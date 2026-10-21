@@ -1,0 +1,51 @@
+services:
+  db:
+    image: mysql:8.4.10
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SHIFTOPT_DB_ROOT_PASSWORD:?set SHIFTOPT_DB_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: shiftopt
+      MYSQL_USER: ${SHIFTOPT_DB_USER:?set SHIFTOPT_DB_USER in .env}
+      MYSQL_PASSWORD: ${SHIFTOPT_DB_PASSWORD:?set SHIFTOPT_DB_PASSWORD in .env}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: shiftopt-backend:local
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      SHIFTOPT_DATABASE_URL: mysql+asyncmy://${SHIFTOPT_DB_USER}:${SHIFTOPT_DB_PASSWORD}@db:3306/shiftopt?charset=utf8mb4
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    image: shiftopt-backend:local
+    environment:
+      SHIFTOPT_DATABASE_URL: mysql+asyncmy://${SHIFTOPT_DB_USER}:${SHIFTOPT_DB_PASSWORD}@db:3306/shiftopt?charset=utf8mb4
+      SHIFTOPT_MAX_SOLVE_SECONDS: ${SHIFTOPT_MAX_SOLVE_SECONDS:-300}
+      SHIFTOPT_SOLVE_WORKERS: ${SHIFTOPT_SOLVE_WORKERS:-8}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  db_data:

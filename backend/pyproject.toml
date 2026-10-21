@@ -1,0 +1,78 @@
+[project]
+name = "shiftopt-backend"
+version = "0.1.0"
+description = "ShiftOpt backend: REST API for demand, employees, shift templates, schedules and analysis"
+requires-python = "==3.11.*"
+dependencies = [
+    "alembic==1.20.0",
+    "asyncmy==0.2.16",
+    "cryptography==50.0.2",
+    "fastapi==0.156.4",
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.1",
+    "shiftopt",
+    "sqlalchemy[asyncio]==2.1.5",
+    "uvicorn[standard]==0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+shiftopt = { path = "../engine", editable = true }
+
+[dependency-groups]
+dev = [
+    "asgi-lifespan==2.1.0",
+    "httpx==0.28.1",
+    "mypy==2.4.0",
+    "pip-audit==2.10.1",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.17.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["--strict-markers", "--strict-config"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+asyncio_default_test_loop_scope = "function"
+markers = [
+    "integration: needs a real MySQL; runs only when SHIFTOPT_TEST_DATABASE_URL is set",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "S", "PT", "RUF", "SIM", "C4", "TC"]
+
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = [
+    "pydantic.BaseModel",
+    "pydantic_settings.BaseSettings",
+    "sqlalchemy.orm.DeclarativeBase",
+    "src.database.Base",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"src/**/router.py" = ["TC001", "TC002", "TC003"]
+"src/**/dependencies.py" = ["TC001", "TC002", "TC003"]
+"src/database.py" = ["TC002", "TC003"]
+"migrations/versions/**" = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+explicit_package_bases = true
+plugins = ["pydantic.mypy"]
+strict = true
+warn_unreachable = true
+exclude = ["^migrations/versions/"]
+
+[[tool.mypy.overrides]]
+module = ["asgi_lifespan.*", "asyncmy.*"]
+ignore_missing_imports = true

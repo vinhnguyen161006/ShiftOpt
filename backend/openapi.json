@@ -1,0 +1,1906 @@
+{
+  "components": {
+    "schemas": {
+      "AnalysisAccepted": {
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          }
+        },
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "AnalysisAccepted",
+        "type": "object"
+      },
+      "AnalysisKind": {
+        "enum": [
+          "demand_sweep",
+          "marginal_cost",
+          "lp_duals"
+        ],
+        "title": "AnalysisKind",
+        "type": "string"
+      },
+      "AnalysisRunRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AnalysisKind"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "result",
+          "error",
+          "created_at",
+          "finished_at"
+        ],
+        "title": "AnalysisRunRead",
+        "type": "object"
+      },
+      "AssignmentRead": {
+        "properties": {
+          "day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "employee_code": {
+            "title": "Employee Code",
+            "type": "string"
+          },
+          "shift_name": {
+            "title": "Shift Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "employee_code",
+          "day",
+          "shift_name"
+        ],
+        "title": "AssignmentRead",
+        "type": "object"
+      },
+      "ComplianceRead": {
+        "properties": {
+          "run_id": {
+            "title": "Run Id",
+            "type": "integer"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/ViolationRead"
+            },
+            "title": "Violations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "violations"
+        ],
+        "title": "ComplianceRead",
+        "type": "object"
+      },
+      "ConversionParams": {
+        "properties": {
+          "alpha": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Alpha",
+            "type": "number"
+          },
+          "min_staff": {
+            "default": 1,
+            "minimum": 0.0,
+            "title": "Min Staff",
+            "type": "integer"
+          },
+          "night_min_staff": {
+            "default": 1,
+            "minimum": 0.0,
+            "title": "Night Min Staff",
+            "type": "integer"
+          },
+          "productivity": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Productivity",
+            "type": "number"
+          }
+        },
+        "title": "ConversionParams",
+        "type": "object"
+      },
+      "DatasetDemandRequest": {
+        "properties": {
+          "conversion_params": {
+            "$ref": "#/components/schemas/ConversionParams"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "store_id": {
+            "title": "Store Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "store_id"
+        ],
+        "title": "DatasetDemandRequest",
+        "type": "object"
+      },
+      "DemandProfileCreate": {
+        "properties": {
+          "conversion_params": {
+            "$ref": "#/components/schemas/ConversionParams"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/StaffingMode",
+            "default": "linear"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "required_staff": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Required Staff",
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DemandSource",
+            "default": "manual"
+          }
+        },
+        "required": [
+          "name",
+          "required_staff"
+        ],
+        "title": "DemandProfileCreate",
+        "type": "object"
+      },
+      "DemandProfileRead": {
+        "properties": {
+          "conversion_params": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Conversion Params",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/StaffingMode"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "required_staff": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Required Staff",
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DemandSource"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "source",
+          "mode",
+          "required_staff",
+          "conversion_params",
+          "created_at"
+        ],
+        "title": "DemandProfileRead",
+        "type": "object"
+      },
+      "DemandProfileUpdate": {
+        "properties": {
+          "conversion_params": {
+            "$ref": "#/components/schemas/ConversionParams"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/StaffingMode",
+            "default": "linear"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "required_staff": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Required Staff",
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DemandSource",
+            "default": "manual"
+          }
+        },
+        "required": [
+          "name",
+          "required_staff"
+        ],
+        "title": "DemandProfileUpdate",
+        "type": "object"
+      },
+      "DemandSource": {
+        "enum": [
+          "manual",
+          "csv",
+          "freshretailnet",
+          "call_center"
+        ],
+        "title": "DemandSource",
+        "type": "string"
+      },
+      "DemandSweepRequest": {
+        "properties": {
+          "multipliers": {
+            "items": {
+              "type": "number"
+            },
+            "minItems": 1,
+            "title": "Multipliers",
+            "type": "array"
+          },
+          "solve": {
+            "$ref": "#/components/schemas/SolveRequest"
+          }
+        },
+        "required": [
+          "solve"
+        ],
+        "title": "DemandSweepRequest",
+        "type": "object"
+      },
+      "EmployeeCreate": {
+        "properties": {
+          "code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "hourly_wage": {
+            "exclusiveMinimum": 0.0,
+            "title": "Hourly Wage",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "hourly_wage"
+        ],
+        "title": "EmployeeCreate",
+        "type": "object"
+      },
+      "EmployeeRead": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "hourly_wage": {
+            "title": "Hourly Wage",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "hourly_wage",
+          "created_at"
+        ],
+        "title": "EmployeeRead",
+        "type": "object"
+      },
+      "EmployeeUpdate": {
+        "properties": {
+          "code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "hourly_wage": {
+            "exclusiveMinimum": 0.0,
+            "title": "Hourly Wage",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "hourly_wage"
+        ],
+        "title": "EmployeeUpdate",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JobAccepted": {
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          }
+        },
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "JobAccepted",
+        "type": "object"
+      },
+      "KpiRead": {
+        "properties": {
+          "coverage_ratio": {
+            "title": "Coverage Ratio",
+            "type": "number"
+          },
+          "labor_cost": {
+            "title": "Labor Cost",
+            "type": "integer"
+          },
+          "overstaffed_hours": {
+            "title": "Overstaffed Hours",
+            "type": "integer"
+          },
+          "required_by_hour": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Required By Hour",
+            "type": "array"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "integer"
+          },
+          "schedule_efficiency": {
+            "title": "Schedule Efficiency",
+            "type": "number"
+          },
+          "staff_by_hour": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Staff By Hour",
+            "type": "array"
+          },
+          "understaffed_hours": {
+            "title": "Understaffed Hours",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "run_id",
+          "coverage_ratio",
+          "understaffed_hours",
+          "overstaffed_hours",
+          "schedule_efficiency",
+          "labor_cost",
+          "staff_by_hour",
+          "required_by_hour"
+        ],
+        "title": "KpiRead",
+        "type": "object"
+      },
+      "LpDualsRequest": {
+        "properties": {
+          "hourly_wage": {
+            "exclusiveMinimum": 0.0,
+            "title": "Hourly Wage",
+            "type": "integer"
+          },
+          "solve": {
+            "$ref": "#/components/schemas/SolveRequest"
+          }
+        },
+        "required": [
+          "solve",
+          "hourly_wage"
+        ],
+        "title": "LpDualsRequest",
+        "type": "object"
+      },
+      "MarginalCostRequest": {
+        "properties": {
+          "solve": {
+            "$ref": "#/components/schemas/SolveRequest"
+          }
+        },
+        "required": [
+          "solve"
+        ],
+        "title": "MarginalCostRequest",
+        "type": "object"
+      },
+      "RunStatus": {
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed"
+        ],
+        "title": "RunStatus",
+        "type": "string"
+      },
+      "ShiftTemplateCreate": {
+        "properties": {
+          "length_hours": {
+            "default": 8,
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "Length Hours",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "start_hour": {
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Start Hour",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "start_hour"
+        ],
+        "title": "ShiftTemplateCreate",
+        "type": "object"
+      },
+      "ShiftTemplateRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "length_hours": {
+            "title": "Length Hours",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "start_hour": {
+            "title": "Start Hour",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "start_hour",
+          "length_hours",
+          "created_at"
+        ],
+        "title": "ShiftTemplateRead",
+        "type": "object"
+      },
+      "ShiftTemplateUpdate": {
+        "properties": {
+          "length_hours": {
+            "default": 8,
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "Length Hours",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "start_hour": {
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Start Hour",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "start_hour"
+        ],
+        "title": "ShiftTemplateUpdate",
+        "type": "object"
+      },
+      "SolveRequest": {
+        "properties": {
+          "demand_profile_id": {
+            "title": "Demand Profile Id",
+            "type": "integer"
+          },
+          "employee_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Ids"
+          },
+          "num_workers": {
+            "default": 8,
+            "minimum": 1.0,
+            "title": "Num Workers",
+            "type": "integer"
+          },
+          "random_seed": {
+            "default": 0,
+            "title": "Random Seed",
+            "type": "integer"
+          },
+          "relative_gap_limit": {
+            "default": 0.01,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Relative Gap Limit",
+            "type": "number"
+          },
+          "shift_template_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Shift Template Ids",
+            "type": "array"
+          },
+          "time_limit_seconds": {
+            "default": 60.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Time Limit Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "demand_profile_id",
+          "shift_template_ids"
+        ],
+        "title": "SolveRequest",
+        "type": "object"
+      },
+      "SolveRunRead": {
+        "properties": {
+          "assignments": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignments"
+          },
+          "best_bound": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Bound"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "demand_profile_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demand Profile Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "gap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Params",
+            "type": "object"
+          },
+          "solve_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solve Status"
+          },
+          "solver": {
+            "title": "Solver",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "understaffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understaffed Hours"
+          },
+          "wall_time_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wall Time Seconds"
+          }
+        },
+        "required": [
+          "id",
+          "demand_profile_id",
+          "status",
+          "solver",
+          "solve_status",
+          "params",
+          "assignments",
+          "objective",
+          "best_bound",
+          "gap",
+          "understaffed_hours",
+          "wall_time_seconds",
+          "error",
+          "created_at",
+          "finished_at"
+        ],
+        "title": "SolveRunRead",
+        "type": "object"
+      },
+      "StaffingMode": {
+        "enum": [
+          "linear",
+          "erlang"
+        ],
+        "title": "StaffingMode",
+        "type": "string"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "ViolationRead": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "employee_code": {
+            "title": "Employee Code",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "employee_code",
+          "detail"
+        ],
+        "title": "ViolationRead",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "ShiftOpt",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/analysis/demand-sweep": {
+      "post": {
+        "operationId": "demand_sweep_api_analysis_demand_sweep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemandSweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Demand Sweep",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/api/analysis/lp-duals": {
+      "post": {
+        "operationId": "lp_duals_api_analysis_lp_duals_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LpDualsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lp Duals",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/api/analysis/marginal-cost": {
+      "post": {
+        "operationId": "marginal_cost_api_analysis_marginal_cost_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarginalCostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Marginal Cost",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/api/analysis/{run_id}": {
+      "get": {
+        "operationId": "get_analysis_api_analysis__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRunRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Analysis",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/api/demand-profiles": {
+      "get": {
+        "operationId": "list_profiles_api_demand_profiles_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DemandProfileRead"
+                  },
+                  "title": "Response List Profiles Api Demand Profiles Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Profiles",
+        "tags": [
+          "demand"
+        ]
+      },
+      "post": {
+        "operationId": "create_profile_api_demand_profiles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemandProfileCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Profile",
+        "tags": [
+          "demand"
+        ]
+      }
+    },
+    "/api/demand-profiles/from-dataset": {
+      "post": {
+        "operationId": "create_profile_from_dataset_api_demand_profiles_from_dataset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetDemandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Profile From Dataset",
+        "tags": [
+          "demand"
+        ]
+      }
+    },
+    "/api/demand-profiles/{profile_id}": {
+      "get": {
+        "operationId": "get_profile_api_demand_profiles__profile_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "title": "Profile Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Profile",
+        "tags": [
+          "demand"
+        ]
+      },
+      "put": {
+        "operationId": "update_profile_api_demand_profiles__profile_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "title": "Profile Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemandProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Profile",
+        "tags": [
+          "demand"
+        ]
+      }
+    },
+    "/api/employees": {
+      "get": {
+        "operationId": "list_employees_api_employees_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeRead"
+                  },
+                  "title": "Response List Employees Api Employees Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Employees",
+        "tags": [
+          "employees"
+        ]
+      },
+      "post": {
+        "operationId": "create_employee_api_employees_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Employee",
+        "tags": [
+          "employees"
+        ]
+      }
+    },
+    "/api/employees/{employee_id}": {
+      "delete": {
+        "operationId": "delete_employee_api_employees__employee_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employee_id",
+            "required": true,
+            "schema": {
+              "title": "Employee Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Employee",
+        "tags": [
+          "employees"
+        ]
+      },
+      "get": {
+        "operationId": "get_employee_api_employees__employee_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employee_id",
+            "required": true,
+            "schema": {
+              "title": "Employee Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Employee",
+        "tags": [
+          "employees"
+        ]
+      },
+      "put": {
+        "operationId": "update_employee_api_employees__employee_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employee_id",
+            "required": true,
+            "schema": {
+              "title": "Employee Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Employee",
+        "tags": [
+          "employees"
+        ]
+      }
+    },
+    "/api/schedules": {
+      "get": {
+        "operationId": "list_schedules_api_schedules_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SolveRunRead"
+                  },
+                  "title": "Response List Schedules Api Schedules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Schedules",
+        "tags": [
+          "schedules"
+        ]
+      },
+      "post": {
+        "operationId": "create_schedule_api_schedules_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Schedule",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}": {
+      "get": {
+        "operationId": "get_schedule_api_schedules__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolveRunRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Schedule",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/compliance": {
+      "get": {
+        "operationId": "get_schedule_compliance_api_schedules__run_id__compliance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Schedule Compliance",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/kpi": {
+      "get": {
+        "operationId": "get_schedule_kpi_api_schedules__run_id__kpi_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Schedule Kpi",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/shift-templates": {
+      "get": {
+        "operationId": "list_templates_api_shift_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShiftTemplateRead"
+                  },
+                  "title": "Response List Templates Api Shift Templates Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Templates",
+        "tags": [
+          "shifts"
+        ]
+      },
+      "post": {
+        "operationId": "create_template_api_shift_templates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShiftTemplateCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftTemplateRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Template",
+        "tags": [
+          "shifts"
+        ]
+      }
+    },
+    "/api/shift-templates/{template_id}": {
+      "delete": {
+        "operationId": "delete_template_api_shift_templates__template_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Template",
+        "tags": [
+          "shifts"
+        ]
+      },
+      "get": {
+        "operationId": "get_template_api_shift_templates__template_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftTemplateRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Template",
+        "tags": [
+          "shifts"
+        ]
+      },
+      "put": {
+        "operationId": "update_template_api_shift_templates__template_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShiftTemplateUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftTemplateRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Template",
+        "tags": [
+          "shifts"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    }
+  }
+}
