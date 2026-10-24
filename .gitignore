@@ -9,4 +9,3 @@ node_modules/
 dist/
 .env
 data/raw/
-CLAUDE.md
