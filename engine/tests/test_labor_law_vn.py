@@ -1,9 +1,26 @@
 import pytest
 
+from shiftopt.constraints.labor_law_vn import LaborRules
+from shiftopt.domain import Assignment, Employee, Instance, ShiftType, Solution
+from shiftopt.time_grid import HOURS_PER_WEEK
+from shiftopt.validation import ViolationKind, validate
 
-@pytest.mark.skip(reason="TODO")
+DAY = ShiftType("day", 8)
+
+
+def six_day_roster(rules: LaborRules) -> list[ViolationKind]:
+    instance = Instance(
+        demand=(0,) * HOURS_PER_WEEK,
+        employees=(Employee("e1", 100),),
+        shift_types=(DAY,),
+        rules=rules,
+    )
+    roster = Solution(tuple(Assignment("e1", day, DAY.name) for day in range(6)))
+    return [violation.kind for violation in validate(instance, roster)]
+
+
 def test_consecutive_days_rule_permits_six_in_a_row() -> None:
-    """TODO: six consecutive working days must not be flagged (max_consecutive_days = 6)."""
+    assert ViolationKind.CONSECUTIVE_DAYS not in six_day_roster(LaborRules())
 
 
 @pytest.mark.skip(reason="TODO")
@@ -23,11 +40,18 @@ def test_general_formula_not_l8_shortcut() -> None:
     and not the shortcut sigma - sigma' > 4."""
 
 
-@pytest.mark.skip(reason="TODO")
 def test_weekly_hours_limit_48() -> None:
-    """TODO: LaborRules default max_weekly_hours is 48 (Article 105)."""
+    assert LaborRules().max_weekly_hours == 48
+    assert ViolationKind.WEEKLY_HOURS not in six_day_roster(LaborRules())
+    assert ViolationKind.WEEKLY_HOURS in six_day_roster(LaborRules(max_weekly_hours=40))
 
 
-@pytest.mark.skip(reason="TODO")
 def test_night_premium_percent_30() -> None:
-    """TODO: LaborRules default night_premium_percent is 30 (Article 98 clause 2)."""
+    assert LaborRules().night_premium_percent == 30
+    night = ShiftType("night", 0)
+    assert night.cost_per_wage_unit(LaborRules(night_premium_percent=50)) == 100 * 8 + 50 * 6
+
+
+def test_break_minimums_follow_article_109() -> None:
+    rules = LaborRules()
+    assert (rules.min_break_minutes, rules.min_night_break_minutes) == (30, 45)
