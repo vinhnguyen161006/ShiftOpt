@@ -63,10 +63,12 @@ def solve_set_covering(
         if result.objective is not None
         else {}
     )
-    return SetCoveringResult(result=result, counts=counts, duals=_duals(problem, result, relax))
+    return SetCoveringResult(
+        result=result, counts=counts, duals=cover_duals(problem, result, relax)
+    )
 
 
-def _duals(
+def cover_duals(
     problem: pulp.LpProblem, result: SolveResult, relax: bool
 ) -> tuple[float | None, ...] | None:
     if not relax or result.objective is None:
