@@ -110,6 +110,7 @@ Dữ liệu thô tải vào `data/raw/` (gitignore). Kết quả xử lý vào `
 1. Chọn một `store_id` (hoặc `city_id`), cộng `hours_sale` của mọi sản phẩm theo (`dt`, giờ) → chỉ số tải `D[d,h]`.
 2. Giờ có `hours_stock_status = 1`: thay bằng nhu cầu ẩn ước lượng (nguyên tắc 8).
 3. `r[d,h] = max(r_min, ceil(alpha * D[d,h] / p))`. `alpha`, `p`, `r_min` là tham số nhập từ UI hoặc API, có giá trị mặc định ghi trong `staffing/linear.py`.
+4. Giờ đêm (22h–06h, `LaborRules` của người gọi) của FreshRetailNet đặt `D = 0` lúc quy đổi (`zero_night_load`), nên `r` ở giờ đêm bằng `night_min_staff`. File processed giữ tải chưa đặt sàn. Metadata ghi khung đêm, phương pháp và các giả định.
 
 Chế độ tổng đài: `lambda_h → Erlang A/C → r_h`. Erlang A (có khách bỏ cuộc) ưu tiên hơn Erlang C vì Erlang C dẫn tới thừa người. Mục tiêu mặc định "80/20" (80% cuộc gọi trả lời trong 20 giây) là tham số. Square-root staffing `N = R + beta * sqrt(R)` là phương án nhanh. Dataset tổng đài công khai (ngân hàng Đông Bắc Mỹ, SEELab Technion) hoặc giả lập có seed cố định.
 
@@ -260,7 +261,7 @@ Schedule adherence (so lịch với chấm công) **ngoài phạm vi** vì khôn
 | Engine | Python 3.11 · OR-Tools (CP-SAT) · PuLP + HiGHS · NumPy / pandas (chỉ xử lý dữ liệu) |
 | Backend | FastAPI · Python 3.11 · Pydantic v2 (async REST) |
 | Database | MySQL 8 · SQLAlchemy 2 · Alembic |
-| Dữ liệu | `datasets` (Hugging Face) · Parquet |
+| Dữ liệu | `pyarrow` (đọc/ghi Parquet ở backend) · Parquet · tải FreshRetailNet bằng `urllib` theo commit ghim, không dùng `datasets` |
 | Frontend | React 19 · react-router 8 · Vite 8 · TypeScript 5.9 · CSS thuần · TanStack Query 5 · Biome · openapi-typescript · thư viện biểu đồ chọn khi dựng UI (`docs/adr/adr-002-charting-library.md`) |
 | Deploy | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
 | Test | pytest · pytest-asyncio · httpx + asgi-lifespan · pytest-cov |
@@ -289,7 +290,7 @@ backend/
     config.py               Settings (BaseSettings, tiền tố SHIFTOPT_), get_settings
     database.py             Base + naming convention, enum_column (VARCHAR), engine, get_session
     exceptions.py           AppError, NotFoundError, ConflictError, InstanceTooLargeError + handler
-    demand/                 router, schemas, models (DemandProfile), service, dataset_loader
+    demand/                 router, schemas, models (DemandProfile), service, dataset_loader, csv_import
     employees/              router, schemas, models (EmployeeRecord), service
     shifts/                 router, schemas, models (ShiftTemplate), service
     schedules/              router, schemas, models (SolveRun, RunStatus), service, dependencies
@@ -303,7 +304,7 @@ engine/
   src/shiftopt/
     domain.py               dataclass bất biến: ShiftType, Employee, Instance, Assignment, Solution
     time_grid.py            hằng số giờ/ngày/tuần, quấn vòng mod 168, giờ đêm
-    staffing/               linear.py, erlang.py
+    staffing/               linear.py, erlang.py (C, A, square-root), latent_demand.py, call_arrivals.py
     models/                 set_covering_pulp.py, implicit_breaks.py, roster_cpsat.py
     constraints/            labor_law_vn.py (LaborRules), sequences.py, fairness.py
     solvers/                base.py (SolveStatus, SolveParams, SolveResult), cpsat.py, pulp_backend.py

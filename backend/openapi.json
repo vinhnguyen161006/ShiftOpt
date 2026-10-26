@@ -208,6 +208,8 @@
           },
           "required_staff": {
             "items": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
               "type": "integer"
             },
             "maxItems": 168,
@@ -292,6 +294,8 @@
           },
           "required_staff": {
             "items": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
               "type": "integer"
             },
             "maxItems": 168,

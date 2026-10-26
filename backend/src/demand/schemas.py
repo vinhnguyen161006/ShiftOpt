@@ -1,16 +1,18 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 from shiftopt.staffing.linear import (
     DEFAULT_ALPHA,
     DEFAULT_MIN_STAFF,
     DEFAULT_NIGHT_MIN_STAFF,
     DEFAULT_PRODUCTIVITY,
 )
+from shiftopt.time_grid import HOURS_PER_WEEK
 
 from src.demand.models import DemandSource, StaffingMode
 
-HOURS_PER_WEEK = 168
+MAX_HOURLY_DEMAND = 1000
 
 
 class ConversionParams(BaseModel):
@@ -24,8 +26,17 @@ class DemandProfileCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     source: DemandSource = DemandSource.MANUAL
     mode: StaffingMode = StaffingMode.LINEAR
-    required_staff: list[int] = Field(min_length=HOURS_PER_WEEK, max_length=HOURS_PER_WEEK)
+    required_staff: list[Annotated[StrictInt, Field(ge=0, le=MAX_HOURLY_DEMAND)]] = Field(
+        min_length=HOURS_PER_WEEK, max_length=HOURS_PER_WEEK
+    )
     conversion_params: ConversionParams = Field(default_factory=ConversionParams)
+
+    @field_validator("required_staff", mode="before")
+    @classmethod
+    def check_cell_count(cls, value: object) -> object:
+        if isinstance(value, list) and len(value) != HOURS_PER_WEEK:
+            raise ValueError(f"demand grid must have {HOURS_PER_WEEK} cells")
+        return value
 
 
 class DemandProfileUpdate(DemandProfileCreate):
