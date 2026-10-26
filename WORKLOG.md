@@ -19,8 +19,8 @@ Lập ngày 2026-10-26 từ `CLAUDE.md` và trạng thái repo thực tế (khun
 | 0 | Chốt nền: đặc tả, quyết định mở, dữ liệu, tài liệu gốc | — | chưa làm |
 | 1 | Engine: lưới thời gian, domain, quy đổi nhu cầu → số người | 0 | xong (trừ Erlang A, dời sang 6.2) |
 | 2 | Engine: validator độc lập + KPI | 1 | xong (Đ.109 dời sang 3.3) |
-| 3 | Engine: lớp solver chung + mô hình tổng hợp (Dantzig) | 1 | chưa làm |
-| 4 | Engine: mô hình theo nhân viên (CP-SAT) | 2, 3 | chưa làm |
+| 3 | Engine: lớp solver chung + mô hình tổng hợp (Dantzig) | 1 | xong (3.1–3.3) |
+| 4 | Engine: mô hình theo nhân viên (CP-SAT) | 2, 3 | xong (4.1–4.4; phá đối xứng tắt mặc định, phân rã chưa bật tự động) |
 | 5 | Engine: phân tích độ nhạy | 3, 4 | chưa làm |
 | 6 | Pipeline dữ liệu nhu cầu (FreshRetailNet, tổng đài) | 0, 1 | chưa làm |
 | 7 | Backend: service, job giải, API, test tích hợp | 2–6 | chưa làm |
@@ -103,19 +103,22 @@ Mục tiêu: thực thi nguyên tắc 1. Làm **trước** các mô hình để 
 
 Mục tiêu: có đường đi LP/MIP hoàn chỉnh, có đáp án tay, làm nền cho dual và độ nhạy.
 
-- [ ] **3.1 Lớp solver chung: `solvers/base.py`, `cpsat.py`, `pulp_backend.py`**
+- [x] **3.1 Lớp solver chung: `solvers/base.py`, `cpsat.py`, `pulp_backend.py`**
+  - Đã làm: `SolveParams` có `log_search_progress`; `SolveResult` có `solver_version` và `log`; `relative_gap` là nguồn duy nhất cho gap; `ModelInvalidError` raise khi solver báo model lỗi (không trả status). `run_cp_model` (CP-SAT) và `run_problem` (PuLP + HiGHS) cùng một kiểu kết quả. Trạng thái HiGHS lấy từ `getModelStatus()` vì PuLP status không phân biệt được nghiệm hết giờ với tối ưu đã chứng minh.
+  - Đã xác minh API: `pulp.HiGHS(... random_seed=...)` truyền xuống `setOptionValue`; cận dưới MIP từ `getInfo().mip_dual_bound`.
+  - Cảnh báo PuLP: code dùng `add_variable`, `problem += expr >= rhs, name` và `get_constraint_by_name`, không kích hoạt cảnh báo PuLP 4. `pyproject.toml` đổi filter: thay vì nuốt mọi `DeprecationWarning` của pulp, chỉ coi cảnh báo "PuLP 4.0" là lỗi.
   - `SolveParams` (time limit, gap, workers, seed, log) và `SolveResult(status, objective, bound, gap, wall_time_seconds, solver)` dùng chung hai backend; map status về `OPTIMAL/FEASIBLE/INFEASIBLE/UNKNOWN/MODEL_INVALID`; gap = `|obj - bound| / max(1, |obj|)`; `MODEL_INVALID` là lỗi lập trình, không trả như lỗi người dùng; ghi tên + phiên bản solver (nguyên tắc 10).
   - PuLP dùng `pulp.HiGHS`, không `PULP_CBC_CMD`; xử lý `DeprecationWarning` PuLP 3.3.2 có chủ đích, không im lặng.
   - Test: mô hình đồ chơi có đáp án biết trước trên cả hai backend; time limit cực nhỏ trả `FEASIBLE`/`UNKNOWN` kèm bound; infeasible nhận diện đúng.
   - Xong khi: hai backend trả cùng kiểu kết quả, test pass.
-- [ ] **3.2 Mô hình phủ tập Dantzig `models/set_covering_pulp.py`**
-  - `min sum c_j x_j`, `sum a_tj x_j >= r_t`, `x_j` nguyên không âm, chu kỳ 24/168 quấn vòng; chi phí `c_s = L*wage + 0.3*wage*|night_hours(s)|`; hỗ trợ chế độ LP relaxation (cờ) để lấy dual.
-  - Test (`test_set_covering.py`): ví dụ có đáp án tay (ghi lời giải trong docstring), nhu cầu bằng 0, ca duy nhất, nghiệm nguyên ≥ LP bound.
-  - Xong khi: kết quả khớp đáp án tay; mọi nghiệm nguyên đủ phủ nhu cầu.
-- [ ] **3.3 Nghỉ giữa ca ngầm `models/implicit_breaks.py` (biến thể Bechtold–Jacobs)**
-  - Mô hình hóa Đ.109 như giảm năng lực phủ một giờ trong cửa sổ nghỉ (30 phút, 45 phút nếu ca đêm), không liệt kê tổ hợp (ca, vị trí nghỉ).
-  - Test: số người cần ≥ mô hình không nghỉ; so sánh với liệt kê tổ hợp Dantzig gốc trên instance nhỏ phải cùng giá trị mục tiêu.
-  - Xong khi: giá trị mục tiêu khớp liệt kê đầy đủ trên instance nhỏ, ghi trong `docs/model.md`.
+- [x] **3.2 Mô hình phủ tập Dantzig `models/set_covering_pulp.py`**
+  - Đã làm: biến nguyên `x[d, s]` cho ca dài tối đa `max_daily_hours`; chi phí `wage * cost_per_wage_unit(s)` (dùng lại hàm sẵn có, không viết công thức `0.3 * wage` thứ hai, đơn vị phần trăm đơn vị lương); phủ từng giờ quấn vòng 168; `relax=True` cho LP và trả dual theo giờ (`get_constraint_by_name(...).pi`, có thể `None`).
+  - Test (`test_set_covering.py`): 3 ca 0/8/16 nhu cầu 1 → 21 ca, objective `7 * 100 * (2400 + 30 * 8)`; nhu cầu 2 → 42 ca; nhu cầu 0 → 0; ca 10 giờ bị loại → INFEASIBLE; 168 dual không âm; LP ≤ nguyên.
+  - Xong khi: đạt. Ví dụ có đáp án tay là ví dụ 3 ca ở trên, lời giải ghi trong test.
+- [x] **3.3 Nghỉ giữa ca ngầm `models/implicit_breaks.py` (biến thể Bechtold–Jacobs)**
+  - Đã làm: `LaborRules.break_required_from_hours = 6` (placeholder, phải đối chiếu văn bản 45/2019 ở task 0.2); `ShiftType.break_window` là offset 1 đến L-2. Mỗi người của ca cần nghỉ được đếm một lần trong `x` và một lần trong một khe nghỉ `y[d, s, k]`; nghỉ làm mất đúng một giờ phủ. Nghỉ 30/45 phút tính trọn một giờ, là xấp xỉ bảo thủ.
+  - Test: oracle liệt kê đầy đủ cột (ca, vị trí nghỉ) bằng HiGHS, objective phải khớp với mô hình ngầm trên instance đều và instance có nhu cầu đỉnh; nghỉ không làm rẻ hơn mô hình không nghỉ.
+  - Xong khi: đạt; ghi trong `docs/model.md` mục 1b.
 
 ---
 
@@ -123,22 +126,28 @@ Mục tiêu: có đường đi LP/MIP hoàn chỉnh, có đáp án tay, làm n�
 
 Mục tiêu: lõi sản phẩm — lịch thật, mọi ràng buộc cứng pháp lý, luôn khả thi nhờ biến thiếu người.
 
-- [ ] **4.1 Ràng buộc chuỗi và công bằng: `constraints/sequences.py`, `constraints/fairness.py`**
-  - Cấm cặp ca vi phạm nghỉ 12 giờ (công thức tổng quát), cửa sổ `K+1` ngày, nghỉ tuần 24 giờ **cộng** kiểm tra liên tục trên trục giờ, ≤ 8 giờ/ngày, ≤ 48 giờ/tuần; soft: số ngày liên tiếp tối thiểu, số cuối tuần tối đa, `F = max_e N_e - min_e N_e` (`AddMaxEquality`/`AddMinEquality`).
-  - Đọc mọi hằng từ `LaborRules` và config có tên, không magic number.
-  - Xong khi: mỗi hàm ràng buộc có test mô hình nhỏ chứng minh cấm đúng cặp ca và cho phép cặp hợp lệ.
-- [ ] **4.2 `models/roster_cpsat.py`: biến, ràng buộc cứng, coverage mềm, mục tiêu**
-  - Biến `x[e,d,s]`, `w[e,d]`, `u_h`; `staff_h + u_h >= r_h`; ca qua đêm tính vào giờ ngày sau; yêu cầu cá nhân (ngày không thể làm, ca mong muốn) chỉ áp cho nhân viên có yêu cầu; **không** trả `INFEASIBLE` trần trụi khi thiếu nhân lực (nguyên tắc 3).
-  - Giải **lexicographic**: tối thiểu thiếu người → cố định → tối thiểu chi phí → (tùy chọn) công bằng; không chọn `M` tùy tiện. Trả `RosterOutcome` gồm lịch, giờ thiếu, status, bound, gap, log.
-  - Test (`test_roster_cpsat.py`): instance nhỏ có đáp án biết; mọi nghiệm trả về qua `validation.py` = 0 vi phạm; đủ người thì `u_h = 0`; thiếu người thì UI biết giờ nào thiếu; cùng seed + `num_workers = 1` cho cùng objective.
-  - Xong khi: tuần 7×24, 20–40 nhân viên giải được, validator xác nhận 0 vi phạm cứng.
-- [ ] **4.3 Phá đối xứng cho nhóm đồng nhất**
-  - Chỉ áp cho nhân viên cùng hợp đồng, kỹ năng, không yêu cầu riêng (nguyên tắc 12); thứ tự từ điển `sum_d w[e,d] >= sum_d w[e+1,d]` và/hoặc cố định đầu nhóm.
-  - Test: trên instance nhỏ, objective **bằng nhau** khi bật/tắt; không áp khi nhân viên có yêu cầu riêng.
-  - Xong khi: test tương đương pass; đo và ghi mức giảm thời gian giải.
-- [ ] **4.4 Phân rã hai pha (khi instance lớn)**
-  - Pha 1 giải mô hình tổng hợp lấy số người mỗi kiểu ca; pha 2 gán cá nhân dựa trên đó. Chỉ bật khi vượt ngưỡng kích thước cấu hình.
-  - Xong khi: trên instance lớn hơn mục tiêu, hai pha ra lịch qua validator với 0 vi phạm và thời gian giải thấp hơn một pha; ghi rõ là xấp xỉ, không tuyên bố tối ưu toàn cục.
+- [x] **4.1 Ràng buộc chuỗi và công bằng: `constraints/sequences.py`, `constraints/fairness.py`**
+  - Đã làm: `rest_hours(prev, next, day_offset)` là công thức tổng quát duy nhất (không dùng rút gọn `sigma - sigma' > 4`); `forbidden_shift_pairs` trả bộ ba (ca trước, ca sau, offset 1–6) theo vòng tuần; `consecutive_day_windows` là cửa sổ `K+1` ngày quấn vòng; `night_shift_spread` = max − min số ca đêm trên mọi nhân viên (cùng định nghĩa với CP-SAT).
+  - Lệch có chủ đích: model tối thiểu hóa max − min (tuyến tính), KPI báo độ lệch chuẩn (mô tả). Hai đại lượng khác nhau, không thay thế nhau.
+  - Test: cặp 14h → 06h bị cấm; công thức tổng quát với ca dài khác 8; cửa sổ `K = 4` bắt đầu thứ Bảy là `(5, 6, 0, 1, 2)`; **đối chiếu với validator**: với mọi cặp ca và offset 1–6, cặp bị cấm khi và chỉ khi validator báo `REST_BETWEEN_SHIFTS` ở ngày đó.
+  - Xong khi: đạt.
+- [x] **4.2 `models/roster_cpsat.py`: biến, ràng buộc cứng, coverage mềm, mục tiêu**
+  - Đã làm: `work[e,d,s]`, `breaks[e,d,s,k]`, `shortfall[h]` (nguyên, trong `[0, r_h]`), `rest_start[e,t]` cho cửa sổ nghỉ 24 giờ. Ràng buộc cứng: tối đa 1 ca/ngày, giờ/tuần theo từng nhân viên, nghỉ 12 giờ theo offset 1–6, số ngày liên tiếp, nghỉ 24 giờ liên tục trên trục giờ, mỗi ca cần nghỉ có đúng một khe nghỉ, không xếp ca vào ngày không làm được. Coverage mềm luôn khả thi.
+  - Mục tiêu lexicographic 4 tầng (thiếu người → chi phí → chênh ca đêm → vi phạm mong muốn), mỗi tầng một lần giải CP-SAT, tầng sau bị chặn bởi tối ưu tầng trước; tầng bỏ qua nếu không có điều kiện tương ứng. `OPTIMAL` chỉ khi mọi tầng `OPTIMAL`.
+  - Lỗi đã bắt được trong quá trình làm (ghi lại vì là bài học): (1) giới hạn giờ/tuần ban đầu cộng toàn đội vào một ràng buộc `≤ 48`, nên cả đội chỉ được 6 ca; sửa theo từng nhân viên; (2) thiếu `AtMostOne` một ca/ngày, validator báo `MULTIPLE_SHIFTS_PER_DAY` ngay trong test.
+  - Test (`test_roster_cpsat.py`): đủ người → thiếu = 0, tầng 1 `OPTIMAL`, validator rỗng; thiếu người (3 nhân viên) → thiếu ≥ 42 giờ, tính tay: tối đa 6 ca × 3 người = 18 ca, mỗi ca 8 giờ trừ 1 giờ nghỉ = 126 giờ có người, 168 − 126 = 42; cùng seed + 1 worker → cùng objective; ca 14h rồi 06h không bao giờ cùng nhân viên (thiếu đúng 1 giờ); lexicographic ưu tiên thiếu người hơn chi phí; yêu cầu ngày không làm được và ngày nghỉ mong muốn; ngẫu nhiên 2 instance nhỏ → validator rỗng.
+  - Số đo scale (`benchmarks/run_roster_scale.py`, seed 0, giới hạn 60 giây, 1 worker, không phá đối xứng): 20 nhân viên `OPTIMAL` 8,7 s; 30 `OPTIMAL` 15,5 s; 40 `OPTIMAL` 22,2 s; 0 vi phạm, 0 giờ thiếu. Đây là một instance và một seed, chưa phải kết luận chung.
+  - Xong khi: đạt cho 20–40 nhân viên ở instance benchmark; validator 0 vi phạm; nghiệm trên instance khác vẫn cần đo thêm (task 9.4).
+- [x] **4.3 Phá đối xứng cho nhóm đồng nhất**
+  - Đã làm: `symmetry_pairs` chỉ ghép nhân viên cùng lương và không có yêu cầu (nguyên tắc 12); ràng buộc `shifts_e >= shifts_{e+1}`. Tham số `symmetry_breaking`, **mặc định tắt**.
+  - Lý do tắt: đo trên benchmark 20/30/40 nhân viên, bật làm chậm hơn (12,7 s so với 8,7 s; 24,3 s so với 22,2 s ở 20 và 40 nhân viên cùng seed và 1 worker). Đây là một seed; cần đo thêm trước khi đổi mặc định.
+  - Test: objective bằng nhau khi bật/tắt (cả hai `OPTIMAL`); nhân viên có yêu cầu không được ghép cặp.
+  - Xong khi: test tương đương pass; mức giảm thời gian không đạt, ghi lại như trên và giữ tính năng tắt.
+- [x] **4.4 Phân rã hai pha (khi instance lớn)**
+  - Đã làm: `solve_roster(..., decompose=True)` giải mô hình tổng hợp có nghỉ ngầm (3.3) trong nửa thời gian, lấy số ca mỗi (ngày, loại ca), giới hạn `ceil(count)` cho mô hình nhân viên. Kết quả gắn `approximate=True`, status không bao giờ `OPTIMAL` (tối đa `FEASIBLE`).
+  - Chưa bật tự động. Ngưỡng tự bật sẽ đặt sau khi có số đo ở 9.4 cho thấy một pha không đạt 60 giây với gap 1%.
+  - Test: nghiệm qua validator rỗng; cờ `approximate` đúng; status không `OPTIMAL`.
+  - Xong khi: đạt về tính đúng. Chưa đo được lợi về thời gian giải trên instance lớn (sẽ đo ở 9.4).
 
 ---
 
