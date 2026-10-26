@@ -39,15 +39,31 @@ class ShiftType:
         fairness measure, so an evening shift that only touches midnight is not a night shift."""
         return 2 * self.night_hours(rules) > self.length
 
+    def break_window(self, rules: LaborRules) -> tuple[int, ...]:
+        """Offsets from the shift start where the rest break may begin: hours 1 to length - 2,
+        so the break is never the first or last hour. Empty when the shift needs no break."""
+        if self.length < rules.break_required_from_hours:
+            return ()
+        return tuple(range(1, self.length - 1))
+
 
 @dataclass(frozen=True)
 class Employee:
     id: str
     hourly_wage: int
+    unavailable_days: frozenset[int] = frozenset()
+    preferred_days_off: frozenset[int] = frozenset()
 
     def __post_init__(self) -> None:
         if self.hourly_wage <= 0:
             raise ValueError(f"employee {self.id}: hourly_wage must be positive")
+        for days in (self.unavailable_days, self.preferred_days_off):
+            if any(not 0 <= day < DAYS_PER_WEEK for day in days):
+                raise ValueError(f"employee {self.id}: request days must be in [0, 7)")
+
+    @property
+    def has_requests(self) -> bool:
+        return bool(self.unavailable_days or self.preferred_days_off)
 
 
 @dataclass(frozen=True)
@@ -85,6 +101,7 @@ class Assignment:
     employee_id: str
     day: int
     shift_name: str
+    break_offset: int | None = None
 
     def __post_init__(self) -> None:
         if not 0 <= self.day < DAYS_PER_WEEK:

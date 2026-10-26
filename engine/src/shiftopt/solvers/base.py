@@ -9,6 +9,10 @@ class SolveStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+class ModelInvalidError(RuntimeError):
+    """The solver rejected the model. This is a programming error, never a user input error."""
+
+
 @dataclass(frozen=True)
 class SolveParams:
     """Solver settings stored with every run. Identical instance, params and seed with
@@ -18,6 +22,7 @@ class SolveParams:
     relative_gap_limit: float = 0.01
     num_workers: int = 8
     random_seed: int = 0
+    log_search_progress: bool = False
 
 
 @dataclass(frozen=True)
@@ -30,3 +35,12 @@ class SolveResult:
     gap: float | None
     wall_time_seconds: float
     solver: str
+    solver_version: str
+    log: str = ""
+
+
+def relative_gap(objective: float, bound: float) -> float:
+    return abs(objective - bound) / max(1.0, abs(objective))
+
+
+DEFAULT_PARAMS = SolveParams()

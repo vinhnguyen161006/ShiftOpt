@@ -27,7 +27,7 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = ["--strict-markers", "--strict-config"]
-filterwarnings = ["ignore::DeprecationWarning:pulp.*"]
+filterwarnings = ["error:.*PuLP 4[.]0:DeprecationWarning"]
 
 [tool.ruff]
 line-length = 100
@@ -37,7 +37,8 @@ target-version = "py311"
 select = ["E", "F", "I", "B", "UP", "S", "PT", "RUF", "SIM", "C4", "TC"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]
+"tests/**" = ["S101", "S311"]
+"benchmarks/**" = ["S311"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -47,7 +48,7 @@ mypy_path = "src"
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
-module = ["pulp.*"]
+module = ["pulp.*", "highspy.*"]
 ignore_missing_imports = true
 
 [tool.coverage.run]

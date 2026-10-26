@@ -170,12 +170,17 @@ def kpi_instance(demand_value: int = 1, employees: tuple[str, ...] = ("e1",)) ->
 
 
 def test_kpi_for_single_day_shift() -> None:
-    kpi = compute_kpi(kpi_instance(), Solution((Assignment("e1", 0, "day"),)))
-    assert kpi.coverage_ratio == pytest.approx(8 / 168)
-    assert kpi.understaffed_hours == 160
+    kpi = compute_kpi(kpi_instance(), Solution((Assignment("e1", 0, "day", break_offset=1),)))
+    assert kpi.coverage_ratio == pytest.approx(7 / 168)
+    assert kpi.understaffed_hours == 161
     assert kpi.overstaffed_hours == 0
-    assert kpi.schedule_efficiency == pytest.approx(21)
+    assert kpi.schedule_efficiency == pytest.approx(24)
     assert kpi.labor_cost == 100 * 800
+
+
+def test_break_hour_takes_one_person_off_the_floor() -> None:
+    staff = staff_by_hour(kpi_instance(), Solution((Assignment("e1", 0, "day", break_offset=3),)))
+    assert [hour for hour, count in enumerate(staff) if count] == [8, 9, 10, 12, 13, 14, 15]
 
 
 def test_night_premium_is_added_to_cost() -> None:
@@ -186,10 +191,12 @@ def test_night_premium_is_added_to_cost() -> None:
 
 
 def test_ratios_use_one_when_denominator_is_zero() -> None:
-    idle = compute_kpi(kpi_instance(demand_value=0), Solution((Assignment("e1", 0, "day"),)))
+    idle = compute_kpi(
+        kpi_instance(demand_value=0), Solution((Assignment("e1", 0, "day", break_offset=1),))
+    )
     assert idle.coverage_ratio == 1.0
     assert idle.schedule_efficiency == 0.0
-    assert idle.overstaffed_hours == 8
+    assert idle.overstaffed_hours == 7
 
     empty = compute_kpi(kpi_instance(), Solution(()))
     assert empty.coverage_ratio == 0.0
