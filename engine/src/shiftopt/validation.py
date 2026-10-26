@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.domain import Assignment, Instance, ShiftType, Solution
+from shiftopt.domain import Assignment, Employee, Instance, ShiftType, Solution
 from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_DAY, HOURS_PER_WEEK
 
 
@@ -16,6 +16,9 @@ class ViolationKind(StrEnum):
     REST_BETWEEN_SHIFTS = "rest_between_shifts"
     CONSECUTIVE_DAYS = "consecutive_days"
     WEEKLY_REST = "weekly_rest"
+    MISSING_BREAK = "missing_break"
+    BREAK_OUTSIDE_WINDOW = "break_outside_window"
+    UNAVAILABLE_DAY = "unavailable_day"
 
 
 LEGAL_BASIS: dict[ViolationKind, str] = {
@@ -27,6 +30,9 @@ LEGAL_BASIS: dict[ViolationKind, str] = {
     ViolationKind.REST_BETWEEN_SHIFTS: "Article 110",
     ViolationKind.CONSECUTIVE_DAYS: "Roster rule",
     ViolationKind.WEEKLY_REST: "Article 111",
+    ViolationKind.MISSING_BREAK: "Article 109",
+    ViolationKind.BREAK_OUTSIDE_WINDOW: "Article 109",
+    ViolationKind.UNAVAILABLE_DAY: "Employee request",
 }
 
 
@@ -53,8 +59,8 @@ def validate(instance: Instance, solution: Solution) -> list[Violation]:
     Sunday to Monday. Checks: one shift per day, daily and weekly hours (Article 105), rest of at
     least 12 hours between consecutive shifts (Article 110), maximum consecutive working days, and
     a longest rest gap of at least 24 hours (Article 111), which a calendar day off alone does not
-    guarantee for overnight shifts. The rest break inside a shift (Article 109) is not checked
-    here because a Solution does not carry break positions.
+    guarantee for overnight shifts. Each shift that needs a rest break (Article 109) must carry a
+    break offset inside its break window, and an employee is never rostered on an unavailable day.
     """
     shifts = {shift.name: shift for shift in instance.shift_types}
     employee_ids = {employee.id for employee in instance.employees}
@@ -82,19 +88,20 @@ def validate(instance: Instance, solution: Solution) -> list[Violation]:
         else:
             rostered[assignment.employee_id].append(assignment)
     for employee in instance.employees:
-        violations.extend(
-            _check_employee(employee.id, rostered[employee.id], shifts, instance.rules)
-        )
+        violations.extend(_check_employee(employee, rostered[employee.id], shifts, instance.rules))
     return violations
 
 
 def _check_employee(
-    employee_id: str,
+    employee: Employee,
     assignments: list[Assignment],
     shifts: dict[str, ShiftType],
     rules: LaborRules,
 ) -> list[Violation]:
+    employee_id = employee.id
     violations = _multiple_shifts_per_day(employee_id, assignments)
+    violations.extend(_request_violations(employee, assignments))
+    violations.extend(_break_violations(employee_id, assignments, shifts, rules))
     spans = sorted(
         (_span(assignment, shifts[assignment.shift_name]) for assignment in assignments),
         key=lambda span: span.start,
@@ -106,6 +113,53 @@ def _check_employee(
     violations.extend(_rest_violations(employee_id, gaps, rules))
     violations.extend(_weekly_rest_violations(employee_id, gaps, rules))
     violations.extend(_consecutive_violations(employee_id, spans, rules))
+    return violations
+
+
+def _request_violations(employee: Employee, assignments: list[Assignment]) -> list[Violation]:
+    return [
+        Violation(
+            ViolationKind.UNAVAILABLE_DAY,
+            employee.id,
+            f"rostered on day {assignment.day}, which the employee cannot work",
+            assignment.day,
+        )
+        for assignment in assignments
+        if assignment.day in employee.unavailable_days
+    ]
+
+
+def _break_violations(
+    employee_id: str,
+    assignments: list[Assignment],
+    shifts: dict[str, ShiftType],
+    rules: LaborRules,
+) -> list[Violation]:
+    violations: list[Violation] = []
+    for assignment in assignments:
+        shift = shifts[assignment.shift_name]
+        window = shift.break_window(rules)
+        if assignment.break_offset is None:
+            if window:
+                violations.append(
+                    Violation(
+                        ViolationKind.MISSING_BREAK,
+                        employee_id,
+                        f"shift {shift.name} has no break, allowed offsets {window[0]} to "
+                        f"{window[-1]}",
+                        assignment.day,
+                    )
+                )
+        elif assignment.break_offset not in window:
+            violations.append(
+                Violation(
+                    ViolationKind.BREAK_OUTSIDE_WINDOW,
+                    employee_id,
+                    f"break at offset {assignment.break_offset} is not allowed for shift "
+                    f"{shift.name}",
+                    assignment.day,
+                )
+            )
     return violations
 
 

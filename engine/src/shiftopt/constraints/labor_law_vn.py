@@ -13,8 +13,10 @@ class LaborRules:
     weekly_rest_hours: Article 111, at least 24 consecutive hours of rest each week.
     max_consecutive_days: working days in a row; 6 guarantees a day off in every 7-day window.
     min_break_minutes, min_night_break_minutes: Article 109 and Decree 145/2020, rest break
-    during a shift; 45 minutes applies when the shift works at night. Checked by the implicit
-    break model, not by the validator.
+    during a shift; 45 minutes applies when the shift works at night. Modelled as one lost
+    coverage hour, which is conservative.
+    break_required_from_hours: shifts of this length or longer must contain a break. The value 6
+    is a placeholder that must be checked against the text of Article 109 (WORKLOG task 0.2).
     """
 
     max_daily_hours: int = 8
@@ -27,3 +29,4 @@ class LaborRules:
     max_consecutive_days: int = 6
     min_break_minutes: int = 30
     min_night_break_minutes: int = 45
+    break_required_from_hours: int = 6

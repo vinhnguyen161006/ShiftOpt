@@ -17,16 +17,42 @@ LP relaxation duals approximate marginal cost; always labelled "approximate".
 
 Variables:
 
-- `x[e, d, s]` Boolean — employee `e` works shift `s` on day `d`
-- `w[e, d] = sum_s x[e,d,s]` — 1 if employee works on day `d`
-- `u_h >= 0` — shortfall at hour `h` (`staff_h + u_h >= r_h`); overstaffing is computed in `kpi.py`
+- `x[e, d, s]` Boolean: employee `e` works shift `s` on day `d` (absent when `d` is an unavailable day of `e`)
+- `b[e, d, s, k]` Boolean: the break of that shift starts at offset `k` (`k` in the break window, Article 109)
+- `u_h` integer in `[0, r_h]`: shortfall at hour `h`, with `present_h + u_h >= r_h` and `present_h = sum x covering h - sum b breaking at h`
+- `v[e, t]` Boolean: the 24-hour rest window of employee `e` starts at hour `t` (cyclic)
+- `N_e` = night shifts of `e`; `F = max_e N_e - min_e N_e` (`AddMaxEquality` / `AddMinEquality`)
 
-Objective (lexicographic):
+Hard constraints:
+
+- at most one shift per day per employee;
+- weekly hours per employee `<= max_weekly_hours` (Article 105);
+- for each pair of shifts whose rest is below `min_rest_between_shifts` (general formula, cyclic offsets 1 to 6), `x + x' <= 1`;
+- every cyclic window of `max_consecutive_days + 1` days holds at most `max_consecutive_days` shifts;
+- rest window: `v[e, t]` implies no work in hours `t .. t+23` (cyclic); at least one `v[e, t]` true (Article 111). Equivalent to the validator's longest-gap rule because a gap is an uncovered hour run;
+- each shift that needs a break has exactly one break slot in its window (Article 109).
+
+Objective (lexicographic, one CP-SAT solve per tier, each tier capped at the optimum of the previous one):
 
 ```
-Phase 1:  min sum_h u_h
-Phase 2:  min sum_{e,d,s} c_s * x[e,d,s]  (sum_h u_h capped at the phase-1 value)
+Tier 1:  min sum_h u_h
+Tier 2:  min sum_{e,d,s} wage_e * cost_per_wage_unit(s) * x[e,d,s]   (Article 98 premium inside)
+Tier 3:  min F                                                       (only if more than one employee)
+Tier 4:  min number of shifts on the employee's preferred days off   (only if any preference)
 ```
+
+Status is `OPTIMAL` only when every tier is `OPTIMAL`; otherwise `FEASIBLE` with the bound and gap of the last tier that returned a solution.
+
+Options:
+
+- `symmetry_breaking` (default off): for employees with equal wage and no requests, `shifts_e >= shifts_{e+1}`. Measured on the 20/30/40 employee benchmark, it was slower on seed 0 (see WORKLOG 4.3).
+- `decompose` (default off): solve the aggregate model with implicit breaks (section 1b), then cap starts per day and shift type to `ceil(count)`. The result is an approximation and is reported as `FEASIBLE`, never `OPTIMAL`.
+
+## 1b. Implicit Breaks (Bechtold-Jacobs style)
+
+Each worker of a shift that needs a break is counted once in `x[d, s]` and once in one slot `y[d, s, k]` inside the break window. The break removes that worker from coverage at hour `k`. This has the same optimum as enumerating every (shift, break position) column; the test suite checks this against an explicit enumeration on small instances.
+
+Breaks are whole hours. A 30 or 45 minute break takes a full hour of coverage, which is a conservative approximation.
 
 ## 3. Labor Law Constraints (45/2019/QH14)
 
