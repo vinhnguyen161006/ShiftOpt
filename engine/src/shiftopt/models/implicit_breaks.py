@@ -1,14 +1,17 @@
 import pulp
 
 from shiftopt.domain import Instance, ShiftType
-from shiftopt.models.set_covering_pulp import SetCoveringResult, columns_for
+from shiftopt.models.set_covering_pulp import SetCoveringResult, columns_for, cover_duals
 from shiftopt.solvers.base import DEFAULT_PARAMS, SolveParams
 from shiftopt.solvers.pulp_backend import run_problem
 from shiftopt.time_grid import HOURS_PER_WEEK, hour_of_week, shift_hours
 
 
 def solve_with_implicit_breaks(
-    instance: Instance, hourly_wage: int, params: SolveParams = DEFAULT_PARAMS
+    instance: Instance,
+    hourly_wage: int,
+    params: SolveParams = DEFAULT_PARAMS,
+    relax: bool = False,
 ) -> SetCoveringResult:
     """Bechtold-Jacobs style implicit break model. Each worker of a shift that needs a break is
     counted once in x and once in one break slot y[d, s, k] inside the break window; the break
@@ -17,15 +20,16 @@ def solve_with_implicit_breaks(
     hours, so a 30 or 45 minute break takes a full hour: a conservative approximation."""
     problem = pulp.LpProblem("set_covering_breaks", pulp.LpMinimize)
     rules = instance.rules
+    category = pulp.LpContinuous if relax else pulp.LpInteger
     columns = columns_for(instance)
     starts = {
-        (day, shift.name): problem.add_variable(f"x_{index}", lowBound=0, cat=pulp.LpInteger)
+        (day, shift.name): problem.add_variable(f"x_{index}", lowBound=0, cat=category)
         for index, (day, shift) in enumerate(columns)
     }
     slots: list[tuple[int, ShiftType, int, pulp.LpVariable]] = []
     for index, (day, shift) in enumerate(columns):
         for offset in shift.break_window(rules):
-            variable = problem.add_variable(f"y_{index}_{offset}", lowBound=0, cat=pulp.LpInteger)
+            variable = problem.add_variable(f"y_{index}_{offset}", lowBound=0, cat=category)
             slots.append((day, shift, offset, variable))
     problem += pulp.lpSum(
         hourly_wage * shift.cost_per_wage_unit(rules) * starts[(day, shift.name)]
@@ -58,10 +62,12 @@ def solve_with_implicit_breaks(
             pulp.lpSum(present) - pulp.lpSum(on_break) >= instance.demand[hour],
             f"cover_{hour}",
         )
-    result = run_problem(problem, params, mip=True)
+    result = run_problem(problem, params, mip=not relax)
     counts = (
         {key: variable.value() or 0.0 for key, variable in starts.items()}
         if result.objective is not None
         else {}
     )
-    return SetCoveringResult(result=result, counts=counts, duals=None)
+    return SetCoveringResult(
+        result=result, counts=counts, duals=cover_duals(problem, result, relax)
+    )

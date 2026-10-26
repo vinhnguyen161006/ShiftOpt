@@ -74,6 +74,10 @@ Implemented so far: Erlang C (no abandonment, tends to overstaff) and square-roo
 
 ## 5. Sensitivity Analysis
 
-- LP dual from set covering relaxation: approximate marginal cost per hour.
-- Discrete marginal cost: `z(r + e_t) - z(r)` via 168 re-solves.
-- Parametric sweep: `lambda in {0.8, 0.9, ..., 1.3}`, demand scaled by `ceil(lambda * r_t)`.
+- Discrete marginal cost: `delta_t = z(r + e_t) - z(r)` by 168 re-solves of the head-count model with implicit breaks. This is the exact marginal cost of the integer model, not a shadow price. A point is `proven` only when both solves are `OPTIMAL`.
+- LP relaxation dual per hour: from the same model with continuous `x` and `y`, taken from constraint `cover_h`. Always labelled approximate; the integrality gap can be large. Duals are only read at an LP optimum.
+- Dual vs marginal cost: the table `(hour, lp_dual, delta_t, proven)` shows the integrality effect hour by hour. This replaces "fix the integer variables and re-solve the LP": with every variable integer, fixing them all leaves no free variable, so the duals of that LP are degenerate.
+- Parametric sweep: `lambda in {0.8, ..., 1.3}`, demand scaled by `tolerant_ceil(lambda * r_t)`. Each point carries `proven`; a `FEASIBLE` point is never read as an optimum.
+- Re-solve resolvers: `aggregate_resolver` (head-count model) or `roster_resolver` (CP-SAT roster). Labor cost comes from `kpi.labor_cost`, not from the lexicographic objective, whose last tier is not a cost.
+- Covariate scenarios: `DemandScenario` scales demand per weekday and keeps the source text beside the result. The promotion uplift `1.43` is a suggested default from the FreshRetailNet paper (arXiv:2505.16319 v5). Holiday and rain have no default: the caller supplies the factor and its source.
+- Staffing assumptions: `sweep_staffing_assumption` re-derives demand with `required_staff` for each value of `alpha`, `productivity`, `min_staff` or `night_min_staff`, then re-solves. Sensitivity to these team assumptions is part of the analysis.

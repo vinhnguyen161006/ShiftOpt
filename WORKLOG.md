@@ -155,19 +155,22 @@ Mục tiêu: lõi sản phẩm — lịch thật, mọi ràng buộc cứng phá
 
 Mục tiêu: thực thi nguyên tắc 4 và 5 — độ nhạy nguyên bằng giải lại, dual chỉ từ LP và gắn nhãn xấp xỉ.
 
-- [ ] **5.1 Quét tham số `sensitivity/parametric.py`**
-  - `lambda` trong `{0.8, 0.9, ..., 1.3}`, `r_t(lambda) = ceil(lambda * r_t)`; trả `z(lambda)`, số người, giờ thiếu; cùng time limit + seed mọi lần giải; đánh dấu rõ điểm `FEASIBLE` (không `OPTIMAL`) để chênh lệch không bị hiểu sai.
-  - **Chi phí biên rời rạc** `z(r + e_t) - z(r)` cho 24 giờ bằng 24 lần giải lại (không dùng dual).
-  - Test: `z(lambda)` đơn điệu không giảm trên instance có đáp án; chi phí biên ≥ 0; đánh dấu đúng điểm không tối ưu.
-  - Xong khi: kết quả tái lập với cùng seed; cảnh báo hiển thị cho điểm `FEASIBLE`.
-- [ ] **5.2 Dual của LP relaxation `sensitivity/lp_duals.py` + dual cục bộ**
-  - Lấy `constraint.pi` và `.slack` từ PuLP + HiGHS, **xử lý `pi is None`** (có test); luôn kèm nhãn "xấp xỉ, integrality gap có thể lớn"; thêm đường "cố định biến nguyên rồi giải lại LP" để lấy dual cục bộ.
-  - Test: dual khớp ví dụ tay; trường hợp `None`; nhãn xấp xỉ luôn có trong kết quả; không bao giờ lấy dual từ CP-SAT/MIP.
-  - Xong khi: schema API có trường nhãn, không đường nào trình bày dual MIP như chi phí biên.
-- [ ] **5.3 Kịch bản theo covariate `sensitivity/scenarios.py`**
-  - `holiday_flag`, `discount < 1` / `activity_flag`, mưa; hệ số uplift là **tham số** (tham chiếu median 1.43× của bài báo v5 chỉ để gợi ý mặc định, ghi rõ nguồn); độ nhạy theo `alpha`, `p`, `r_min`.
-  - Test: kịch bản không đổi dữ liệu gốc (bất biến), cùng kịch bản cùng kết quả.
-  - Xong khi: so sánh được hai kịch bản trên cùng instance; giả định hiện trong kết quả.
+- [x] **5.1 Quét tham số `sensitivity/parametric.py`**
+  - `lambda` trong `{0.8, ..., 1.3}`, `r_t(lambda) = tolerant_ceil(lambda * r_t)`; `sweep_demand_multiplier` trả `SweepPoint(multiplier, evaluation, proven)`; `Evaluation` mang chi phí, giờ thiếu, giờ đã xếp. Hai resolver: `aggregate_resolver` (mô hình có nghỉ ngầm) và `roster_resolver` (CP-SAT, chi phí tính bằng `kpi.labor_cost`).
+  - **Chi phí biên rời rạc** `z(r + e_t) - z(r)` bằng 168 lần giải lại (một lần mỗi giờ), không dùng dual. `proven` chỉ đúng khi cả hai lần giải `OPTIMAL`.
+  - Test: `z(lambda)` không giảm; `1.1 * 10 -> 11`; điểm `FEASIBLE` có `proven = False`; chi phí biên ví dụ tay (3 ca 0/8/16, nhu cầu 1, không nghỉ: giờ 3 = `100 * 980`); 168 giá trị đều không âm khi `OPTIMAL`.
+  - Đo: 168 lần giải lại trên instance 3 ca, nhu cầu 1, mô hình không nghỉ: khoảng 5.5 giây, 168/168 `OPTIMAL`, cấu hình `num_workers = 1`, seed 0.
+  - Xong khi: đạt. Kết quả tái lập với cùng seed (`num_workers = 1`); điểm không `OPTIMAL` được đánh dấu `proven = False`.
+- [x] **5.2 Dual của LP relaxation `sensitivity/lp_duals.py`**
+  - `lp_relaxation_duals` lấy dual từ bản relax của mô hình có nghỉ ngầm (cùng mô hình với chi phí biên); `normalize_duals` đổi `None` thành `0.0` và liệt kê giờ thiếu; `LpDuals` luôn có `approximate = True` và nhãn "xấp xỉ, integrality gap có thể lớn"; LP không `OPTIMAL` thì raise.
+  - Thay "cố định biến nguyên rồi giải lại LP" bằng `compare_duals_with_marginal_cost`: 168 dòng `(giờ, dual LP, chi phí biên, proven)`. Lý do: khi mọi biến đều nguyên, cố định hết thì LP không còn biến tự do và dual suy biến.
+  - Test: đối ngẫu mạnh `sum(pi * r) = objective LP`; `None` được chuẩn hóa; nhãn luôn có; bảng so sánh có 168 dòng. Dual không bao giờ lấy từ CP-SAT hoặc MIP.
+  - Xong khi: đạt (không có đường trình bày dual MIP như chi phí biên).
+- [x] **5.3 Kịch bản theo covariate `sensitivity/scenarios.py`**
+  - `DemandScenario(name, day_multipliers, source)`; `apply_demand_scenario` nhân nhu cầu theo ngày bằng `tolerant_ceil`, trả instance mới (bất biến). `promotion_scenario` dùng `PROMOTION_UPLIFT = 1.43` với nguồn ghi rõ. Ngày lễ và mưa không có số mặc định: người gọi tự truyền hệ số và nguồn.
+  - `compare_scenarios` trả baseline cùng các kịch bản. `sweep_staffing_assumption` dựng lại nhu cầu bằng `required_staff` cho từng giá trị của `alpha`, `productivity`, `min_staff`, `night_min_staff` (hai floor phải là số nguyên), rồi giải lại: đây là độ nhạy theo giả định quy đổi.
+  - Test: instance gốc không đổi; chỉ ngày được chọn bị đổi; ngày sai hoặc hệ số `<= 0` bị từ chối; quét `alpha` tăng thì chi phí tăng.
+  - Xong khi: đạt. So sánh kịch bản trên cùng instance; giả định hiện trong `source` và trong kết quả quét.
 
 ---
 

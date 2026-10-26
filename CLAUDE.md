@@ -173,9 +173,9 @@ Chỉ áp cho nhóm đồng nhất: thứ tự từ điển `sum_d w[e,d] >= sum
 
 Bắt buộc (1–3), kịch bản (4) nên có, (5–6) là mở rộng:
 
-1. **Dual của LP relaxation** (`sensitivity/lp_duals.py`): mô hình Dantzig, PuLP + HiGHS, lấy `constraint.pi` và `.slack`. Luôn gắn nhãn "xấp xỉ, integrality gap có thể lớn". `.pi` có thể là `None` tùy giao diện solver — phải xử lý và có test.
-2. **Cố định biến nguyên rồi giải lại LP** để lấy dual cục bộ.
-3. **Quét tham số** (`sensitivity/parametric.py`): với `lambda` trong `{0.8, 0.9, ..., 1.3}` giải lại với `r_t(lambda) = ceil(lambda * r_t)`, vẽ `z(lambda)`, số người, giờ thiếu. **Chi phí biên rời rạc** của giờ `t` là `z(r + e_t) - z(r)`, tính bằng 24 lần giải lại; đây là heatmap có giá trị nhất cho UI. Mỗi lần giải dùng cùng time limit và seed; kết quả `FEASIBLE` không phải `OPTIMAL` phải được đánh dấu để chênh lệch không bị diễn giải sai.
+1. **Dual của LP relaxation** (`sensitivity/lp_duals.py`): mô hình Dantzig có nghỉ ngầm, relax biến liên tục, PuLP + HiGHS, lấy `constraint.pi` của `cover_h`. Luôn gắn nhãn "xấp xỉ, integrality gap có thể lớn". `.pi` có thể là `None` tùy giao diện solver — phải xử lý và có test. Dual và chi phí biên dùng cùng một mô hình để so sánh được.
+2. **Bảng so sánh dual LP với chi phí biên rời rạc theo giờ** (`compare_duals_with_marginal_cost`) thay cho "cố định biến nguyên rồi giải lại LP": khi mọi biến của mô hình phủ tập đều nguyên, cố định hết thì LP không còn biến tự do và dual suy biến. Chênh lệch giữa dual và chi phí biên cho thấy integrality gap theo từng giờ.
+3. **Quét tham số** (`sensitivity/parametric.py`): với `lambda` trong `{0.8, 0.9, ..., 1.3}` giải lại với `r_t(lambda) = ceil(lambda * r_t)`, vẽ `z(lambda)`, số người, giờ thiếu. **Chi phí biên rời rạc** của giờ `t` là `z(r + e_t) - z(r)`, tính bằng 168 lần giải lại (một lần cho mỗi giờ trong tuần); đây là heatmap có giá trị nhất cho UI. Mỗi lần giải dùng cùng time limit và seed; kết quả không `OPTIMAL` phải được đánh dấu `proven = False` để chênh lệch không bị diễn giải sai.
 4. **Kịch bản theo covariate** (`sensitivity/scenarios.py`): `holiday_flag`, `discount < 1` / `activity_flag`, mưa. Khuyến mãi tạo nhu cầu cao hơn doanh số quan sát (median uplift 1.43× theo bài báo), mưa và giảm giá sâu làm tăng hết hàng — nghĩa là nhu cầu thật còn cao hơn nữa.
 5. *(Mở rộng)* Stochastic hai giai đoạn: giai đoạn 1 chọn lịch, giai đoạn 2 gọi thêm / làm thêm giờ trên 10–30 kịch bản (SAA).
 6. *(Mở rộng)* Robust optimization với tập bất định có ngân sách.
