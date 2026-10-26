@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     max_employees: int = 200
     max_solve_seconds: float = 300.0
     solve_workers: int = 8
-    dataset_dir: str = "data/processed"
+    dataset_dir: str = "../data/processed"
 
 
 @lru_cache

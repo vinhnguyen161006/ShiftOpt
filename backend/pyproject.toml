@@ -8,6 +8,7 @@ dependencies = [
     "asyncmy==0.2.16",
     "cryptography==50.0.2",
     "fastapi==0.156.4",
+    "pyarrow==26.0.0",
     "pydantic==2.14.1",
     "pydantic-settings==2.16.1",
     "shiftopt",
@@ -64,6 +65,7 @@ runtime-evaluated-base-classes = [
 "src/**/dependencies.py" = ["TC001", "TC002", "TC003"]
 "src/database.py" = ["TC002", "TC003"]
 "migrations/versions/**" = ["E501"]
+"scripts/download_freshretailnet.py" = ["S310"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -74,5 +76,5 @@ warn_unreachable = true
 exclude = ["^migrations/versions/"]
 
 [[tool.mypy.overrides]]
-module = ["asgi_lifespan.*", "asyncmy.*"]
+module = ["asgi_lifespan.*", "asyncmy.*", "pyarrow.*"]
 ignore_missing_imports = true

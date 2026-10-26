@@ -5,6 +5,7 @@ import pytest
 from shiftopt import kpi
 from shiftopt.domain import Instance
 from shiftopt.models.roster_cpsat import solve_roster
+from shiftopt.sensitivity import parametric
 from shiftopt.sensitivity.lp_duals import (
     APPROXIMATE_LABEL,
     compare_duals_with_marginal_cost,
@@ -214,9 +215,13 @@ def test_staffing_sweep_rejects_unknown_field_and_fractional_floor(
         )
 
 
-def test_roster_resolver_reports_cost_from_kpi(build_instance: InstanceFactory) -> None:
+def test_roster_resolver_reports_cost_from_kpi(
+    build_instance: InstanceFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
     instance = build_instance(demand_per_hour=1, employee_count=6)
     outcome = solve_roster(instance, PARAMS)
+    assert outcome.understaffed_hours is not None
+    monkeypatch.setattr(parametric, "solve_roster", lambda _instance, _params: outcome)
     evaluation = roster_resolver(PARAMS)(instance)
     assert evaluation.labor_cost == kpi.labor_cost(instance, outcome.solution)
     assert evaluation.understaffed_hours == outcome.understaffed_hours

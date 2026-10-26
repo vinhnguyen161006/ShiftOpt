@@ -17,12 +17,12 @@ Lập ngày 2026-10-26 từ `CLAUDE.md` và trạng thái repo thực tế (khun
 | Giai đoạn | Nội dung | Phụ thuộc | Trạng thái |
 |---|---|---|---|
 | 0 | Chốt nền: đặc tả, quyết định mở, dữ liệu, tài liệu gốc | — | chưa làm |
-| 1 | Engine: lưới thời gian, domain, quy đổi nhu cầu → số người | 0 | xong (trừ Erlang A, dời sang 6.2) |
+| 1 | Engine: lưới thời gian, domain, quy đổi nhu cầu → số người | 0 | xong (Erlang A làm ở 6.2) |
 | 2 | Engine: validator độc lập + KPI | 1 | xong (Đ.109 dời sang 3.3) |
 | 3 | Engine: lớp solver chung + mô hình tổng hợp (Dantzig) | 1 | xong (3.1–3.3) |
 | 4 | Engine: mô hình theo nhân viên (CP-SAT) | 2, 3 | xong (4.1–4.4; phá đối xứng tắt mặc định, phân rã chưa bật tự động) |
-| 5 | Engine: phân tích độ nhạy | 3, 4 | chưa làm |
-| 6 | Pipeline dữ liệu nhu cầu (FreshRetailNet, tổng đài) | 0, 1 | chưa làm |
+| 5 | Engine: phân tích độ nhạy | 3, 4 | xong (5.1–5.3) |
+| 6 | Pipeline dữ liệu nhu cầu (FreshRetailNet, tổng đài) | 0, 1 | xong (6.1–6.3; tổng đài công khai còn mở) |
 | 7 | Backend: service, job giải, API, test tích hợp | 2–6 | chưa làm |
 | 8 | Frontend: các màn hình MVP | 7 (OpenAPI) | chưa làm |
 | 9 | Kiểm chứng: benchmark, so sánh solver, tái lập, nghiệm thu | 4, 5, 7, 8 | chưa làm |
@@ -178,18 +178,31 @@ Mục tiêu: thực thi nguyên tắc 4 và 5 — độ nhạy nguyên bằng gi
 
 Mục tiêu: dữ liệu vào đúng, giả định minh bạch (nguyên tắc 6, 7, 8).
 
-- [ ] **6.1 Nạp và xử lý FreshRetailNet-50K (`backend/src/demand/dataset_loader.py` + hàm xử lý thuần)**
+- [x] **6.1 Nạp và xử lý FreshRetailNet-50K (`backend/src/demand/dataset_loader.py` + hàm xử lý thuần)**
   - Tải `Dingdong-Inc/FreshRetailNet-50K` vào `data/raw/` (có script, không commit); xác nhận bằng `dt.min()/max()` split eval 7 ngày thay vì suy luận; cộng `hours_sale` theo (`dt`, giờ) cho một `store_id`/`city_id` → `D[d,h]`; xuất `data/processed/demand_store_<id>.parquet`.
   - **Nhu cầu ẩn:** giờ `hours_stock_status = 1` thay bằng trung bình cùng giờ, cùng thứ, loại giờ hết hàng; ghi phương pháp trong metadata kết quả.
   - Gắn nhãn trong dữ liệu trả về: "doanh số chuẩn hóa của kho tiền phương", không phải nhu cầu nhân sự hay cửa hàng vật lý 24/7. Ghi "~863–865 SKU" khi trích dẫn.
   - Test trên dữ liệu mẫu nhỏ cố định: cộng đúng, thay hết hàng đúng, giờ đêm không suy từ doanh số (dùng `r_min`).
   - Xong khi: một store xử lý end-to-end ra lưới 7×24 và `r[d,h]`; metadata ghi rõ phương pháp, `alpha`, `p`, `r_min`.
-- [ ] **6.2 Dữ liệu tổng đài** (kèm Erlang A, dời từ 1.3: thêm hàm Erlang A với chuỗi sinh-tử, kiểm tra Erlang A cho số người ≤ Erlang C trên cùng lưu lượng)
+  - Đã làm: `engine/src/shiftopt/staffing/latent_demand.py` (`ProductDay`, `weekly_load`: nhu cầu ẩn theo từng sản phẩm, giờ đêm bằng 0); `backend/src/demand/dataset_loader.py` (`build_processed_store`, `load_hourly_load`, `dataset_required_staff`); `backend/scripts/download_freshretailnet.py` (tải vào `data/raw/`, kiểm SHA-256 ghim theo LFS oid của Hugging Face, bỏ qua file đúng hash); `backend/scripts/build_demand_store.py`. Thêm `pyarrow==26.0.0` (phát hành 2026-10-09, đủ 2 tuần tuổi); `data/processed/*.parquet` vào `.gitignore`.
+  - Lệch so với kế hoạch: `ProductDay` nhận `day: date` thay cho `weekday`, để đếm số ngày mỗi thứ khi lấy trung bình. Nhu cầu lấy từ split `train`; split `eval` giữ lại làm tập đánh giá.
+  - Đã xác minh bằng `dt.min()/max()`: `train` 2024-03-28 .. 2024-06-25 (90 ngày), `eval` 2024-06-26 .. 2024-07-02 (7 ngày). Hash file local khớp LFS oid trên Hugging Face.
+  - Chạy thật store 18: 164 sản phẩm; ô hết hàng được thay bằng trung bình 90159 ô; 1008 ô không có ngày không hết hàng để học nên giữ doanh số quan sát; 56 giờ đêm đặt 0. `build_demand_store` mất khoảng 2,7 giây (gồm cả khởi động uv).
+  - Test: `test_latent_demand.py` (11), `test_dataset_loader.py` (4).
+- [x] **6.2 Dữ liệu tổng đài** (kèm Erlang A, dời từ 1.3: thêm hàm Erlang A với chuỗi sinh-tử, kiểm tra Erlang A cho số người ≤ Erlang C trên cùng lưu lượng)
   - Bộ giả lập lưu lượng cuộc gọi theo giờ có seed cố định (mô hình ngày/tuần, đỉnh buổi); tùy chọn nạp dataset công khai (ngân hàng Đông Bắc Mỹ, SEELab Technion) nếu giấy phép cho phép.
   - Xong khi: cùng seed cho cùng lưu lượng; đi qua Erlang A ra `r[d,h]` hợp lý.
-- [ ] **6.3 Nhập từ người dùng: lưới 7×24 và CSV**
+  - Đã làm: `erlang_a_queue_probabilities` (chuỗi sinh-tử M/M/n+M, tính trong miền log), `erlang_a_service_level` (xác suất thời gian chờ ảo không quá `answer_seconds`, theo Garnett, Mandelbaum và Reiman 2002), `required_staff_erlang_a` (tìm n nhỏ nhất: nhân đôi rồi chia đôi). Thời gian chờ ảo bỏ qua việc chính khách tự bỏ, nên khớp Erlang C khi patience → ∞. `patience_seconds` không có mặc định: là giả định của nhóm.
+  - Đã làm: `simulate_arrival_rates` (168 tốc độ đến, seed cố định, mọi tham số ngày/đỉnh/nhiễu là giả định, không phải dữ liệu quan sát). Mô-đun được miễn S311 trong `engine/pyproject.toml` vì là mô phỏng có seed, không phải bảo mật.
+  - Kiểm: patience → ∞ khớp `erlang_c_service_level` (sai số 1e-6); số người Erlang A ≤ Erlang C trên cả 168 giờ của lưu lượng thử; tổng xác suất trạng thái = 1.
+  - Chưa làm: dataset tổng đài công khai (ngân hàng Đông Bắc Mỹ, SEELab Technion) vì chưa kiểm giấy phép. Để mở, cần quyết định của nhóm.
+  - Test: `test_erlang_a.py`, `test_call_arrivals.py`.
+- [x] **6.3 Nhập từ người dùng: lưới 7×24 và CSV**
   - Validate ở biên: đủ 168 ô, số nguyên không âm, giới hạn trên hợp lý; thông báo lỗi có nghĩa ("demand grid must have 168 cells"); parser CSV chịu được dòng trống, dấu phân cách, BOM.
   - Xong khi: test các trường hợp biên (167/169 ô, âm, số thực, quá lớn) trả lỗi đúng.
+  - Đã làm: `DemandProfileCreate.required_staff` là `list[StrictInt]`, cận `MAX_HOURLY_DEMAND = 1000`, thông điệp "demand grid must have 168 cells". Kiểm độ dài bằng validator `mode="before"` để `minItems`/`maxItems` vẫn nằm trong OpenAPI; `openapi.json` không đổi. `parse_demand_csv` (`backend/src/demand/csv_import.py`) nhận BOM, dòng trống, dòng tiêu đề, dấu `,` `;` tab, dấu phân cách cuối, CRLF; chấp nhận lưới 7×24 hoặc một cột 168 giá trị; lỗi báo dòng và cột.
+  - Test: `test_csv_import.py`, `test_demand_schema.py`.
+  - Sửa sau review (10/2026): (1) vòng Poisson của Erlang A có số bước tối đa, không còn treo khi thời gian trả lời lớn (đo: 2,4 giây thay vì treo); (2) `patience_seconds` tối đa 3600 giây, và tìm số người Erlang A trong `[1, n_C]` (không nhân đôi từ 1); (3) khung đêm không còn chốt lúc build: `weekly_load` giữ tải đêm, `zero_night_load` áp theo `LaborRules` của người gọi, metadata ghi `night_start`, `night_end`, `night_hours_floored`; (4) test roster của phase 5 so khớp một nghiệm đã giải, không giải hai lần; (5) `dataset_dir` mặc định `../data/processed` (backend chạy từ `backend/`); (6) CSV nhận dòng nhãn giờ `0..23` và dò dấu phân cách trên toàn bộ dòng; (7) đỉnh Gaussian dùng khoảng cách vòng; (8) revision HF chỉ khai báo ở `dataset_loader.py`; (9) cận 0..1000 nằm trong `Annotated[StrictInt, Field(...)]`, OpenAPI có `minimum`/`maximum`.
 
 ---
 
@@ -315,3 +328,4 @@ Mục tiêu: chứng minh độ đúng bằng bằng chứng, chỉ kết luận
 | Dataset không tải được / quá nặng | 6.1 kẹt | làm việc trên mẫu một store, giữ script tải tái lập |
 | Giả định `alpha`/`p` bị hỏi nguồn | người xem nghi ngờ | luôn hiện trên UI + đưa vào độ nhạy (8.2, 8.6) |
 | Biome/TypeScript lệch phiên bản | `npm run ci` đỏ | giữ ghim hiện tại (Biome 2.5.x, TypeScript 5.9.3); nâng có kiểm tra binary Windows |
+| `test_roster_resolver_reports_cost_from_kpi` (5.1) lỗi trong một lần chạy đầy đủ | so sánh hai lần giải CP-SAT; giới hạn thời gian có thể cho hai nghiệm khác nhau | đã sửa: test dùng lại một nghiệm đã giải (monkeypatch `solve_roster`) |
