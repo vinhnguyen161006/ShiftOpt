@@ -1,6 +1,12 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
+from shiftopt.staffing.linear import (
+    DEFAULT_ALPHA,
+    DEFAULT_MIN_STAFF,
+    DEFAULT_NIGHT_MIN_STAFF,
+    DEFAULT_PRODUCTIVITY,
+)
 
 from src.demand.models import DemandSource, StaffingMode
 
@@ -8,10 +14,10 @@ HOURS_PER_WEEK = 168
 
 
 class ConversionParams(BaseModel):
-    alpha: float = Field(1.0, gt=0)
-    productivity: float = Field(1.0, gt=0)
-    min_staff: int = Field(1, ge=0)
-    night_min_staff: int = Field(1, ge=0)
+    alpha: float = Field(DEFAULT_ALPHA, gt=0)
+    productivity: float = Field(DEFAULT_PRODUCTIVITY, gt=0)
+    min_staff: int = Field(DEFAULT_MIN_STAFF, ge=0)
+    night_min_staff: int = Field(DEFAULT_NIGHT_MIN_STAFF, ge=0)
 
 
 class DemandProfileCreate(BaseModel):

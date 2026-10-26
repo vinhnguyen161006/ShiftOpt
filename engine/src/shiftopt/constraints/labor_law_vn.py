@@ -12,6 +12,9 @@ class LaborRules:
     min_rest_between_shifts: Article 110, at least 12 hours before switching shifts.
     weekly_rest_hours: Article 111, at least 24 consecutive hours of rest each week.
     max_consecutive_days: working days in a row; 6 guarantees a day off in every 7-day window.
+    min_break_minutes, min_night_break_minutes: Article 109 and Decree 145/2020, rest break
+    during a shift; 45 minutes applies when the shift works at night. Checked by the implicit
+    break model, not by the validator.
     """
 
     max_daily_hours: int = 8
@@ -22,3 +25,5 @@ class LaborRules:
     min_rest_between_shifts: int = 12
     weekly_rest_hours: int = 24
     max_consecutive_days: int = 6
+    min_break_minutes: int = 30
+    min_night_break_minutes: int = 45

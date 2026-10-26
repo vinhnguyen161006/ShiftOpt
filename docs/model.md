@@ -32,6 +32,7 @@ Phase 2:  min sum_{e,d,s} c_s * x[e,d,s]  (sum_h u_h capped at the phase-1 value
 
 | Article | Constraint | Formula |
 |---------|-----------|---------|
+| 105 | Daily hours | `length_s <= max_daily_hours` for each shift worked |
 | 105 | Weekly hours | `sum_{d,s} length_s * x[e,d,s] <= max_weekly_hours` |
 | 106 | Night window | 22:00–06:00 |
 | 110 | Rest between shifts | `24 + sigma' - (sigma + L) >= 12` (general, not L=8 shortcut) |
@@ -42,7 +43,8 @@ Phase 2:  min sum_{e,d,s} c_s * x[e,d,s]  (sum_h u_h capped at the phase-1 value
 Retail mode: `r[d,h] = max(r_min_h, ceil(alpha * D[d,h] / p))`
 
 Call-centre mode: Erlang A (with abandonment) targeting 80/20 service level.
-Square-root staffing `N = R + beta * sqrt(R)` is a fast approximation.
+Implemented so far: Erlang C (no abandonment, tends to overstaff) and square-root staffing
+`N = R + beta * sqrt(R)` as a fast approximation. Erlang A is deferred to task 6.2.
 
 ## 5. Sensitivity Analysis
 
