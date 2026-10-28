@@ -1,16 +1,54 @@
-import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
-import type { JobAccepted, KpiRead, SolveRequest, SolveRunRead } from "../../../types/models";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch, apiUrl, jsonInit } from "../../../lib/api-client";
+import type {
+  JobAccepted,
+  KpiRead,
+  RunStatus,
+  SolveRequest,
+  SolveRunRead,
+} from "../../../types/models";
 
-export function useCreateSchedule(): UseMutationResult<JobAccepted, Error, SolveRequest> {
-  throw new Error("TODO: useMutation POST /schedules, returns job_id");
+const RUNS_KEY = ["schedules"];
+const POLL_MS = 1000;
+
+export function isActive(status: RunStatus | undefined): boolean {
+  return status === "queued" || status === "running";
 }
 
-export function useScheduleRun(runId: number): UseQueryResult<SolveRunRead> {
-  throw new Error(
-    "TODO: useQuery GET /schedules/{runId}, refetchInterval while status is queued or running",
-  );
+export function useScheduleRuns() {
+  return useQuery({
+    queryKey: RUNS_KEY,
+    queryFn: () => apiFetch<SolveRunRead[]>("/schedules"),
+    refetchInterval: (query) =>
+      query.state.data?.some((run) => isActive(run.status)) ? POLL_MS : false,
+  });
 }
 
-export function useScheduleKpi(runId: number): UseQueryResult<KpiRead> {
-  throw new Error("TODO: useQuery GET /schedules/{runId}/kpi, enabled once the run succeeded");
+export function useCreateSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SolveRequest) => apiFetch<JobAccepted>("/schedules", jsonInit("POST", body)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: RUNS_KEY }),
+  });
+}
+
+export function useScheduleRun(runId: number | undefined) {
+  return useQuery({
+    queryKey: [...RUNS_KEY, runId],
+    queryFn: () => apiFetch<SolveRunRead>(`/schedules/${runId}`),
+    enabled: runId !== undefined,
+    refetchInterval: (query) => (isActive(query.state.data?.status) ? POLL_MS : false),
+  });
+}
+
+export function useScheduleKpi(runId: number | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: [...RUNS_KEY, runId, "kpi"],
+    queryFn: () => apiFetch<KpiRead>(`/schedules/${runId}/kpi`),
+    enabled: enabled && runId !== undefined,
+  });
+}
+
+export function exportUrl(runId: number, kind: "assignments" | "coverage" | "kpi"): string {
+  return apiUrl(`/schedules/${runId}/${kind}.csv`);
 }

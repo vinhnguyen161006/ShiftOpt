@@ -1,13 +1,24 @@
+import { Slider } from "../../../components/ui/Slider";
+
 type LambdaSliderProps = {
-  value: number;
-  onChange: (lambda: number) => void;
+  multipliers: number[];
+  index: number;
+  onChange: (index: number) => void;
 };
 
-export function LambdaSlider({ value, onChange }: LambdaSliderProps) {
+export function LambdaSlider({ multipliers, index, onChange }: LambdaSliderProps) {
+  const value = multipliers[index] ?? 1;
   return (
-    <p className="todo">
-      TODO: demand multiplier slider from 0.8 to 1.3 step 0.1 with the matching point of the
-      z(lambda) curve. Current {value}.
-    </p>
+    <Slider
+      id="lambda"
+      label="Demand multiplier lambda"
+      min={0}
+      max={Math.max(0, multipliers.length - 1)}
+      step={1}
+      value={index}
+      valueText={`${value.toFixed(1)}x demand`}
+      ticks={multipliers.map((multiplier) => multiplier.toFixed(1))}
+      onChange={onChange}
+    />
   );
 }

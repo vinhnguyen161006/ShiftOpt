@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
+from shiftopt.staffing.erlang import MAX_PATIENCE_SECONDS
 from shiftopt.staffing.linear import (
     DEFAULT_ALPHA,
     DEFAULT_MIN_STAFF,
@@ -13,6 +14,7 @@ from shiftopt.time_grid import HOURS_PER_WEEK
 from src.demand.models import DemandSource, StaffingMode
 
 MAX_HOURLY_DEMAND = 1000
+MAX_CSV_CHARACTERS = 100_000
 
 
 class ConversionParams(BaseModel):
@@ -52,6 +54,7 @@ class DemandProfileRead(BaseModel):
     mode: StaffingMode
     required_staff: list[int]
     conversion_params: dict[str, float]
+    source_metadata: dict[str, str]
     created_at: datetime
 
 
@@ -59,3 +62,20 @@ class DatasetDemandRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     store_id: int
     conversion_params: ConversionParams = Field(default_factory=ConversionParams)
+
+
+class CsvDemandRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    csv_text: str = Field(min_length=1, max_length=MAX_CSV_CHARACTERS)
+
+
+class CallCenterDemandRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    base_rate: float = Field(gt=0, le=100_000)
+    handle_seconds: float = Field(gt=0, le=3600)
+    patience_seconds: float = Field(gt=0, le=MAX_PATIENCE_SECONDS)
+    service_level: float = Field(0.8, gt=0, lt=1)
+    answer_seconds: float = Field(20.0, gt=0, le=3600)
+    min_staff: int = Field(1, ge=0, le=MAX_HOURLY_DEMAND)
+    noise: float = Field(0.0, ge=0, le=1)
+    seed: int = Field(0, ge=0)
