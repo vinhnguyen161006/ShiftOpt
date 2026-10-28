@@ -67,8 +67,13 @@
           "result": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/DemandSweepResult"
+              },
+              {
+                "$ref": "#/components/schemas/MarginalCostResult"
+              },
+              {
+                "$ref": "#/components/schemas/LpDualsResult"
               },
               {
                 "type": "null"
@@ -94,6 +99,17 @@
       },
       "AssignmentRead": {
         "properties": {
+          "break_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Break Offset"
+          },
           "day": {
             "maximum": 6.0,
             "minimum": 0.0,
@@ -115,6 +131,118 @@
           "shift_name"
         ],
         "title": "AssignmentRead",
+        "type": "object"
+      },
+      "AssignmentWrite": {
+        "properties": {
+          "break_offset": {
+            "anyOf": [
+              {
+                "maximum": 23.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Break Offset"
+          },
+          "day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "employee_code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Employee Code",
+            "type": "string"
+          },
+          "shift_name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Shift Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "employee_code",
+          "day",
+          "shift_name"
+        ],
+        "title": "AssignmentWrite",
+        "type": "object"
+      },
+      "CallCenterDemandRequest": {
+        "properties": {
+          "answer_seconds": {
+            "default": 20.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 3600.0,
+            "title": "Answer Seconds",
+            "type": "number"
+          },
+          "base_rate": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000.0,
+            "title": "Base Rate",
+            "type": "number"
+          },
+          "handle_seconds": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 3600.0,
+            "title": "Handle Seconds",
+            "type": "number"
+          },
+          "min_staff": {
+            "default": 1,
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Min Staff",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "noise": {
+            "default": 0.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Noise",
+            "type": "number"
+          },
+          "patience_seconds": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 3600.0,
+            "title": "Patience Seconds",
+            "type": "number"
+          },
+          "seed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Seed",
+            "type": "integer"
+          },
+          "service_level": {
+            "default": 0.8,
+            "exclusiveMaximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Service Level",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "base_rate",
+          "handle_seconds",
+          "patience_seconds"
+        ],
+        "title": "CallCenterDemandRequest",
         "type": "object"
       },
       "ComplianceRead": {
@@ -166,6 +294,28 @@
           }
         },
         "title": "ConversionParams",
+        "type": "object"
+      },
+      "CsvDemandRequest": {
+        "properties": {
+          "csv_text": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Csv Text",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "csv_text"
+        ],
+        "title": "CsvDemandRequest",
         "type": "object"
       },
       "DatasetDemandRequest": {
@@ -263,6 +413,13 @@
           },
           "source": {
             "$ref": "#/components/schemas/DemandSource"
+          },
+          "source_metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Source Metadata",
+            "type": "object"
           }
         },
         "required": [
@@ -272,6 +429,7 @@
           "mode",
           "required_staff",
           "conversion_params",
+          "source_metadata",
           "created_at"
         ],
         "title": "DemandProfileRead",
@@ -329,8 +487,11 @@
         "properties": {
           "multipliers": {
             "items": {
+              "exclusiveMinimum": 0.0,
+              "maximum": 3.0,
               "type": "number"
             },
+            "maxItems": 20,
             "minItems": 1,
             "title": "Multipliers",
             "type": "array"
@@ -343,6 +504,22 @@
           "solve"
         ],
         "title": "DemandSweepRequest",
+        "type": "object"
+      },
+      "DemandSweepResult": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/SweepPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "title": "DemandSweepResult",
         "type": "object"
       },
       "EmployeeCreate": {
@@ -363,6 +540,26 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "preferred_days_off": {
+            "items": {
+              "exclusiveMaximum": 7.0,
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "maxItems": 7,
+            "title": "Preferred Days Off",
+            "type": "array"
+          },
+          "unavailable_days": {
+            "items": {
+              "exclusiveMaximum": 7.0,
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "maxItems": 7,
+            "title": "Unavailable Days",
+            "type": "array"
           }
         },
         "required": [
@@ -395,6 +592,20 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "preferred_days_off": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Preferred Days Off",
+            "type": "array"
+          },
+          "unavailable_days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Unavailable Days",
+            "type": "array"
           }
         },
         "required": [
@@ -402,6 +613,8 @@
           "code",
           "name",
           "hourly_wage",
+          "unavailable_days",
+          "preferred_days_off",
           "created_at"
         ],
         "title": "EmployeeRead",
@@ -425,6 +638,26 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "preferred_days_off": {
+            "items": {
+              "exclusiveMaximum": 7.0,
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "maxItems": 7,
+            "title": "Preferred Days Off",
+            "type": "array"
+          },
+          "unavailable_days": {
+            "items": {
+              "exclusiveMaximum": 7.0,
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "maxItems": 7,
+            "title": "Unavailable Days",
+            "type": "array"
           }
         },
         "required": [
@@ -471,9 +704,21 @@
             "title": "Coverage Ratio",
             "type": "number"
           },
+          "hard_violations": {
+            "title": "Hard Violations",
+            "type": "integer"
+          },
           "labor_cost": {
             "title": "Labor Cost",
             "type": "integer"
+          },
+          "night_premium_cost": {
+            "title": "Night Premium Cost",
+            "type": "integer"
+          },
+          "night_shift_stddev": {
+            "title": "Night Shift Stddev",
+            "type": "number"
           },
           "overstaffed_hours": {
             "title": "Overstaffed Hours",
@@ -508,6 +753,10 @@
           "understaffed_hours": {
             "title": "Understaffed Hours",
             "type": "integer"
+          },
+          "weekend_shift_stddev": {
+            "title": "Weekend Shift Stddev",
+            "type": "number"
           }
         },
         "required": [
@@ -517,10 +766,78 @@
           "overstaffed_hours",
           "schedule_efficiency",
           "labor_cost",
+          "night_premium_cost",
+          "night_shift_stddev",
+          "weekend_shift_stddev",
+          "hard_violations",
           "staff_by_hour",
           "required_by_hour"
         ],
         "title": "KpiRead",
+        "type": "object"
+      },
+      "LaborRulesRead": {
+        "description": "Default labor rules of the engine (Labor Code 45/2019/QH14), so the UI can warn before\nthe backend rejects an input.",
+        "properties": {
+          "break_required_from_hours": {
+            "title": "Break Required From Hours",
+            "type": "integer"
+          },
+          "max_consecutive_days": {
+            "title": "Max Consecutive Days",
+            "type": "integer"
+          },
+          "max_daily_hours": {
+            "title": "Max Daily Hours",
+            "type": "integer"
+          },
+          "max_weekly_hours": {
+            "title": "Max Weekly Hours",
+            "type": "integer"
+          },
+          "min_break_minutes": {
+            "title": "Min Break Minutes",
+            "type": "integer"
+          },
+          "min_night_break_minutes": {
+            "title": "Min Night Break Minutes",
+            "type": "integer"
+          },
+          "min_rest_between_shifts": {
+            "title": "Min Rest Between Shifts",
+            "type": "integer"
+          },
+          "night_end": {
+            "title": "Night End",
+            "type": "integer"
+          },
+          "night_premium_percent": {
+            "title": "Night Premium Percent",
+            "type": "integer"
+          },
+          "night_start": {
+            "title": "Night Start",
+            "type": "integer"
+          },
+          "weekly_rest_hours": {
+            "title": "Weekly Rest Hours",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_daily_hours",
+          "max_weekly_hours",
+          "night_start",
+          "night_end",
+          "night_premium_percent",
+          "min_rest_between_shifts",
+          "weekly_rest_hours",
+          "max_consecutive_days",
+          "min_break_minutes",
+          "min_night_break_minutes",
+          "break_required_from_hours"
+        ],
+        "title": "LaborRulesRead",
         "type": "object"
       },
       "LpDualsRequest": {
@@ -541,16 +858,152 @@
         "title": "LpDualsRequest",
         "type": "object"
       },
+      "LpDualsResult": {
+        "properties": {
+          "approximate": {
+            "default": true,
+            "title": "Approximate",
+            "type": "boolean"
+          },
+          "duals_by_hour": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Duals By Hour",
+            "type": "array"
+          },
+          "label": {
+            "default": "LP relaxation dual: an approximation, the integrality gap can be large",
+            "title": "Label",
+            "type": "string"
+          },
+          "lp_objective": {
+            "title": "Lp Objective",
+            "type": "number"
+          },
+          "missing_hours": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Missing Hours",
+            "type": "array"
+          }
+        },
+        "required": [
+          "duals_by_hour",
+          "missing_hours",
+          "lp_objective"
+        ],
+        "title": "LpDualsResult",
+        "type": "object"
+      },
+      "ManualEditRequest": {
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentWrite"
+            },
+            "maxItems": 2000,
+            "title": "Assignments",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assignments"
+        ],
+        "title": "ManualEditRequest",
+        "type": "object"
+      },
       "MarginalCostRequest": {
         "properties": {
+          "hourly_wage": {
+            "exclusiveMinimum": 0.0,
+            "title": "Hourly Wage",
+            "type": "integer"
+          },
           "solve": {
             "$ref": "#/components/schemas/SolveRequest"
           }
         },
         "required": [
-          "solve"
+          "solve",
+          "hourly_wage"
         ],
         "title": "MarginalCostRequest",
+        "type": "object"
+      },
+      "MarginalCostResult": {
+        "properties": {
+          "approximate": {
+            "default": true,
+            "title": "Approximate",
+            "type": "boolean"
+          },
+          "base_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Cost"
+          },
+          "base_status": {
+            "title": "Base Status",
+            "type": "string"
+          },
+          "label": {
+            "default": "LP relaxation dual: an approximation, the integrality gap can be large",
+            "title": "Label",
+            "type": "string"
+          },
+          "lp_dual_by_hour": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Lp Dual By Hour",
+            "type": "array"
+          },
+          "marginal_cost_by_hour": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Marginal Cost By Hour",
+            "type": "array"
+          },
+          "proven_by_hour": {
+            "items": {
+              "type": "boolean"
+            },
+            "maxItems": 168,
+            "minItems": 168,
+            "title": "Proven By Hour",
+            "type": "array"
+          }
+        },
+        "required": [
+          "base_cost",
+          "base_status",
+          "marginal_cost_by_hour",
+          "proven_by_hour",
+          "lp_dual_by_hour"
+        ],
+        "title": "MarginalCostResult",
         "type": "object"
       },
       "RunStatus": {
@@ -594,6 +1047,10 @@
       },
       "ShiftTemplateRead": {
         "properties": {
+          "break_required": {
+            "title": "Break Required",
+            "type": "boolean"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -611,6 +1068,10 @@
             "title": "Name",
             "type": "string"
           },
+          "night_hours": {
+            "title": "Night Hours",
+            "type": "integer"
+          },
           "start_hour": {
             "title": "Start Hour",
             "type": "integer"
@@ -621,6 +1082,8 @@
           "name",
           "start_hour",
           "length_hours",
+          "night_hours",
+          "break_required",
           "created_at"
         ],
         "title": "ShiftTemplateRead",
@@ -655,6 +1118,29 @@
         "title": "ShiftTemplateUpdate",
         "type": "object"
       },
+      "ShiftTypeRead": {
+        "properties": {
+          "length": {
+            "title": "Length",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "start_hour": {
+            "title": "Start Hour",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "start_hour",
+          "length"
+        ],
+        "title": "ShiftTypeRead",
+        "type": "object"
+      },
       "SolveRequest": {
         "properties": {
           "demand_profile_id": {
@@ -667,6 +1153,7 @@
                 "items": {
                   "type": "integer"
                 },
+                "maxItems": 500,
                 "type": "array"
               },
               {
@@ -674,6 +1161,20 @@
               }
             ],
             "title": "Employee Ids"
+          },
+          "max_consecutive_days": {
+            "default": 6,
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Max Consecutive Days",
+            "type": "integer"
+          },
+          "max_weekly_hours": {
+            "default": 48,
+            "maximum": 168.0,
+            "minimum": 1.0,
+            "title": "Max Weekly Hours",
+            "type": "integer"
           },
           "num_workers": {
             "default": 8,
@@ -697,6 +1198,7 @@
             "items": {
               "type": "integer"
             },
+            "maxItems": 50,
             "minItems": 1,
             "title": "Shift Template Ids",
             "type": "array"
@@ -758,6 +1260,13 @@
             ],
             "title": "Demand Profile Id"
           },
+          "employee_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Employee Codes",
+            "type": "array"
+          },
           "error": {
             "anyOf": [
               {
@@ -792,6 +1301,17 @@
             ],
             "title": "Gap"
           },
+          "hard_violations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hard Violations"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -814,6 +1334,24 @@
             "title": "Params",
             "type": "object"
           },
+          "parent_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Run Id"
+          },
+          "shift_types": {
+            "items": {
+              "$ref": "#/components/schemas/ShiftTypeRead"
+            },
+            "title": "Shift Types",
+            "type": "array"
+          },
           "solve_status": {
             "anyOf": [
               {
@@ -828,6 +1366,17 @@
           "solver": {
             "title": "Solver",
             "type": "string"
+          },
+          "solver_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solver Version"
           },
           "status": {
             "$ref": "#/components/schemas/RunStatus"
@@ -857,9 +1406,13 @@
         },
         "required": [
           "id",
+          "employee_codes",
+          "shift_types",
           "demand_profile_id",
+          "parent_run_id",
           "status",
           "solver",
+          "solver_version",
           "solve_status",
           "params",
           "assignments",
@@ -867,6 +1420,7 @@
           "best_bound",
           "gap",
           "understaffed_hours",
+          "hard_violations",
           "wall_time_seconds",
           "error",
           "created_at",
@@ -882,6 +1436,65 @@
         ],
         "title": "StaffingMode",
         "type": "string"
+      },
+      "SweepPoint": {
+        "properties": {
+          "labor_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labor Cost"
+          },
+          "multiplier": {
+            "title": "Multiplier",
+            "type": "number"
+          },
+          "proven": {
+            "title": "Proven",
+            "type": "boolean"
+          },
+          "solve_status": {
+            "title": "Solve Status",
+            "type": "string"
+          },
+          "staffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staffed Hours"
+          },
+          "understaffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understaffed Hours"
+          }
+        },
+        "required": [
+          "multiplier",
+          "solve_status",
+          "proven",
+          "labor_cost",
+          "understaffed_hours",
+          "staffed_hours"
+        ],
+        "title": "SweepPoint",
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
@@ -925,6 +1538,17 @@
       },
       "ViolationRead": {
         "properties": {
+          "day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day"
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -936,12 +1560,18 @@
           "kind": {
             "title": "Kind",
             "type": "string"
+          },
+          "legal_basis": {
+            "title": "Legal Basis",
+            "type": "string"
           }
         },
         "required": [
           "kind",
           "employee_code",
-          "detail"
+          "detail",
+          "day",
+          "legal_basis"
         ],
         "title": "ViolationRead",
         "type": "object"
@@ -1183,6 +1813,88 @@
         ]
       }
     },
+    "/api/demand-profiles/from-call-center": {
+      "post": {
+        "operationId": "create_profile_from_call_center_api_demand_profiles_from_call_center_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CallCenterDemandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Profile From Call Center",
+        "tags": [
+          "demand"
+        ]
+      }
+    },
+    "/api/demand-profiles/from-csv": {
+      "post": {
+        "operationId": "create_profile_from_csv_api_demand_profiles_from_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvDemandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Profile From Csv",
+        "tags": [
+          "demand"
+        ]
+      }
+    },
     "/api/demand-profiles/from-dataset": {
       "post": {
         "operationId": "create_profile_from_dataset_api_demand_profiles_from_dataset_post",
@@ -1225,6 +1937,39 @@
       }
     },
     "/api/demand-profiles/{profile_id}": {
+      "delete": {
+        "operationId": "delete_profile_api_demand_profiles__profile_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "title": "Profile Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Profile",
+        "tags": [
+          "demand"
+        ]
+      },
       "get": {
         "operationId": "get_profile_api_demand_profiles__profile_id__get",
         "parameters": [
@@ -1505,6 +2250,27 @@
         ]
       }
     },
+    "/api/labor-rules": {
+      "get": {
+        "operationId": "get_labor_rules_api_labor_rules_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaborRulesRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Labor Rules",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
     "/api/schedules": {
       "get": {
         "operationId": "list_schedules_api_schedules_get",
@@ -1611,6 +2377,46 @@
         ]
       }
     },
+    "/api/schedules/{run_id}/assignments.csv": {
+      "get": {
+        "operationId": "get_assignments_csv_api_schedules__run_id__assignments_csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Assignments Csv",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
     "/api/schedules/{run_id}/compliance": {
       "get": {
         "operationId": "get_schedule_compliance_api_schedules__run_id__compliance_get",
@@ -1653,6 +2459,98 @@
         ]
       }
     },
+    "/api/schedules/{run_id}/coverage.csv": {
+      "get": {
+        "operationId": "get_coverage_csv_api_schedules__run_id__coverage_csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Coverage Csv",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/edits": {
+      "post": {
+        "operationId": "create_manual_edit_api_schedules__run_id__edits_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualEditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolveRunRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Manual Edit",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
     "/api/schedules/{run_id}/kpi": {
       "get": {
         "operationId": "get_schedule_kpi_api_schedules__run_id__kpi_get",
@@ -1690,6 +2588,46 @@
           }
         },
         "summary": "Get Schedule Kpi",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/kpi.csv": {
+      "get": {
+        "operationId": "get_kpi_csv_api_schedules__run_id__kpi_csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Kpi Csv",
         "tags": [
           "schedules"
         ]

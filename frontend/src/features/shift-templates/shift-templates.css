@@ -1,0 +1,38 @@
+.shift-strip {
+  display: inline-grid;
+  grid-template-columns: repeat(24, 7px);
+  gap: 1px;
+  vertical-align: middle;
+}
+
+.shift-strip-hour {
+  display: block;
+  height: 14px;
+  background: var(--color-neutral-200);
+}
+
+.shift-strip-hour.is-worked {
+  background: var(--color-accent-500);
+}
+
+.shift-strip-hour.is-night {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-accent-900) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.legend .shift-strip-hour {
+  width: 11px;
+  height: 11px;
+}
+
+.template-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 13px;
+}

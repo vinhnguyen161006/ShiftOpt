@@ -1,18 +1,34 @@
-import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch, jsonInit } from "../../../lib/api-client";
 import type { ShiftTemplateCreate, ShiftTemplateRead } from "../../../types/models";
 
-export function useShiftTemplates(): UseQueryResult<ShiftTemplateRead[]> {
-  throw new Error("TODO: useQuery GET /shift-templates");
+const TEMPLATES_KEY = ["shift-templates"];
+
+export function useShiftTemplates() {
+  return useQuery({
+    queryKey: TEMPLATES_KEY,
+    queryFn: () => apiFetch<ShiftTemplateRead[]>("/shift-templates"),
+  });
 }
 
-export function useCreateShiftTemplate(): UseMutationResult<
-  ShiftTemplateRead,
-  Error,
-  ShiftTemplateCreate
-> {
-  throw new Error("TODO: useMutation POST /shift-templates, invalidate the list");
+function useTemplateMutation<V, R>(request: (variables: V) => Promise<R>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: request,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: TEMPLATES_KEY }),
+  });
 }
 
-export function useDeleteShiftTemplate(): UseMutationResult<void, Error, number> {
-  throw new Error("TODO: useMutation DELETE /shift-templates/{templateId}");
+export function useSaveShiftTemplate() {
+  return useTemplateMutation(({ id, body }: { id?: number; body: ShiftTemplateCreate }) =>
+    id === undefined
+      ? apiFetch<ShiftTemplateRead>("/shift-templates", jsonInit("POST", body))
+      : apiFetch<ShiftTemplateRead>(`/shift-templates/${id}`, jsonInit("PUT", body)),
+  );
+}
+
+export function useDeleteShiftTemplate() {
+  return useTemplateMutation((id: number) =>
+    apiFetch<void>(`/shift-templates/${id}`, jsonInit("DELETE")),
+  );
 }

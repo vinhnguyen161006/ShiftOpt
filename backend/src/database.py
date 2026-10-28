@@ -4,6 +4,7 @@ from enum import Enum
 from fastapi import Request
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import MetaData
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -11,6 +12,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+
+from src.exceptions import ConflictError
 
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
@@ -46,3 +49,11 @@ def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSessi
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     async with request.app.state.session_factory() as session:
         yield session
+
+
+async def commit_unique(session: AsyncSession, message: str) -> None:
+    try:
+        await session.commit()
+    except IntegrityError as error:
+        await session.rollback()
+        raise ConflictError(message) from error

@@ -1,0 +1,95 @@
+.demand-grid-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.demand-grid {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.demand-grid th {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 0 0 2px;
+}
+
+.demand-grid tbody th {
+  text-align: left;
+  padding: 0 8px 0 0;
+  font-size: 11px;
+}
+
+.demand-grid td {
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  background: var(--color-neutral-100);
+}
+
+.demand-grid td.shade-1 {
+  background: var(--color-accent-100);
+}
+
+.demand-grid td.shade-2 {
+  background: var(--color-accent-200);
+}
+
+.demand-grid td.shade-3 {
+  background: var(--color-accent-300);
+}
+
+.demand-grid td.shade-4 {
+  background: var(--color-accent-400);
+}
+
+.demand-grid td.shade-5 {
+  background: var(--color-accent-500);
+}
+
+.demand-cell,
+.demand-grid td > span {
+  display: block;
+  width: 32px;
+  height: 26px;
+  padding: 0;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  line-height: 26px;
+  text-align: center;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+}
+
+.demand-cell:focus-visible {
+  outline: 2px solid var(--color-accent-900);
+  outline-offset: -2px;
+  background: var(--color-neutral-100);
+}
+
+.demand-cell[aria-invalid="true"] {
+  outline: 2px solid var(--color-accent-900);
+  outline-offset: -2px;
+  text-decoration: underline wavy var(--color-accent-900);
+}
+
+.demand-grid-help {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.profile-stats {
+  margin: 0;
+  font-size: 13px;
+}
+
+.conversion-form {
+  padding: 12px;
+  border: 1px dashed var(--color-divider);
+}

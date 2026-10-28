@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
+import { BrandMark, Wordmark } from "../components/ui/BrandMark";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Demand" },
+  { to: "/demand", label: "Demand" },
   { to: "/employees", label: "Employees" },
   { to: "/shift-templates", label: "Shift templates" },
   { to: "/schedule", label: "Schedule" },
@@ -11,14 +12,25 @@ const NAV_ITEMS = [
 export function AppLayout() {
   return (
     <>
-      <nav className="app-nav">
-        {NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} to={item.to} end>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-      <main className="app-main">
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <header className="site-header">
+        <div className="container site-header-bar">
+          <Link to="/" className="brand">
+            <BrandMark />
+            <Wordmark />
+          </Link>
+          <nav className="site-nav" aria-label="Workspace">
+            {NAV_ITEMS.map((item) => (
+              <NavLink key={item.to} to={item.to} className="site-nav-link">
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      </header>
+      <main id="main" className="container app-main" tabIndex={-1}>
         <Outlet />
       </main>
     </>

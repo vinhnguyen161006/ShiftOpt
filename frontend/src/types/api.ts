@@ -90,6 +90,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demand-profiles/from-call-center": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Profile From Call Center */
+        post: operations["create_profile_from_call_center_api_demand_profiles_from_call_center_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demand-profiles/from-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Profile From Csv */
+        post: operations["create_profile_from_csv_api_demand_profiles_from_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demand-profiles/from-dataset": {
         parameters: {
             query?: never;
@@ -119,7 +153,8 @@ export interface paths {
         /** Update Profile */
         put: operations["update_profile_api_demand_profiles__profile_id__put"];
         post?: never;
-        delete?: never;
+        /** Delete Profile */
+        delete: operations["delete_profile_api_demand_profiles__profile_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -162,6 +197,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/labor-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Labor Rules */
+        get: operations["get_labor_rules_api_labor_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schedules": {
         parameters: {
             query?: never;
@@ -197,6 +249,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/{run_id}/assignments.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Assignments Csv */
+        get: operations["get_assignments_csv_api_schedules__run_id__assignments_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schedules/{run_id}/compliance": {
         parameters: {
             query?: never;
@@ -214,6 +283,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/{run_id}/coverage.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Coverage Csv */
+        get: operations["get_coverage_csv_api_schedules__run_id__coverage_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/schedules/{run_id}/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Manual Edit */
+        post: operations["create_manual_edit_api_schedules__run_id__edits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schedules/{run_id}/kpi": {
         parameters: {
             query?: never;
@@ -223,6 +326,23 @@ export interface paths {
         };
         /** Get Schedule Kpi */
         get: operations["get_schedule_kpi_api_schedules__run_id__kpi_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/schedules/{run_id}/kpi.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Kpi Csv */
+        get: operations["get_kpi_csv_api_schedules__run_id__kpi_csv_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -315,19 +435,66 @@ export interface components {
             id: number;
             kind: components["schemas"]["AnalysisKind"];
             /** Result */
-            result: {
-                [key: string]: unknown;
-            } | null;
+            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | null;
             status: components["schemas"]["RunStatus"];
         };
         /** AssignmentRead */
         AssignmentRead: {
+            /** Break Offset */
+            break_offset?: number | null;
             /** Day */
             day: number;
             /** Employee Code */
             employee_code: string;
             /** Shift Name */
             shift_name: string;
+        };
+        /** AssignmentWrite */
+        AssignmentWrite: {
+            /** Break Offset */
+            break_offset?: number | null;
+            /** Day */
+            day: number;
+            /** Employee Code */
+            employee_code: string;
+            /** Shift Name */
+            shift_name: string;
+        };
+        /** CallCenterDemandRequest */
+        CallCenterDemandRequest: {
+            /**
+             * Answer Seconds
+             * @default 20
+             */
+            answer_seconds: number;
+            /** Base Rate */
+            base_rate: number;
+            /** Handle Seconds */
+            handle_seconds: number;
+            /**
+             * Min Staff
+             * @default 1
+             */
+            min_staff: number;
+            /** Name */
+            name: string;
+            /**
+             * Noise
+             * @default 0
+             */
+            noise: number;
+            /** Patience Seconds */
+            patience_seconds: number;
+            /**
+             * Seed
+             * @default 0
+             */
+            seed: number;
+            /**
+             * Service Level
+             * @default 0.8
+             */
+            service_level: number;
         };
         /** ComplianceRead */
         ComplianceRead: {
@@ -358,6 +525,13 @@ export interface components {
              * @default 1
              */
             productivity: number;
+        };
+        /** CsvDemandRequest */
+        CsvDemandRequest: {
+            /** Csv Text */
+            csv_text: string;
+            /** Name */
+            name: string;
         };
         /** DatasetDemandRequest */
         DatasetDemandRequest: {
@@ -398,6 +572,10 @@ export interface components {
             /** Required Staff */
             required_staff: number[];
             source: components["schemas"]["DemandSource"];
+            /** Source Metadata */
+            source_metadata: {
+                [key: string]: string;
+            };
         };
         /** DemandProfileUpdate */
         DemandProfileUpdate: {
@@ -422,6 +600,11 @@ export interface components {
             multipliers?: number[];
             solve: components["schemas"]["SolveRequest"];
         };
+        /** DemandSweepResult */
+        DemandSweepResult: {
+            /** Points */
+            points: components["schemas"]["SweepPoint"][];
+        };
         /** EmployeeCreate */
         EmployeeCreate: {
             /** Code */
@@ -430,6 +613,10 @@ export interface components {
             hourly_wage: number;
             /** Name */
             name: string;
+            /** Preferred Days Off */
+            preferred_days_off?: number[];
+            /** Unavailable Days */
+            unavailable_days?: number[];
         };
         /** EmployeeRead */
         EmployeeRead: {
@@ -446,6 +633,10 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+            /** Preferred Days Off */
+            preferred_days_off: number[];
+            /** Unavailable Days */
+            unavailable_days: number[];
         };
         /** EmployeeUpdate */
         EmployeeUpdate: {
@@ -455,6 +646,10 @@ export interface components {
             hourly_wage: number;
             /** Name */
             name: string;
+            /** Preferred Days Off */
+            preferred_days_off?: number[];
+            /** Unavailable Days */
+            unavailable_days?: number[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -471,8 +666,14 @@ export interface components {
         KpiRead: {
             /** Coverage Ratio */
             coverage_ratio: number;
+            /** Hard Violations */
+            hard_violations: number;
             /** Labor Cost */
             labor_cost: number;
+            /** Night Premium Cost */
+            night_premium_cost: number;
+            /** Night Shift Stddev */
+            night_shift_stddev: number;
             /** Overstaffed Hours */
             overstaffed_hours: number;
             /** Required By Hour */
@@ -485,6 +686,37 @@ export interface components {
             staff_by_hour: number[];
             /** Understaffed Hours */
             understaffed_hours: number;
+            /** Weekend Shift Stddev */
+            weekend_shift_stddev: number;
+        };
+        /**
+         * LaborRulesRead
+         * @description Default labor rules of the engine (Labor Code 45/2019/QH14), so the UI can warn before
+         *     the backend rejects an input.
+         */
+        LaborRulesRead: {
+            /** Break Required From Hours */
+            break_required_from_hours: number;
+            /** Max Consecutive Days */
+            max_consecutive_days: number;
+            /** Max Daily Hours */
+            max_daily_hours: number;
+            /** Max Weekly Hours */
+            max_weekly_hours: number;
+            /** Min Break Minutes */
+            min_break_minutes: number;
+            /** Min Night Break Minutes */
+            min_night_break_minutes: number;
+            /** Min Rest Between Shifts */
+            min_rest_between_shifts: number;
+            /** Night End */
+            night_end: number;
+            /** Night Premium Percent */
+            night_premium_percent: number;
+            /** Night Start */
+            night_start: number;
+            /** Weekly Rest Hours */
+            weekly_rest_hours: number;
         };
         /** LpDualsRequest */
         LpDualsRequest: {
@@ -492,9 +724,58 @@ export interface components {
             hourly_wage: number;
             solve: components["schemas"]["SolveRequest"];
         };
+        /** LpDualsResult */
+        LpDualsResult: {
+            /**
+             * Approximate
+             * @default true
+             */
+            approximate: boolean;
+            /** Duals By Hour */
+            duals_by_hour: number[];
+            /**
+             * Label
+             * @default LP relaxation dual: an approximation, the integrality gap can be large
+             */
+            label: string;
+            /** Lp Objective */
+            lp_objective: number;
+            /** Missing Hours */
+            missing_hours: number[];
+        };
+        /** ManualEditRequest */
+        ManualEditRequest: {
+            /** Assignments */
+            assignments: components["schemas"]["AssignmentWrite"][];
+        };
         /** MarginalCostRequest */
         MarginalCostRequest: {
+            /** Hourly Wage */
+            hourly_wage: number;
             solve: components["schemas"]["SolveRequest"];
+        };
+        /** MarginalCostResult */
+        MarginalCostResult: {
+            /**
+             * Approximate
+             * @default true
+             */
+            approximate: boolean;
+            /** Base Cost */
+            base_cost: number | null;
+            /** Base Status */
+            base_status: string;
+            /**
+             * Label
+             * @default LP relaxation dual: an approximation, the integrality gap can be large
+             */
+            label: string;
+            /** Lp Dual By Hour */
+            lp_dual_by_hour: number[];
+            /** Marginal Cost By Hour */
+            marginal_cost_by_hour: (number | null)[];
+            /** Proven By Hour */
+            proven_by_hour: boolean[];
         };
         /**
          * RunStatus
@@ -515,6 +796,8 @@ export interface components {
         };
         /** ShiftTemplateRead */
         ShiftTemplateRead: {
+            /** Break Required */
+            break_required: boolean;
             /**
              * Created At
              * Format: date-time
@@ -526,6 +809,8 @@ export interface components {
             length_hours: number;
             /** Name */
             name: string;
+            /** Night Hours */
+            night_hours: number;
             /** Start Hour */
             start_hour: number;
         };
@@ -541,12 +826,31 @@ export interface components {
             /** Start Hour */
             start_hour: number;
         };
+        /** ShiftTypeRead */
+        ShiftTypeRead: {
+            /** Length */
+            length: number;
+            /** Name */
+            name: string;
+            /** Start Hour */
+            start_hour: number;
+        };
         /** SolveRequest */
         SolveRequest: {
             /** Demand Profile Id */
             demand_profile_id: number;
             /** Employee Ids */
             employee_ids?: number[] | null;
+            /**
+             * Max Consecutive Days
+             * @default 6
+             */
+            max_consecutive_days: number;
+            /**
+             * Max Weekly Hours
+             * @default 48
+             */
+            max_weekly_hours: number;
             /**
              * Num Workers
              * @default 8
@@ -583,12 +887,16 @@ export interface components {
             created_at: string;
             /** Demand Profile Id */
             demand_profile_id: number | null;
+            /** Employee Codes */
+            employee_codes: string[];
             /** Error */
             error: string | null;
             /** Finished At */
             finished_at: string | null;
             /** Gap */
             gap: number | null;
+            /** Hard Violations */
+            hard_violations: number | null;
             /** Id */
             id: number;
             /** Objective */
@@ -597,10 +905,16 @@ export interface components {
             params: {
                 [key: string]: number;
             };
+            /** Parent Run Id */
+            parent_run_id: number | null;
+            /** Shift Types */
+            shift_types: components["schemas"]["ShiftTypeRead"][];
             /** Solve Status */
             solve_status: string | null;
             /** Solver */
             solver: string;
+            /** Solver Version */
+            solver_version: string | null;
             status: components["schemas"]["RunStatus"];
             /** Understaffed Hours */
             understaffed_hours: number | null;
@@ -612,6 +926,21 @@ export interface components {
          * @enum {string}
          */
         StaffingMode: "linear" | "erlang";
+        /** SweepPoint */
+        SweepPoint: {
+            /** Labor Cost */
+            labor_cost: number | null;
+            /** Multiplier */
+            multiplier: number;
+            /** Proven */
+            proven: boolean;
+            /** Solve Status */
+            solve_status: string;
+            /** Staffed Hours */
+            staffed_hours: number | null;
+            /** Understaffed Hours */
+            understaffed_hours: number | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -627,12 +956,16 @@ export interface components {
         };
         /** ViolationRead */
         ViolationRead: {
+            /** Day */
+            day: number | null;
             /** Detail */
             detail: string;
             /** Employee Code */
             employee_code: string;
             /** Kind */
             kind: string;
+            /** Legal Basis */
+            legal_basis: string;
         };
     };
     responses: never;
@@ -826,6 +1159,72 @@ export interface operations {
             };
         };
     };
+    create_profile_from_call_center_api_demand_profiles_from_call_center_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallCenterDemandRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemandProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_profile_from_csv_api_demand_profiles_from_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CsvDemandRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemandProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_profile_from_dataset_api_demand_profiles_from_dataset_post: {
         parameters: {
             query?: never;
@@ -913,6 +1312,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DemandProfileRead"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_profile_api_demand_profiles__profile_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -1073,6 +1501,26 @@ export interface operations {
             };
         };
     };
+    get_labor_rules_api_labor_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LaborRulesRead"];
+                };
+            };
+        };
+    };
     list_schedules_api_schedules_get: {
         parameters: {
             query?: never;
@@ -1157,6 +1605,37 @@ export interface operations {
             };
         };
     };
+    get_assignments_csv_api_schedules__run_id__assignments_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_schedule_compliance_api_schedules__run_id__compliance_get: {
         parameters: {
             query?: never;
@@ -1188,6 +1667,72 @@ export interface operations {
             };
         };
     };
+    get_coverage_csv_api_schedules__run_id__coverage_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_manual_edit_api_schedules__run_id__edits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolveRunRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_schedule_kpi_api_schedules__run_id__kpi_get: {
         parameters: {
             query?: never;
@@ -1206,6 +1751,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KpiRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kpi_csv_api_schedules__run_id__kpi_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
