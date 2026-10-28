@@ -28,4 +28,5 @@ class DemandProfile(Base):
     mode: Mapped[StaffingMode] = mapped_column(enum_column(StaffingMode))
     required_staff: Mapped[list[int]] = mapped_column(JSON)
     conversion_params: Mapped[dict[str, float]] = mapped_column(JSON)
+    source_metadata: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

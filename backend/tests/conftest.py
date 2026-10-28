@@ -6,11 +6,16 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from src import main
 from src.main import create_app
 
 
 @pytest.fixture
-async def app() -> AsyncIterator[FastAPI]:
+async def app(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FastAPI]:
+    async def skip_recovery(session_factory: object) -> None:
+        return None
+
+    monkeypatch.setattr(main, "recover_interrupted_jobs", skip_recovery)
     application = create_app()
     async with LifespanManager(application):
         yield application

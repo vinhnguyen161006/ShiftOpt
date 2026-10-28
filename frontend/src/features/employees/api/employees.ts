@@ -1,20 +1,34 @@
-import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch, jsonInit } from "../../../lib/api-client";
 import type { EmployeeCreate, EmployeeRead } from "../../../types/models";
 
-export function useEmployees(): UseQueryResult<EmployeeRead[]> {
-  throw new Error("TODO: useQuery GET /employees");
+const EMPLOYEES_KEY = ["employees"];
+
+export function useEmployees() {
+  return useQuery({
+    queryKey: EMPLOYEES_KEY,
+    queryFn: () => apiFetch<EmployeeRead[]>("/employees"),
+  });
 }
 
-export function useCreateEmployee(): UseMutationResult<EmployeeRead, Error, EmployeeCreate> {
-  throw new Error("TODO: useMutation POST /employees, invalidate the list");
+function useEmployeeMutation<V, R>(request: (variables: V) => Promise<R>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: request,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: EMPLOYEES_KEY }),
+  });
 }
 
-export function useUpdateEmployee(
-  employeeId: number,
-): UseMutationResult<EmployeeRead, Error, EmployeeCreate> {
-  throw new Error("TODO: useMutation PUT /employees/{employeeId}");
+export function useSaveEmployee() {
+  return useEmployeeMutation(({ id, body }: { id?: number; body: EmployeeCreate }) =>
+    id === undefined
+      ? apiFetch<EmployeeRead>("/employees", jsonInit("POST", body))
+      : apiFetch<EmployeeRead>(`/employees/${id}`, jsonInit("PUT", body)),
+  );
 }
 
-export function useDeleteEmployee(): UseMutationResult<void, Error, number> {
-  throw new Error("TODO: useMutation DELETE /employees/{employeeId}");
+export function useDeleteEmployee() {
+  return useEmployeeMutation((id: number) =>
+    apiFetch<void>(`/employees/${id}`, jsonInit("DELETE")),
+  );
 }

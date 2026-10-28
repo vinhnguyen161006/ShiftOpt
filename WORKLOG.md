@@ -23,8 +23,8 @@ Lập ngày 2026-10-26 từ `CLAUDE.md` và trạng thái repo thực tế (khun
 | 4 | Engine: mô hình theo nhân viên (CP-SAT) | 2, 3 | xong (4.1–4.4; phá đối xứng tắt mặc định, phân rã chưa bật tự động) |
 | 5 | Engine: phân tích độ nhạy | 3, 4 | xong (5.1–5.3) |
 | 6 | Pipeline dữ liệu nhu cầu (FreshRetailNet, tổng đài) | 0, 1 | xong (6.1–6.3; tổng đài công khai còn mở) |
-| 7 | Backend: service, job giải, API, test tích hợp | 2–6 | chưa làm |
-| 8 | Frontend: các màn hình MVP | 7 (OpenAPI) | chưa làm |
+| 7 | Backend: service, job giải, API, test tích hợp | 2–6 | code xong (7.1–7.5); test tích hợp chưa chạy, MySQL80 không khởi động được |
+| 8 | Frontend: các màn hình MVP | 7 (OpenAPI) | code xong (8.1–8.7); chưa chạy với backend thật, chưa duyệt trên trình duyệt |
 | 9 | Kiểm chứng: benchmark, so sánh solver, tái lập, nghiệm thu | 4, 5, 7, 8 | chưa làm |
 | 10 | Hoàn thiện CI, Docker, bảo mật, bật ngưỡng coverage | 9 | chưa làm |
 | 11 | Đặc tả cuối, báo cáo, demo | 9 | chưa làm |
@@ -48,9 +48,10 @@ Mục tiêu: không bắt đầu code nghiệp vụ trên giả định chưa đ
   - Chuyển `Báo cáo nghiên cứu nền Xếp ca nhâ.md` vào `docs/` (hiện không có trong git), sửa link trong CLAUDE.md.
   - Tạo `data/raw/` (gitignore), `data/processed/`, `data/benchmarks/curtois_qu/`; kiểm tra `.gitignore`.
   - Xong khi: cấu trúc khớp CLAUDE.md mục 11, `git status` sạch, không file dữ liệu thô nào bị track.
-- [ ] **0.4 Chốt ADR-002 thư viện biểu đồ**
+- [x] **0.4 Chốt ADR-002 thư viện biểu đồ**
   - So sánh tối thiểu 2 ứng viên trên đúng nhu cầu của dự án: cột + đường chồng (coverage), heatmap 24 ô (chi phí biên), đường cong `z(lambda)`. Tiêu chí: kích thước bundle, hỗ trợ React 19, khả năng tô màu theo điều kiện (đỏ thiếu / xanh thừa), a11y.
   - Xong khi: ADR-002 có trạng thái "đã chốt", dependency được ghim chính xác, bản phát hành ≥ 2 tuần tuổi.
+  - Đã chốt (2026-10-28): không dùng thư viện, tự vẽ bằng HTML/CSS và SVG như trang chủ; không có dependency mới.
 
 ---
 
@@ -230,6 +231,10 @@ Mục tiêu: nối engine vào HTTP đúng quy tắc: router mỏng, solver khô
 - [ ] **7.5 Cố định hợp đồng API và sinh lại OpenAPI**
   - `make openapi`, `npm run gen:api`; CI kiểm tra khớp. Thêm migration Alembic nếu đổi model (autogenerate → review tay MySQL → bỏ comment → `alembic check`).
   - Xong khi: `openapi.json` và `types/api.ts` khớp code; không còn endpoint stub trả `NotImplementedError`.
+  - Trạng thái (chưa tick vì tiêu chí "test tích hợp MySQL" chưa đạt): code 7.1–7.5 đã viết; `ruff`, `mypy` strict, `check_conventions`, `npm run ci` đạt; unit test 45 pass; 19 test tích hợp bị skip vì thiếu `SHIFTOPT_TEST_DATABASE_URL`. Migration `89510c048e94` sinh bằng SQLite tạm, chưa review trên MySQL thật, chưa chạy `alembic check`.
+  - Mới: `backend/src/jobs.py` (ProcessPoolExecutor, `run_in_child`), `schedules/snapshot.py`, `schedules/worker.py`, `analysis/worker.py`; endpoint `POST /demand-profiles/from-csv`, `from-call-center`, `DELETE /demand-profiles/{id}`, `POST /schedules/{id}/edits`, `GET /schedules/{id}/{assignments,coverage,kpi}.csv`.
+  - Lệch so với kế hoạch: độ nhạy quét 168 giờ (không 24); giới hạn đầu vào của job độ nhạy kiểm trên từng lần giải (`time_limit_seconds`), còn tổng thời gian job là `max_analysis_seconds`; `LaborRules` qua API chỉ đổi `max_weekly_hours` và `max_consecutive_days`; sửa tay có vi phạm cứng → run `failed` kèm lý do; `objective` của run roster là giá trị tầng cuối của lexicographic, chi phí lấy từ KPI.
+  - Việc còn mở: chạy test tích hợp và `alembic check` trên MySQL 8.4; giết tiến trình con khi quá hạn (hiện chỉ bỏ chờ, CP-SAT tự dừng theo time limit).
 
 ---
 
@@ -248,7 +253,7 @@ Mục tiêu: luồng "nhập nhu cầu → Optimize → xem lịch, coverage, c�
   - Xong khi: CRUD đầy đủ; dữ liệu vào dùng được cho nút Optimize.
 - [ ] **8.4 Màn Lịch: `features/schedule`**
   - Nút **Optimize** + `SolveStatusPanel` (trạng thái, gap, bound, thời gian giải, seed; chỉ ghi "tối ưu" khi `OPTIMAL`, `FEASIBLE` kèm gap — nguyên tắc 5); poll theo `job_id`.
-  - `ScheduleGrid` (hàng = nhân viên, cột = ngày, màu theo loại ca), `CoverageChart` (cột số người chồng đường nhu cầu, đỏ thiếu / xanh thừa), `CostSummary` (lương, phụ cấp đêm, %), xuất CSV.
+  - `ScheduleGrid` (hàng = nhân viên, cột = ngày, màu theo loại ca), `CoverageChart` (cột số người chồng đường nhu cầu; thiếu = sọc chéo, thừa = phần trên vạch nhu cầu, theo CLAUDE.md 8.3), `CostSummary` (lương, phụ cấp đêm, %), xuất CSV.
   - Xong khi: chạy được trên instance 20–40 nhân viên; giờ thiếu nhìn thấy rõ trên chart.
 - [ ] **8.5 Màn Tuân thủ: `features/compliance`**
   - `ViolationList` hiển thị vi phạm Đ.105/110/111 kèm nhân viên/ngày/giờ; chỉnh tay lịch bằng form → gọi lại validator và cập nhật cảnh báo; lịch gốc không bị ghi đè.
@@ -259,6 +264,11 @@ Mục tiêu: luồng "nhập nhu cầu → Optimize → xem lịch, coverage, c�
 - [ ] **8.7 Hoàn thiện trải nghiệm**
   - Responsive cơ bản, a11y (tương phản, nhãn, bàn phím), trạng thái rỗng/lỗi/chờ ở mọi màn, văn bản UI tiếng Anh (quy ước code), không còn class `.todo`.
   - Xong khi: `npm run ci` sạch; duyệt tay toàn bộ luồng trên trình duyệt thật.
+  - Trạng thái giai đoạn 8 (chưa tick vì chưa chạy với backend + MySQL thật và chưa duyệt trên trình duyệt; máy không có Chrome/Edge):
+    - Đã làm: token, font và class dùng chung chuyển từ trang chủ sang `styles/`; component dùng chung `components/ui/*`, `components/solve/SolveRequestForm`; `apiFetch` đọc lỗi 422 thành lỗi theo ô; năm màn hình Demand, Employees, Shift templates, Schedule (kèm Compliance, sửa tay, xuất CSV), What-if (sweep, heatmap chi phí biên / dual LP, so sánh run). Nguồn UI ghi trong `docs/ui-references.md`.
+    - Backend thêm cho UI: `ShiftTemplateRead.night_hours`, `break_required` (tính bằng engine), `SolveRunRead.employee_codes`, `shift_types` (từ snapshot), `GET /api/labor-rules`.
+    - Kiểm: `npm run ci` (Biome, tsc, build) sạch; `check_conventions` sạch; render SSR mọi component với dữ liệu mẫu không lỗi; trang chủ vẫn đủ 102/102 đoạn chữ sau khi tách style; backend unit 48 pass.
+    - Lệch: hợp đồng và giờ tối đa riêng từng nhân viên chưa có (engine chưa hỗ trợ); quét `alpha`, `p`, `r_min` chưa có API nên chưa lên UI; profile suy từ FreshRetailNet/tổng đài chỉ xem, muốn sửa thì chép sang profile tay (PUT sẽ ghi đè tham số tổng đài).
 
 ---
 

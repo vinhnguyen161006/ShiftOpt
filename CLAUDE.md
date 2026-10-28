@@ -210,7 +210,7 @@ Bắt buộc (1–3), kịch bản (4) nên có, (5–6) là mở rộng:
 2. Mẫu ca: giờ bắt đầu, độ dài, nghỉ, hệ số đêm.
 3. Hồ sơ nhân viên: hợp đồng, giờ tối đa, ngày không thể làm, mong muốn.
 4. Nút **Optimize** hiển thị trạng thái, gap, thời gian giải.
-5. **Coverage chart**: cột số người theo giờ chồng đường nhu cầu; đỏ giờ thiếu, xanh giờ thừa.
+5. **Coverage chart**: cột số người theo giờ chồng đường nhu cầu; giờ thiếu và giờ thừa phân biệt được ngay trên chart, mã hóa theo mục 8.3 (không chỉ bằng màu).
 6. **Lịch dạng lưới** (hàng = nhân viên, cột = ngày, ô màu theo loại ca); chế độ Gantt theo giờ là mức mở rộng.
 7. **Cảnh báo tuân thủ**: vi phạm Đ.105 / 110 / 111, phát hiện cả khi người dùng sửa tay.
 8. Bảng chi phí: tổng lương, phụ cấp đêm, % chi phí lao động.
@@ -226,6 +226,25 @@ Kéo-thả chỉnh tay là mức mở rộng, và nếu làm thì phải kiểm 
 - Kiểu TypeScript ở frontend **sinh từ OpenAPI** của FastAPI, không viết tay.
 - Mọi input qua Pydantic v2 và validate tại biên (kích thước, miền giá trị, số nhân viên và số ngày tối đa để chặn instance quá lớn).
 - Lỗi nghiệp vụ trả mã và thông điệp có nghĩa (vd. "demand grid must have 168 cells"), không để lộ stack trace.
+
+### 8.3 Thiết kế frontend (bắt buộc)
+
+**Một phong cách duy nhất, theo trang chủ.**
+
+- Trang chủ (`features/home/`, port từ `ShiftOpt Homepage.html`) là chuẩn thiết kế. Mọi trang còn lại (Demand, Employees, Shift templates, Schedule, What-if) dùng đúng cùng ngôn ngữ, không biến tấu theo trang.
+- Ngôn ngữ đó gồm: nền `#f2f2f3`, chữ `#1d1f20`, accent `#5980a6` cùng thang `accent-100..900` và `neutral-100..900`; tiêu đề Barlow Condensed 600, thân Barlow 400; khung "blueprint" (viền hairline `--color-divider`, góc vuông, bốn dấu góc `.corner`); nút `.btn` / `.btn-primary` / `.btn-secondary`; tag viền (`.tag-outline`); nhãn chữ hoa cỡ nhỏ giãn chữ; biểu đồ cột accent-500, vạch nhu cầu nét đứt, vùng thiếu người là sọc chéo viền accent-700.
+- Không thêm font, bảng màu, bo góc, bóng đổ nặng hay gradient trang trí. Khi trang chủ chưa có component cần dùng (bảng, form, modal, heatmap, cảnh báo), dựng từ token có sẵn, không đưa style riêng của nguồn tham khảo vào.
+- Màu không được là kênh duy nhất truyền thông tin (thiếu/thừa người, vi phạm, trạng thái solver): luôn kèm hình (sọc, nét, biểu tượng) hoặc chữ. Mã hóa vùng thiếu người theo trang chủ; vùng thừa người chưa có ở trang chủ, chọn khi dựng chart từ thang accent/neutral.
+- Token, `@font-face` và class dùng chung nằm ở `styles/` (`fonts.css`, `tokens.css`, `components.css`, nạp qua `global.css`); `features/home/home.css` chỉ còn bố cục riêng của trang chủ. Component dùng chung ở `components/ui/` (BrandMark, Corners, Button, Table, Modal, Slider, Field, DayPicker, Feedback, Layout). Do `features/` không import chéo nhau (mục 11), trang app không import từ `features/home`.
+
+**UI/UX lấy từ trang web hoặc repo có thật trên mạng.**
+
+- Mọi pattern UI/UX (bố cục màn hình, bảng, lưới lịch, nhập lưới nhu cầu, trạng thái job đang giải, heatmap, trạng thái rỗng/lỗi) phải dựa trên ví dụ có thật từ một trang web hoặc repo mã nguồn mở, không tự nghĩ ra. Trước khi dựng một màn hình: tìm ít nhất hai nguồn tham chiếu và mở xem trực tiếp (sản phẩm xếp ca/WFM, bản Java của Timefold employee scheduling nêu ở mục 3.3, ví dụ của OR-Tools, repo giao diện lịch/bảng nguồn mở).
+- Ghi mỗi nguồn vào `docs/ui-references.md`: màn hình ShiftOpt dùng nó, URL, commit hoặc ngày xem, lấy gì (bố cục, hành vi, mã), giấy phép nếu lấy mã. Nguồn gốc ghi trong tài liệu, không ghi bằng comment trong code (mục 12).
+- Sản phẩm thương mại: chỉ lấy bố cục và hành vi, không lấy mã, ảnh hay thương hiệu; không trích tính năng của hãng cụ thể khi chưa kiểm trên trang của hãng (mục 15). Repo mở: chỉ chép mã khi giấy phép cho phép (MIT, Apache-2.0, BSD, CC BY...), ghim commit và ghi attribution trong tài liệu.
+- Thứ lấy về luôn được vẽ lại bằng token của trang chủ. Stack là CSS thuần nên ưu tiên chép pattern thay vì thêm thư viện component; thư viện UI mới vẫn theo mục 10 (ghim chính xác, phát hành ≥ 2 tuần) và phải hỏi trước khi thêm.
+- Không tìm được hoặc không mở được nguồn thì hỏi lại (nguyên tắc 14), không bịa tham chiếu.
+- Nguyên tắc 4, 5, 6 thắng mọi pattern lấy về: nhãn "xấp xỉ" của dual LP, "FEASIBLE" kèm gap, và nhãn "doanh số chuẩn hóa, không phải nhu cầu nhân sự" không được bỏ để cho giống nguồn.
 
 ---
 
@@ -262,7 +281,7 @@ Schedule adherence (so lịch với chấm công) **ngoài phạm vi** vì khôn
 | Backend | FastAPI · Python 3.11 · Pydantic v2 (async REST) |
 | Database | MySQL 8 · SQLAlchemy 2 · Alembic |
 | Dữ liệu | `pyarrow` (đọc/ghi Parquet ở backend) · Parquet · tải FreshRetailNet bằng `urllib` theo commit ghim, không dùng `datasets` |
-| Frontend | React 19 · react-router 8 · Vite 8 · TypeScript 5.9 · CSS thuần · TanStack Query 5 · Biome · openapi-typescript · thư viện biểu đồ chọn khi dựng UI (`docs/adr/adr-002-charting-library.md`) |
+| Frontend | React 19 · react-router 8 · Vite 8 · TypeScript 5.9 · CSS thuần theo phong cách trang chủ (mục 8.3) · TanStack Query 5 · Biome · openapi-typescript · biểu đồ tự vẽ bằng HTML/CSS và SVG, không thư viện (`docs/adr/adr-002-charting-library.md`) |
 | Deploy | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
 | Test | pytest · pytest-asyncio · httpx + asgi-lifespan · pytest-cov |
 
@@ -289,12 +308,14 @@ backend/
     main.py                 create_app (uvicorn --factory), lifespan (engine + session factory), /health
     config.py               Settings (BaseSettings, tiền tố SHIFTOPT_), get_settings
     database.py             Base + naming convention, enum_column (VARCHAR), engine, get_session
-    exceptions.py           AppError, NotFoundError, ConflictError, InstanceTooLargeError + handler
+    exceptions.py           AppError, NotFoundError, ConflictError, InstanceTooLargeError, InvalidInputError + handler
+    jobs.py                 JobContext (ProcessPoolExecutor), run_in_child (time limit, không chặn event loop)
     demand/                 router, schemas, models (DemandProfile), service, dataset_loader, csv_import
     employees/              router, schemas, models (EmployeeRecord), service
     shifts/                 router, schemas, models (ShiftTemplate), service
-    schedules/              router, schemas, models (SolveRun, RunStatus), service, dependencies
-    analysis/               router, schemas, models (AnalysisRun), service: sweep, chi phí biên, dual LP
+    schedules/              router, schemas, models (SolveRun, RunStatus), service, dependencies, snapshot (instance JSON), worker (child process)
+    analysis/               router, schemas, models (AnalysisRun), service: sweep, chi phí biên, dual LP, worker (child process)
+    rules/                  router, schemas: GET /labor-rules trả LaborRules mặc định cho UI cảnh báo sớm
   tests/
     conftest.py             fixture app (LifespanManager), client (ASGITransport), database_url
     unit/                   không cần DB
@@ -322,25 +343,29 @@ frontend/
   Dockerfile, nginx.conf, .dockerignore
   src/
     main.tsx
-    app/                    providers.tsx (TanStack Query), router.tsx, layout.tsx (nav), routes/*.tsx (stub)
-    components/ui/          Button, Table, Modal, Slider (stub)
+    app/                    providers.tsx (TanStack Query), router.tsx ("/" = trang chủ, app ở /demand...), layout.tsx (header theo trang chủ), routes/*.tsx (ghép feature; schedule.tsx, what-if.tsx ghép nhiều feature)
+    assets/fonts/           Barlow + Barlow Condensed (woff2, OFL)
+    components/ui/          BrandMark, Corners, Button, Table, Modal (<dialog>), Slider, Field, DayPicker, Feedback (Notice, ErrorSummary, EmptyState, Loading), Layout (PageHeader, Panel, KpiStrip)
+    components/solve/       SolveRequestForm: form SolveRequest dùng chung cho Schedule và What-if
     config/env.ts
-    lib/api-client.ts       apiFetch (stub), ApiError
-    styles/global.css       token màu/khoảng cách, class .todo
+    lib/                    api-client.ts (apiFetch, ApiError + lỗi theo ô từ 422), form.ts, time.ts, labor-rules.ts
+    styles/                 global.css (nạp fonts, tokens, components + bố cục trang app), fonts.css, tokens.css, components.css
     types/api.ts            sinh từ backend/openapi.json (npm run gen:api), không sửa tay
     types/models.ts         alias tên schema từ api.ts
     features/
-      demand/               api/demand.ts, components/DemandGridEditor.tsx, ConversionParamsForm.tsx
-      employees/            api/employees.ts, components/EmployeeTable.tsx
-      shift-templates/      api/shift-templates.ts, components/ShiftTemplateList.tsx
-      schedule/             api/schedules.ts, components/ScheduleGrid, CoverageChart, SolveStatusPanel, CostSummary
-      compliance/           api/compliance.ts, components/ViolationList.tsx
-      what-if/              api/analysis.ts, components/LambdaSlider, SensitivityHeatmap, ScenarioCompare
+      home/                 trang chủ port từ "ShiftOpt Homepage.html": components/, sample-data.ts (số liệu minh họa), home.css, links.ts
+      demand/               api, DemandPage, DemandProfileList, DemandProfileView, DemandGridEditor (lưới 7x24), NewProfileForm (tay, CSV, FreshRetailNet, tổng đài), ConversionParamsForm
+      employees/            api, EmployeesPage, EmployeeTable, EmployeeForm
+      shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip
+      schedule/             api (poll), NewRunForm, RunsTable, SolveStatusPanel, ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
+      compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới)
+      what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
 data/                       (chưa tạo) raw/ gitignore, processed/, benchmarks/curtois_qu/
 docs/
   đặc tả.md                 (chưa có) nguồn sự thật yêu cầu
   model.md                  công thức mô hình
-  adr/                      adr-001 chọn solver, adr-002 thư viện biểu đồ (chưa chốt)
+  adr/                      adr-001 chọn solver, adr-002 biểu đồ (đã chốt: tự vẽ, không thư viện)
+  ui-references.md          nguồn UI/UX tham chiếu: màn hình, URL, ngày/commit, giấy phép (mục 8.3)
 scripts/check_conventions.py   cưỡng chế "không comment" + "code chỉ ASCII"; bỏ qua file sinh (GENERATED_PATHS)
 docker-compose.yml, .env.example, .dockerignore, Makefile
 .github/workflows/ci.yml

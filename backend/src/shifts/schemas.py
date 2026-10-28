@@ -20,4 +20,6 @@ class ShiftTemplateRead(BaseModel):
     name: str
     start_hour: int
     length_hours: int
+    night_hours: int
+    break_required: bool
     created_at: datetime

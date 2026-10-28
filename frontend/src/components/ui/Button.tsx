@@ -1,13 +1,35 @@
 import type { ButtonHTMLAttributes } from "react";
+import { Corners } from "./Corners";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary" | "ghost";
+  size?: "md" | "sm";
 };
 
-export function Button({ variant = "primary", ...props }: ButtonProps) {
+export function buttonClass(variant: ButtonProps["variant"], size: ButtonProps["size"] = "md") {
+  return [
+    "btn",
+    `btn-${variant}`,
+    size === "sm" ? "btn-sm" : "",
+    variant === "primary" ? "blueprint" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function Button({
+  variant = "secondary",
+  size = "md",
+  className,
+  children,
+  type = "button",
+  ...props
+}: ButtonProps) {
+  const classes = [buttonClass(variant, size), className].filter(Boolean).join(" ");
   return (
-    <p className="todo">
-      TODO: styled button, variant {variant}, forwards native button props and type="button".
-    </p>
+    <button type={type === "submit" ? "submit" : "button"} className={classes} {...props}>
+      {children}
+      {variant === "primary" && <Corners />}
+    </button>
   );
 }

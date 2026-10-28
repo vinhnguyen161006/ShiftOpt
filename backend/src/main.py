@@ -1,27 +1,43 @@
 from collections.abc import AsyncIterator
+from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from src.analysis import service as analysis_service
 from src.analysis.router import router as analysis_router
 from src.config import get_settings
 from src.database import create_engine, create_session_factory
 from src.demand.router import router as demand_router
 from src.employees.router import router as employees_router
 from src.exceptions import register_exception_handlers
+from src.jobs import JobContext
+from src.rules.router import router as rules_router
+from src.schedules import service as schedules_service
 from src.schedules.router import router as schedules_router
 from src.shifts.router import router as shifts_router
 
 
+async def recover_interrupted_jobs(session_factory: async_sessionmaker[AsyncSession]) -> None:
+    async with session_factory() as session:
+        await schedules_service.recover_stale_runs(session)
+        await analysis_service.recover_stale_runs(session)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """TODO: on startup mark solve runs left in status running as failed (see
-    schedules.service.recover_stale_runs) and stop accepting new runs while recovering."""
-    engine = create_engine(get_settings().database_url)
+    settings = get_settings()
+    engine = create_engine(settings.database_url)
+    session_factory = create_session_factory(engine)
+    executor = ProcessPoolExecutor(max_workers=settings.max_concurrent_jobs)
     app.state.engine = engine
-    app.state.session_factory = create_session_factory(engine)
+    app.state.session_factory = session_factory
+    app.state.jobs = JobContext(session_factory, executor)
+    await recover_interrupted_jobs(session_factory)
     yield
+    executor.shutdown(wait=False, cancel_futures=True)
     await engine.dispose()
 
 
@@ -41,6 +57,7 @@ def create_app() -> FastAPI:
         shifts_router,
         schedules_router,
         analysis_router,
+        rules_router,
     ):
         app.include_router(router, prefix="/api")
 
