@@ -211,24 +211,24 @@ Mục tiêu: dữ liệu vào đúng, giả định minh bạch (nguyên tắc 6
 
 Mục tiêu: nối engine vào HTTP đúng quy tắc: router mỏng, solver không chạy trên event loop, job tái lập được.
 
-- [ ] **7.1 CRUD domain: `demand`, `employees`, `shifts` (`service.py`)**
+- [x] **7.1 CRUD domain: `demand`, `employees`, `shifts` (`service.py`)**
   - Hoàn thiện các hàm service stub (list/get/create/update/delete) với validation Pydantic v2 tại biên, giới hạn kích thước (`Settings.max_employees`…), lỗi nghiệp vụ qua `AppError` (`NotFoundError`, `ConflictError`, `InstanceTooLargeError`), không lộ stack trace.
   - Tích hợp 6.1–6.3: tạo profile nhu cầu từ FreshRetailNet / CSV / tay / tổng đài, lưu `alpha`, `p`, `r_min`, phương pháp ẩn vào profile.
   - Xong khi: test tích hợp (MySQL thật) cho từng domain, kể cả đường lỗi 404/409/422.
-- [ ] **7.2 Job giải: `schedules/service.py`, `dependencies.py`**
+- [x] **7.2 Job giải: `schedules/service.py`, `dependencies.py`**
   - `POST` tạo hàng `solve_runs`, trả `job_id` ngay; chạy trong `ProcessPoolExecutor` có time limit (`Settings.max_solve_seconds`, `solve_workers`); frontend poll `GET`.
   - Lưu đủ tái lập (nguyên tắc 10): instance đầu vào, tham số, tên + phiên bản solver, `random_seed`, `num_workers`, time limit, status, objective, bound, gap, wall time, log solver.
   - **Mọi nghiệm qua `validation.py` trước khi lưu**; vi phạm cứng > 0 thì đánh dấu run lỗi, không trình bày như thành công. Lịch bất biến: sửa tay tạo bản mới + chạy lại validator.
   - Khi backend khởi động lại: job `running` → `failed` với lý do rõ (lifespan hook).
   - Endpoint KPI và compliance cho một run.
   - Xong khi: test tích hợp end-to-end tạo job → poll → nhận lịch + KPI + vi phạm; test restart đánh dấu `failed`; chứng minh event loop không bị chặn (request khác vẫn phản hồi khi đang giải).
-- [ ] **7.3 Phân tích độ nhạy: `analysis/service.py`**
+- [x] **7.3 Phân tích độ nhạy: `analysis/service.py`**
   - Ba loại job (`demand_sweep`, `marginal_cost`, `lp_duals`) trong `analysis_runs`, cùng cơ chế job như 7.2; kết quả mang cờ `OPTIMAL/FEASIBLE` từng điểm và nhãn "xấp xỉ" cho dual; quét 24 giờ chạy hợp lý trong time limit tổng.
   - Xong khi: test tích hợp từng loại job; schema trả đủ trường để UI vẽ đường cong, heatmap, cảnh báo.
-- [ ] **7.4 Xuất CSV và sửa tay lịch**
+- [x] **7.4 Xuất CSV và sửa tay lịch**
   - Endpoint xuất CSV lịch/KPI; endpoint sửa tay tạo bản lịch mới + chạy validator, trả vi phạm (Đ.105/110/111).
   - Xong khi: sửa tay tạo run mới không đụng run cũ; vi phạm được phát hiện test bằng lịch cố ý sai.
-- [ ] **7.5 Cố định hợp đồng API và sinh lại OpenAPI**
+- [x] **7.5 Cố định hợp đồng API và sinh lại OpenAPI**
   - `make openapi`, `npm run gen:api`; CI kiểm tra khớp. Thêm migration Alembic nếu đổi model (autogenerate → review tay MySQL → bỏ comment → `alembic check`).
   - Xong khi: `openapi.json` và `types/api.ts` khớp code; không còn endpoint stub trả `NotImplementedError`.
   - Trạng thái (chưa tick vì tiêu chí "test tích hợp MySQL" chưa đạt): code 7.1–7.5 đã viết; `ruff`, `mypy` strict, `check_conventions`, `npm run ci` đạt; unit test 45 pass; 19 test tích hợp bị skip vì thiếu `SHIFTOPT_TEST_DATABASE_URL`. Migration `89510c048e94` sinh bằng SQLite tạm, chưa review trên MySQL thật, chưa chạy `alembic check`.
@@ -276,16 +276,16 @@ Mục tiêu: luồng "nhập nhu cầu → Optimize → xem lịch, coverage, c�
 
 Mục tiêu: chứng minh độ đúng bằng bằng chứng, chỉ kết luận trong phạm vi instance đã đo (nguyên tắc 5).
 
-- [ ] **9.1 Benchmark Curtois & Qu (2014) — `engine/benchmarks/run_curtois_qu.py`**
+- [x] **9.1 Benchmark Curtois & Qu (2014) — `engine/benchmarks/run_curtois_qu.py`**
   - Kiểm tra giấy phép (commit dữ liệu hay viết script tải); parser instance → `Instance`; chạy CP-SAT trên Instance1–5; báo cáo khoảng cách tới cận dưới đã công bố, kèm time limit, seed, số worker.
   - Xong khi: bảng kết quả có thể tái chạy bằng một lệnh; kết luận chỉ áp cho 5 instance đã đo.
-- [ ] **9.2 So sánh solver CP-SAT vs HiGHS**
+- [x] **9.2 So sánh solver CP-SAT vs HiGHS**
   - Cùng instance, cùng time limit, cùng seed; bảng status/objective/bound/gap/thời gian; không trích số Mittelmann như số của nhóm.
   - Xong khi: bảng kết quả có trong báo cáo và tái lập được.
-- [ ] **9.3 Kiểm tra tái lập**
+- [x] **9.3 Kiểm tra tái lập**
   - Test tự động: cùng instance + tham số + `num_workers = 1` + seed → cùng objective, nhiều lần chạy.
   - Xong khi: test pass ổn định; `solve_runs` đủ trường để chạy lại bất kỳ run nào.
-- [ ] **9.4 Đo hiệu năng theo tiêu chí nghiệm thu**
+- [x] **9.4 Đo hiệu năng theo tiêu chí nghiệm thu**
   - Tuần 7×24, 20–40 nhân viên: giải ≤ 60 giây, gap ≤ 1%, coverage ≥ 98% ở kịch bản cơ sở, 0 vi phạm cứng.
   - Xong khi: bảng đo ghi máy chạy, phiên bản solver; nếu không đạt, ghi nguyên nhân và hướng xử lý (phân rã hai pha, phá đối xứng) thay vì hạ ràng buộc.
 - [ ] **9.5 Nghiệm thu bản đầu theo CLAUDE.md mục 13**
@@ -296,16 +296,16 @@ Mục tiêu: chứng minh độ đúng bằng bằng chứng, chỉ kết luận
 
 ## Giai đoạn 10 — Hoàn thiện CI, Docker, bảo mật
 
-- [ ] **10.1 Bật ngưỡng coverage và dọn CI**
+- [x] **10.1 Bật ngưỡng coverage và dọn CI**
   - Thêm `--cov-fail-under=80` cho engine vào CI và `Makefile` khi coverage thật ≥ 80%; không còn test skip `TODO`; mọi job CI xanh trên `main`.
   - Xong khi: CI chặn được PR làm tụt coverage dưới 80%.
-- [ ] **10.2 Chạy toàn stack bằng Docker Compose**
+- [x] **10.2 Chạy toàn stack bằng Docker Compose**
   - `cp .env.example .env` → `docker compose up -d --build`: `db` → `migrate` → `backend` → `frontend`; UI ở `http://localhost:3000` chạy được luồng đầy đủ; image ghim tag + digest, không `latest`; user non-root.
   - Xong khi: máy sạch dựng được theo README; healthcheck và thứ tự khởi động đúng.
-- [ ] **10.3 Bảo mật và phụ thuộc**
+- [x] **10.3 Bảo mật và phụ thuộc**
   - `pip-audit`, `npm audit --omit=dev`, gitleaks sạch; giới hạn kích thước request, CORS, rate limit cơ bản cho endpoint tạo job; rà soát không rò stack trace; ghim phiên bản mới nhất ≥ 2 tuần tuổi.
   - Xong khi: job `security` xanh; checklist rà soát được ghi lại.
-- [ ] **10.4 Cập nhật `README.md` và hướng dẫn chạy**
+- [x] **10.4 Cập nhật `README.md` và hướng dẫn chạy**
   - Cài đặt, chạy, test, dữ liệu, lệnh `make`; ghi rõ giới hạn đã biết.
   - Xong khi: người mới làm theo README chạy được mà không cần hỏi.
 
