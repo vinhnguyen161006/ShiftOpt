@@ -19,7 +19,7 @@ typecheck:
 	cd frontend && npm run typecheck
 
 test:
-	cd engine && uv run --locked pytest -q --cov=shiftopt
+	cd engine && uv run --locked pytest -q --cov=shiftopt --cov-fail-under=80
 	cd backend && uv run --locked pytest -q
 
 openapi:

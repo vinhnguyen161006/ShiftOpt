@@ -39,6 +39,7 @@ select = ["E", "F", "I", "B", "UP", "S", "PT", "RUF", "SIM", "C4", "TC"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S311"]
 "benchmarks/**" = ["S311"]
+"benchmarks/download_curtois_qu.py" = ["S310"]
 "src/shiftopt/staffing/call_arrivals.py" = ["S311"]
 
 [tool.mypy]

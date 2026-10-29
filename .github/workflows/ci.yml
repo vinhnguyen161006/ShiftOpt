@@ -33,7 +33,7 @@ jobs:
       - run: uv run --locked ruff format --check .
       - run: uv run --locked ruff check .
       - run: uv run --locked mypy src tests benchmarks
-      - run: uv run --locked pytest -q --cov=shiftopt --cov-report=term
+      - run: uv run --locked pytest -q --cov=shiftopt --cov-report=term --cov-fail-under=80
 
   backend:
     runs-on: ubuntu-24.04
