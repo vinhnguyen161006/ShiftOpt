@@ -8,7 +8,7 @@ Nguồn sự thật về yêu cầu, theo thứ tự ưu tiên:
 2. [docs/đặc tả.md](docs/đặc tả.md) — **chưa có**, sẽ viết dựa trên báo cáo nghiên cứu nền. Khi có, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
 3. [Báo cáo nghiên cứu nền Xếp ca nhâ.md](<Báo cáo nghiên cứu nền Xếp ca nhâ.md>) — nghiên cứu tham chiếu (dữ liệu, mô hình, pháp lý, solver). Đây là khuyến nghị, không phải yêu cầu; chỗ nào báo cáo ghi "nên" thì file này đã chốt thành quy tắc hoặc loại bỏ ở các mục dưới. Nên chuyển báo cáo vào `docs/` khi dựng khung.
 
-> **Trạng thái repo (2026-10-21):** đã có **khung code (skeleton)**. Mọi hàm nghiệp vụ là stub: docstring `TODO: ...` mô tả việc cần làm + `raise NotImplementedError` (frontend: `throw new Error("TODO: ...")` hoặc `<p className="todo">`). Phần khai báo (dataclass engine, `LaborRules`, settings, ORM model, Pydantic schema), phần nối dây (`create_app`, router, React router/layout, Alembic env, Compose, CI) và công cụ nội bộ (`scripts/`) là code thật. Đã có migration Alembic baseline. Engine coverage hiện ~32% nên CI **chưa** đặt ngưỡng 80% — bật `--cov-fail-under=80` khi đã triển khai engine. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
+> **Trạng thái repo (2026-10-21):** đã có **khung code (skeleton)**. Mọi hàm nghiệp vụ là stub: docstring `TODO: ...` mô tả việc cần làm + `raise NotImplementedError` (frontend: `throw new Error("TODO: ...")` hoặc `<p className="todo">`). Phần khai báo (dataclass engine, `LaborRules`, settings, ORM model, Pydantic schema), phần nối dây (`create_app`, router, React router/layout, Alembic env, Compose, CI) và công cụ nội bộ (`scripts/`) là code thật. Đã có migration Alembic baseline. Engine coverage hiện ~98%; CI và Makefile đặt ngưỡng `--cov-fail-under=80`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
 
 ---
 
@@ -425,7 +425,7 @@ Engine (trong `engine/`):
 |---|---|
 | Cài đặt | `uv sync --locked` |
 | Test | `uv run --locked pytest -q` |
-| Test + coverage | `uv run --locked pytest -q --cov=shiftopt` (thêm `--cov-fail-under=80` khi đã triển khai) |
+| Test + coverage | `uv run --locked pytest -q --cov=shiftopt --cov-fail-under=80` |
 | Lint / format | `uv run --locked ruff check .` · `uv run --locked ruff format --check .` |
 | Type check | `uv run --locked mypy src tests benchmarks` |
 | Benchmark | `uv run --locked python benchmarks/run_curtois_qu.py` |
