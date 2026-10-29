@@ -16,7 +16,7 @@ from src.config import get_settings
 from src.demand.service import get_profile
 from src.employees.models import EmployeeRecord
 from src.exceptions import ConflictError, InstanceTooLargeError, InvalidInputError, NotFoundError
-from src.jobs import JOB_GRACE_SECONDS, JobContext, run_in_child
+from src.jobs import JOB_GRACE_SECONDS, JobContext, ensure_job_capacity, run_in_child
 from src.schedules.models import RunStatus, SolveRun
 from src.schedules.schemas import (
     ComplianceRead,
@@ -116,6 +116,7 @@ async def snapshot_for(session: AsyncSession, payload: SolveRequest) -> Snapshot
 
 
 async def create_run(session: AsyncSession, payload: SolveRequest) -> SolveRun:
+    await ensure_job_capacity(session)
     run = SolveRun(
         demand_profile_id=payload.demand_profile_id,
         status=RunStatus.QUEUED,
