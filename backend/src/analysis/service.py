@@ -10,7 +10,7 @@ from src.analysis.schemas import DemandSweepRequest, LpDualsRequest, MarginalCos
 from src.analysis.worker import run_analysis
 from src.config import get_settings
 from src.exceptions import NotFoundError
-from src.jobs import JOB_GRACE_SECONDS, JobContext, run_in_child
+from src.jobs import JOB_GRACE_SECONDS, JobContext, ensure_job_capacity, run_in_child
 from src.schedules.models import RunStatus
 from src.schedules.service import check_limits, snapshot_for, solve_params
 
@@ -28,6 +28,7 @@ async def create_run(
     kind: AnalysisKind,
     request: AnalysisRequest,
 ) -> AnalysisRun:
+    await ensure_job_capacity(session)
     check_limits(request.solve)
     body: dict[str, Any] = {
         "snapshot": await snapshot_for(session, request.solve),

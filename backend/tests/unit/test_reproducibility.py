@@ -87,4 +87,4 @@ def test_solve_params_carry_seed_and_workers() -> None:
 def test_solve_run_has_every_reproducibility_column() -> None:
     columns = {column.name for column in SolveRun.__table__.columns}
 
-    assert PRINCIPLE_10_COLUMNS <= columns
+    assert columns >= PRINCIPLE_10_COLUMNS
