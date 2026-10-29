@@ -70,3 +70,51 @@ Lệnh: `cd engine && uv run --locked python benchmarks/compare_solvers.py`
 | peaked_spaced_8_shifts | CP-SAT | 60 | optimal | 3 570 000 | 3 570 000 | 0,03 |
 
 Kết luận trong phạm vi đã đo: 3 instance, cả hai solver chứng minh cùng objective; cả hai đều quá nhanh để phân biệt hiệu năng. Mô hình này nhỏ (không có phân công từng người); không suy ra cho mô hình theo nhân viên (mục 3).
+
+## 3. Lịch tuần 7×24, 20–40 nhân viên (mục 9.4)
+
+Máy và phiên bản như mục đầu. Nhu cầu: đỉnh 3–4 người ban ngày, nền 1–2 người ban đêm, sinh theo seed (`weekly_instance` trong `engine/benchmarks/run_roster_scale.py`). Phá đối xứng tắt (mặc định). `relative_gap_limit = 0.01`, time limit 60 giây.
+
+Lệnh:
+
+```
+cd engine
+uv run --locked python -u benchmarks/run_roster_scale.py --sizes 20 30 40 --seeds 0 1 2 --time-limit 60 --workers 1
+uv run --locked python -u benchmarks/run_roster_scale.py --sizes 20 30 40 --seeds 0 1 2 --time-limit 60 --workers 8
+```
+
+### 3a. 1 worker
+
+| Nhân viên | Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng |
+|---|---|---|---|---|---|---|---|
+| 20 | 0 | optimal | 0.0 | 14.37 | 0 | 1.0000 | 0 |
+| 30 | 0 | optimal | 0.0 | 21.38 | 0 | 1.0000 | 0 |
+| 40 | 0 | optimal | 0.0 | 31.53 | 0 | 1.0000 | 0 |
+| 20 | 1 | optimal | 0.0 | 24.76 | 0 | 1.0000 | 0 |
+| 30 | 1 | optimal | 0.0 | 22.56 | 0 | 1.0000 | 0 |
+| 40 | 1 | optimal | 0.0 | 27.92 | 0 | 1.0000 | 0 |
+| 20 | 2 | optimal | 0.0 | 19.38 | 0 | 1.0000 | 0 |
+| 30 | 2 | optimal | 0.0 | 21.13 | 0 | 1.0000 | 0 |
+| 40 | 2 | optimal | 0.0 | 29.38 | 0 | 1.0000 | 0 |
+
+### 3b. 8 worker
+
+| Nhân viên | Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng |
+|---|---|---|---|---|---|---|---|
+| 20 | 0 | optimal | 0.0 | 9.90 | 0 | 1.0000 | 0 |
+| 30 | 0 | optimal | 0.0 | 17.40 | 0 | 1.0000 | 0 |
+| 40 | 0 | optimal | 0.0 | 25.87 | 0 | 1.0000 | 0 |
+| 20 | 1 | optimal | 0.0 | 12.18 | 0 | 1.0000 | 0 |
+| 30 | 1 | optimal | 0.0 | 18.99 | 0 | 1.0000 | 0 |
+| 40 | 1 | optimal | 0.0 | 25.60 | 0 | 1.0000 | 0 |
+| 20 | 2 | optimal | 0.0 | 12.42 | 0 | 1.0000 | 0 |
+| 30 | 2 | optimal | 0.0 | 17.18 | 0 | 1.0000 | 0 |
+| 40 | 2 | optimal | 0.0 | 22.40 | 0 | 1.0000 | 0 |
+
+### Kết luận trong phạm vi đã đo
+
+- 18/18 lần giải đạt `OPTIMAL` với gap 0, coverage 1,0, không thiếu giờ, 0 vi phạm cứng theo validator. Thời gian tối đa 31,5 s (1 worker) và 25,9 s (8 worker), đều dưới ngưỡng 60 giây.
+- Instance này dễ: nhu cầu thấp hơn sức chứa, nên chưa kiểm được coverage ≥ 98% khi thiếu người. Đó là phạm vi chưa đo.
+- `objective` là giá trị tầng cuối của lexicographic (vi phạm sở thích), nên bằng 1,0 ở mọi dòng; không so sánh chi phí giữa các dòng qua cột này.
+- Cùng seed với `num_workers = 1` cho cùng kết quả (test `test_roster_repeats_objective_and_assignments`). Dòng 8 worker không đảm bảo tái lập.
+- 3 seed × 3 cỡ. Không suy ra cho instance khác.
