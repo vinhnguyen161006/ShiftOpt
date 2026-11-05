@@ -1,6 +1,8 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 from shiftopt import validation
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.domain import Assignment, Employee, Instance, ShiftType, Solution
@@ -89,6 +91,41 @@ def test_weekly_hours_limit_follows_rules() -> None:
     assert ViolationKind.WEEKLY_HOURS in kinds_for(
         *six_shifts, rules=LaborRules(max_weekly_hours=40)
     )
+
+
+def capped_violations(cap: int | None, days: int) -> list[Violation]:
+    instance = Instance(
+        demand=(0,) * HOURS_PER_WEEK,
+        employees=(Employee("e1", 100, max_weekly_hours=cap),),
+        shift_types=ALL_SHIFTS,
+    )
+    return validate(instance, Solution(tuple(work(day, DAY) for day in range(days))))
+
+
+def test_employee_weekly_cap_below_law_is_enforced() -> None:
+    assert [v.kind for v in capped_violations(24, 3)] == []
+    violations = capped_violations(24, 4)
+    assert [v.kind for v in violations] == [ViolationKind.WEEKLY_HOURS]
+    assert "maximum 24" in violations[0].detail
+
+
+def test_employee_weekly_cap_cannot_exceed_law() -> None:
+    violations = capped_violations(60, 7)
+    assert ViolationKind.WEEKLY_HOURS in [v.kind for v in violations]
+    assert (
+        "maximum 48" in next(v for v in violations if v.kind is ViolationKind.WEEKLY_HOURS).detail
+    )
+
+
+def test_weekly_cap_is_law_limit_when_unset() -> None:
+    assert Employee("e1", 100).weekly_cap(LaborRules()) == 48
+    assert Employee("e1", 100, max_weekly_hours=24).weekly_cap(LaborRules()) == 24
+    assert Employee("e1", 100, max_weekly_hours=60).weekly_cap(LaborRules()) == 48
+
+
+def test_non_positive_employee_weekly_cap_is_rejected() -> None:
+    with pytest.raises(ValueError, match="max_weekly_hours"):
+        Employee("e1", 100, max_weekly_hours=0)
 
 
 def test_shift_longer_than_daily_limit_is_reported_with_day() -> None:

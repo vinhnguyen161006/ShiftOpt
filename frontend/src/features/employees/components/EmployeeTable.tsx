@@ -25,6 +25,12 @@ export function EmployeeTable({ employees, onEdit, onDelete }: EmployeeTableProp
           render: (employee) => employee.hourly_wage.toLocaleString("en-US"),
         },
         {
+          key: "max_hours",
+          label: "Max hours/week",
+          align: "end",
+          render: (employee) => employee.max_weekly_hours ?? "Law limit (48)",
+        },
+        {
           key: "unavailable",
           label: "Cannot work",
           render: (employee) => dayList(employee.unavailable_days),

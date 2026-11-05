@@ -611,6 +611,8 @@ export interface components {
             code: string;
             /** Hourly Wage */
             hourly_wage: number;
+            /** Max Weekly Hours */
+            max_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -631,6 +633,8 @@ export interface components {
             hourly_wage: number;
             /** Id */
             id: number;
+            /** Max Weekly Hours */
+            max_weekly_hours: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -644,6 +648,8 @@ export interface components {
             code: string;
             /** Hourly Wage */
             hourly_wage: number;
+            /** Max Weekly Hours */
+            max_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */

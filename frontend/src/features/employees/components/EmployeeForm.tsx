@@ -16,6 +16,7 @@ const FIELD_IDS: Record<string, string> = {
   code: "employee-code",
   name: "employee-name",
   hourly_wage: "employee-wage",
+  max_weekly_hours: "employee-max-hours",
   unavailable_days: "employee-unavailable",
   preferred_days_off: "employee-preferred",
 };
@@ -25,6 +26,9 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
   const [code, setCode] = useState(employee?.code ?? "");
   const [name, setName] = useState(employee?.name ?? "");
   const [wage, setWage] = useState(employee ? String(employee.hourly_wage) : "");
+  const [maxHours, setMaxHours] = useState(
+    employee?.max_weekly_hours == null ? "" : String(employee.max_weekly_hours),
+  );
   const [unavailable, setUnavailable] = useState(employee?.unavailable_days ?? []);
   const [preferred, setPreferred] = useState(employee?.preferred_days_off ?? []);
   const errors = errorsByPath(save.error);
@@ -39,6 +43,7 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
           code,
           name,
           hourly_wage: toNumber(wage),
+          max_weekly_hours: maxHours.trim() === "" ? null : toNumber(maxHours),
           unavailable_days: unavailable,
           preferred_days_off: preferred,
         },
@@ -96,6 +101,25 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
               step={1}
               value={wage}
               onChange={(event) => setWage(event.target.value)}
+            />
+          )}
+        </Field>
+        <Field
+          id={FIELD_IDS.max_weekly_hours}
+          label="Max hours per week"
+          hint="Optional. Leave empty for the legal limit (48). Lower values are a hard limit for this employee."
+          error={errors.get("max_weekly_hours")}
+        >
+          {(control) => (
+            <input
+              {...control}
+              className="input"
+              type="number"
+              min={1}
+              max={48}
+              step={1}
+              value={maxHours}
+              onChange={(event) => setMaxHours(event.target.value)}
             />
           )}
         </Field>

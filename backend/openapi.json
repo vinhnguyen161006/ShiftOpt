@@ -535,6 +535,19 @@
             "title": "Hourly Wage",
             "type": "integer"
           },
+          "max_weekly_hours": {
+            "anyOf": [
+              {
+                "maximum": 48.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Weekly Hours"
+          },
           "name": {
             "maxLength": 120,
             "minLength": 1,
@@ -589,6 +602,17 @@
             "title": "Id",
             "type": "integer"
           },
+          "max_weekly_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Weekly Hours"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -613,6 +637,7 @@
           "code",
           "name",
           "hourly_wage",
+          "max_weekly_hours",
           "unavailable_days",
           "preferred_days_off",
           "created_at"
@@ -632,6 +657,19 @@
             "exclusiveMinimum": 0.0,
             "title": "Hourly Wage",
             "type": "integer"
+          },
+          "max_weekly_hours": {
+            "anyOf": [
+              {
+                "maximum": 48.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Weekly Hours"
           },
           "name": {
             "maxLength": 120,
