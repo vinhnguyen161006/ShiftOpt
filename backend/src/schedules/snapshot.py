@@ -33,6 +33,7 @@ def build_snapshot(
             {
                 "id": employee.code,
                 "hourly_wage": employee.hourly_wage,
+                "max_weekly_hours": employee.max_weekly_hours,
                 "unavailable_days": sorted(employee.unavailable_days),
                 "preferred_days_off": sorted(employee.preferred_days_off),
             }
@@ -49,6 +50,7 @@ def instance_from_snapshot(snapshot: Snapshot) -> Instance:
             Employee(
                 id=row["id"],
                 hourly_wage=row["hourly_wage"],
+                max_weekly_hours=row.get("max_weekly_hours"),
                 unavailable_days=frozenset(row["unavailable_days"]),
                 preferred_days_off=frozenset(row["preferred_days_off"]),
             )
