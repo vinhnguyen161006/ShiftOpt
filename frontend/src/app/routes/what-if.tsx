@@ -10,6 +10,7 @@ import { useAnalysisRun } from "../../features/what-if/api/analysis";
 import { AnalysisStatus } from "../../features/what-if/components/AnalysisStatus";
 import { ScenarioCompare } from "../../features/what-if/components/ScenarioCompare";
 import { SensitivityHeatmap } from "../../features/what-if/components/SensitivityHeatmap";
+import { StaffingSweepView } from "../../features/what-if/components/StaffingSweepView";
 import { SweepView } from "../../features/what-if/components/SweepView";
 import { WhatIfSetup } from "../../features/what-if/components/WhatIfSetup";
 import { errorMessage } from "../../lib/api-client";
@@ -19,6 +20,7 @@ import type {
   DemandSweepResult,
   MarginalCostResult,
   SolveRunRead,
+  StaffingSweepResult,
 } from "../../types/models";
 
 function numberParam(params: URLSearchParams, key: string): number | undefined {
@@ -29,7 +31,13 @@ function numberParam(params: URLSearchParams, key: string): number | undefined {
 function isSweep(
   run: AnalysisRunRead | undefined,
 ): run is AnalysisRunRead & { result: DemandSweepResult } {
-  return run?.result !== null && run?.result !== undefined && "points" in run.result;
+  return run?.kind === "demand_sweep" && run.result !== null && run.result !== undefined;
+}
+
+function isStaffing(
+  run: AnalysisRunRead | undefined,
+): run is AnalysisRunRead & { result: StaffingSweepResult } {
+  return run?.kind === "staffing_sweep" && run.result !== null && run.result !== undefined;
 }
 
 function isMarginal(
@@ -41,7 +49,7 @@ function isMarginal(
 function SetupPanel({
   onStarted,
 }: {
-  onStarted: (kind: "sweep" | "marginal", runId: number) => void;
+  onStarted: (kind: "sweep" | "marginal" | "staffing", runId: number) => void;
 }) {
   const profiles = useDemandProfiles();
   const templates = useShiftTemplates();
@@ -147,8 +155,10 @@ export function WhatIfRoute() {
   const [params, setParams] = useSearchParams();
   const sweepId = numberParam(params, "sweep");
   const marginalId = numberParam(params, "marginal");
+  const staffingId = numberParam(params, "staffing");
   const sweep = useAnalysisRun(sweepId);
   const marginal = useAnalysisRun(marginalId);
+  const staffing = useAnalysisRun(staffingId);
   const sweepResult =
     sweep.data?.status === "succeeded" && isSweep(sweep.data) ? sweep.data.result : undefined;
 
@@ -192,6 +202,23 @@ export function WhatIfRoute() {
           )}
         </Panel>
       )}
+      <Panel title="Conversion assumption sweep" labelledBy="staffing-title">
+        {staffingId === undefined && (
+          <EmptyState title="No assumption sweep yet">
+            Pick a FreshRetailNet profile and a conversion assumption above to see how the head
+            count and cost move.
+          </EmptyState>
+        )}
+        {staffing.isError && <Notice kind="error" title={errorMessage(staffing.error)} />}
+        {staffing.data && (
+          <AnalysisStatus
+            run={staffing.data}
+            activeLabel={`Re-solving at each value (analysis ${staffing.data.id})`}
+          >
+            {isStaffing(staffing.data) && <StaffingSweepView result={staffing.data.result} />}
+          </AnalysisStatus>
+        )}
+      </Panel>
       <Panel title="Marginal cost by hour" labelledBy="marginal-title">
         {marginalId === undefined && (
           <EmptyState title="No marginal cost yet">
