@@ -12,6 +12,7 @@ class AnalysisKind(StrEnum):
     DEMAND_SWEEP = "demand_sweep"
     MARGINAL_COST = "marginal_cost"
     LP_DUALS = "lp_duals"
+    STAFFING_SWEEP = "staffing_sweep"
 
 
 class AnalysisRun(Base):

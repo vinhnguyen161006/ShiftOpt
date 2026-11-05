@@ -104,6 +104,26 @@ def test_lp_duals_return_one_value_per_hour() -> None:
     assert result["approximate"] is True
 
 
+def test_staffing_sweep_rederives_demand_for_each_value() -> None:
+    load = [0.0] * 168
+    load[8:16] = [3.0] * 8
+    result = run_analysis(
+        "staffing_sweep",
+        {
+            "snapshot": _snapshot(),
+            "params": PARAMS,
+            "assumption": "alpha",
+            "values": [1.0, 2.0],
+            "load": load,
+            "base": {"alpha": 1.0, "productivity": 1.0, "min_staff": 1, "night_min_staff": 1},
+        },
+    )
+
+    assert result["assumption"] == "alpha"
+    assert [point["value"] for point in result["points"]] == [1.0, 2.0]
+    assert result["points"][1]["understaffed_hours"] >= result["points"][0]["understaffed_hours"]
+
+
 def test_unknown_analysis_kind_is_rejected() -> None:
     with pytest.raises(ValueError, match="unknown analysis kind"):
         run_analysis("bogus", {"snapshot": _snapshot(), "params": PARAMS})

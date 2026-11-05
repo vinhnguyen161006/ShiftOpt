@@ -12,7 +12,9 @@ from shiftopt.sensitivity.parametric import (
     roster_resolver,
     scale_demand,
 )
+from shiftopt.sensitivity.scenarios import StaffingAssumption, sweep_staffing_assumption
 from shiftopt.solvers.base import SolveParams
+from shiftopt.staffing.latent_demand import zero_night_load
 
 from src.analysis.models import AnalysisKind
 from src.schedules.snapshot import instance_from_snapshot
@@ -28,7 +30,39 @@ def run_analysis(kind: str, request: dict[str, Any]) -> dict[str, Any]:
         return _marginal_cost(instance, int(request["hourly_wage"]), params)
     if kind == AnalysisKind.LP_DUALS:
         return _lp_duals(instance, int(request["hourly_wage"]), params)
+    if kind == AnalysisKind.STAFFING_SWEEP:
+        return _staffing_sweep(instance, request, params)
     raise ValueError(f"unknown analysis kind {kind}")
+
+
+def _staffing_sweep(
+    instance: Instance, request: dict[str, Any], params: SolveParams
+) -> dict[str, Any]:
+    load, _ = zero_night_load(request["load"], instance.rules)
+    base = StaffingAssumption(**request["base"])
+    points = sweep_staffing_assumption(
+        instance,
+        load,
+        base,
+        request["assumption"],
+        request["values"],
+        roster_resolver(params),
+    )
+    return {
+        "assumption": request["assumption"],
+        "points": [_staffing_row(value, evaluation) for value, evaluation in points],
+    }
+
+
+def _staffing_row(value: float, evaluation: Evaluation) -> dict[str, Any]:
+    return {
+        "value": value,
+        "solve_status": evaluation.result.status.value,
+        "proven": evaluation.proven,
+        "labor_cost": evaluation.labor_cost,
+        "understaffed_hours": evaluation.understaffed_hours,
+        "staffed_hours": evaluation.staffed_hours,
+    }
 
 
 def parallel_points(point_count: int, workers_per_point: int) -> int:

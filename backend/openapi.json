@@ -22,7 +22,8 @@
         "enum": [
           "demand_sweep",
           "marginal_cost",
-          "lp_duals"
+          "lp_duals",
+          "staffing_sweep"
         ],
         "title": "AnalysisKind",
         "type": "string"
@@ -74,6 +75,9 @@
               },
               {
                 "$ref": "#/components/schemas/LpDualsResult"
+              },
+              {
+                "$ref": "#/components/schemas/StaffingSweepResult"
               },
               {
                 "type": "null"
@@ -1475,6 +1479,132 @@
         "title": "StaffingMode",
         "type": "string"
       },
+      "StaffingSweepPoint": {
+        "properties": {
+          "labor_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labor Cost"
+          },
+          "proven": {
+            "title": "Proven",
+            "type": "boolean"
+          },
+          "solve_status": {
+            "title": "Solve Status",
+            "type": "string"
+          },
+          "staffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staffed Hours"
+          },
+          "understaffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understaffed Hours"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "value",
+          "solve_status",
+          "proven",
+          "labor_cost",
+          "understaffed_hours",
+          "staffed_hours"
+        ],
+        "title": "StaffingSweepPoint",
+        "type": "object"
+      },
+      "StaffingSweepRequest": {
+        "properties": {
+          "assumption": {
+            "enum": [
+              "alpha",
+              "productivity",
+              "min_staff",
+              "night_min_staff"
+            ],
+            "title": "Assumption",
+            "type": "string"
+          },
+          "solve": {
+            "$ref": "#/components/schemas/SolveRequest"
+          },
+          "values": {
+            "items": {
+              "exclusiveMinimum": 0.0,
+              "maximum": 1000.0,
+              "type": "number"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "solve",
+          "assumption",
+          "values"
+        ],
+        "title": "StaffingSweepRequest",
+        "type": "object"
+      },
+      "StaffingSweepResult": {
+        "properties": {
+          "assumption": {
+            "enum": [
+              "alpha",
+              "productivity",
+              "min_staff",
+              "night_min_staff"
+            ],
+            "title": "Assumption",
+            "type": "string"
+          },
+          "label": {
+            "default": "Team conversion assumption, not staffing data from the source",
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/StaffingSweepPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assumption",
+          "points"
+        ],
+        "title": "StaffingSweepResult",
+        "type": "object"
+      },
       "SweepPoint": {
         "properties": {
           "labor_cost": {
@@ -1768,6 +1898,47 @@
           }
         },
         "summary": "Marginal Cost",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/api/analysis/staffing-sweep": {
+      "post": {
+        "operationId": "staffing_sweep_api_analysis_staffing_sweep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffingSweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Staffing Sweep",
         "tags": [
           "analysis"
         ]
