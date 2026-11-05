@@ -4,7 +4,7 @@ import type { SolveRunRead } from "../../../types/models";
 import { isActive } from "../api/schedules";
 import "../schedule.css";
 
-type SolveStatusPanelProps = {
+type SolveRunProps = {
   run: SolveRunRead;
 };
 
@@ -16,7 +16,7 @@ function number(value: number | null | undefined): string {
   return value === null || value === undefined ? "-" : value.toLocaleString("en-US");
 }
 
-function verdict(run: SolveRunRead): { value: string; sub: string } {
+export function solveVerdict(run: SolveRunRead): { value: string; sub: string } {
   if (run.solver === "manual") {
     return { value: "MANUAL EDIT", sub: `edited from run ${run.parent_run_id ?? "-"}` };
   }
@@ -24,12 +24,12 @@ function verdict(run: SolveRunRead): { value: string; sub: string } {
     return { value: "OPTIMAL", sub: "proven optimal for this instance and time limit" };
   }
   if (run.solve_status === "feasible") {
-    return { value: "FEASIBLE", sub: `not proven optimal, gap ${percent(run.gap)}` };
+    return { value: "FEASIBLE", sub: `gap ${percent(run.gap)}, not proven optimal` };
   }
   return { value: (run.solve_status ?? run.status).toUpperCase(), sub: "no proven result" };
 }
 
-export function SolveStatusPanel({ run }: SolveStatusPanelProps) {
+export function SolveNotice({ run }: SolveRunProps) {
   if (isActive(run.status)) {
     return (
       <Notice kind="info" title={run.status === "queued" ? "Queued" : "Solving"}>
@@ -39,18 +39,22 @@ export function SolveStatusPanel({ run }: SolveStatusPanelProps) {
       </Notice>
     );
   }
-  const result = verdict(run);
+  if (run.status === "failed") {
+    return (
+      <Notice kind="error" title="This run is not a valid schedule">
+        {run.error ?? "The run failed."}
+      </Notice>
+    );
+  }
+  return null;
+}
+
+export function SolveDetails({ run }: SolveRunProps) {
   const hardViolations = run.hard_violations ?? 0;
   return (
     <div className="form-stack">
-      {run.status === "failed" && (
-        <Notice kind="error" title="This run is not a valid schedule">
-          {run.error ?? "The run failed."}
-        </Notice>
-      )}
       <KpiStrip
         items={[
-          { label: "Solver status", value: result.value, sub: result.sub },
           { label: "Gap", value: percent(run.gap), sub: `best bound ${number(run.best_bound)}` },
           {
             label: "Objective",

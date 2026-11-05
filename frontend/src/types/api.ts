@@ -934,8 +934,12 @@ export interface components {
             multiplier: number;
             /** Proven */
             proven: boolean;
+            /** Required By Hour */
+            required_by_hour?: number[] | null;
             /** Solve Status */
             solve_status: string;
+            /** Staff By Hour */
+            staff_by_hour?: number[] | null;
             /** Staffed Hours */
             staffed_hours: number | null;
             /** Understaffed Hours */

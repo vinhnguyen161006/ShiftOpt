@@ -41,6 +41,8 @@ class SweepPoint(BaseModel):
     labor_cost: float | None
     understaffed_hours: int | None
     staffed_hours: int | None
+    staff_by_hour: list[int] | None = None
+    required_by_hour: list[int] | None = None
 
 
 class DemandSweepResult(BaseModel):
