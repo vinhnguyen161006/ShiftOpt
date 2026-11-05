@@ -5,10 +5,10 @@ Hướng dẫn cho Claude Code khi làm việc trong repo **ShiftOpt** — xếp
 Nguồn sự thật về yêu cầu, theo thứ tự ưu tiên:
 
 1. Đề bài của nhóm (mục 1).
-2. [docs/đặc tả.md](docs/đặc tả.md) — **chưa có**, sẽ viết dựa trên báo cáo nghiên cứu nền. Khi có, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
-3. [Báo cáo nghiên cứu nền Xếp ca nhâ.md](<Báo cáo nghiên cứu nền Xếp ca nhâ.md>) — nghiên cứu tham chiếu (dữ liệu, mô hình, pháp lý, solver). Đây là khuyến nghị, không phải yêu cầu; chỗ nào báo cáo ghi "nên" thì file này đã chốt thành quy tắc hoặc loại bỏ ở các mục dưới. Nên chuyển báo cáo vào `docs/` khi dựng khung.
+2. [docs/đặc tả.md](docs/đặc tả.md) — **bản nháp, chờ nhóm duyệt** (Claude soạn theo ủy quyền; quyết định D1–D17 và nguồn luật chưa đối chiếu nguyên văn ghi trong file). Khi đặc tả được duyệt, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
+3. Báo cáo nghiên cứu nền (nghiên cứu tham chiếu: dữ liệu, mô hình, pháp lý, solver). File không có trong repo (WORKLOG 0.3, quyết định D17); mọi chỗ nó từng được dùng đã được chốt trong `docs/đặc tả.md` và các mục dưới.
 
-> **Trạng thái repo (2026-10-21):** đã có **khung code (skeleton)**. Mọi hàm nghiệp vụ là stub: docstring `TODO: ...` mô tả việc cần làm + `raise NotImplementedError` (frontend: `throw new Error("TODO: ...")` hoặc `<p className="todo">`). Phần khai báo (dataclass engine, `LaborRules`, settings, ORM model, Pydantic schema), phần nối dây (`create_app`, router, React router/layout, Alembic env, Compose, CI) và công cụ nội bộ (`scripts/`) là code thật. Đã có migration Alembic baseline. Engine coverage hiện ~98%; CI và Makefile đặt ngưỡng `--cov-fail-under=80`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
+> **Trạng thái repo (2026-11-05):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine coverage 98%; CI và Makefile chặn dưới 80%. Backend chạy integration test trên MySQL 8.4. Còn mở: duyệt tay UI trên trình duyệt, nhóm duyệt đặc tả và sai lệch nghiệm thu (`docs/acceptance.md`). Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
 
 ---
 
@@ -336,7 +336,7 @@ engine/
     conftest.py             fixture three_shifts, build_instance
     test_smoke.py           khai báo thật: LaborRules, validate của dataclass
     test_time_grid.py, test_labor_law_vn.py, test_validation.py, test_kpi_and_staffing.py,
-    test_set_covering.py, test_roster_cpsat.py, test_sensitivity.py   kịch bản TODO
+    test_set_covering.py, test_roster_cpsat.py, test_sensitivity.py
   benchmarks/run_curtois_qu.py
 frontend/
   package.json, package-lock.json, vite.config.ts, tsconfig.json, biome.json, index.html
@@ -360,9 +360,9 @@ frontend/
       schedule/             api (poll), NewRunForm, RunsTable, RunWorkspace (panel kết quả như trang chủ), SolveStatusPanel (SolveNotice, SolveDetails), ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
       compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới)
       what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
-data/                       (chưa tạo) raw/ gitignore, processed/, benchmarks/curtois_qu/
+data/                       raw/ (gitignore), processed/ (parquet gitignore), benchmarks/curtois_qu/ (script tải)
 docs/
-  đặc tả.md                 (chưa có) nguồn sự thật yêu cầu
+  đặc tả.md                 nguồn sự thật yêu cầu (bản nháp, chờ duyệt)
   model.md                  công thức mô hình
   adr/                      adr-001 chọn solver, adr-002 biểu đồ (đã chốt: tự vẽ, không thư viện)
   ui-references.md          nguồn UI/UX tham chiếu: màn hình, URL, ngày/commit, giấy phép (mục 8.3)
@@ -405,7 +405,7 @@ Ranh giới module:
 - **Ruff 0.17.1**, `select` tường minh: E, F, I, B, UP, S, PT, RUF, SIM, C4, TC (engine); backend thêm ASYNC. Thêm NPY khi code dùng NumPy. `TC` coi Pydantic/SQLAlchemy base là runtime; `backend/src/**/router.py` và `dependencies.py` tắt TC vì FastAPI đọc annotation lúc chạy.
 - **mypy 2.4 strict**: engine `src tests benchmarks`; backend `src tests migrations/env.py scripts` (thêm plugin Pydantic). Thư viện thiếu type (PuLP, asyncmy, asgi_lifespan) khai báo `ignore_missing_imports` trong cấu hình mypy, không bằng `# type: ignore`.
 - **Biome 2.5** cho frontend (lint + format + organize imports); `tsc --noEmit` riêng vì Vite không type-check. Tham số chưa dùng được phép (`noUnusedParameters: false`, `noUnusedFunctionParameters: off`) vì stub chưa dùng tham số.
-- **pytest**: `asyncio_mode = "auto"`, `--strict-markers`. Test cần MySQL đặt trong `tests/integration/` và tự skip khi thiếu `SHIFTOPT_TEST_DATABASE_URL`. **Coverage `engine/` ≥ 80%** khi đã triển khai (hiện chỉ báo cáo, chưa chặn).
+- **pytest**: `asyncio_mode = "auto"`, `--strict-markers`. Test cần MySQL đặt trong `tests/integration/` và tự skip khi thiếu `SHIFTOPT_TEST_DATABASE_URL`. **Coverage `engine/` ≥ 80%**, CI và Makefile chặn dưới ngưỡng này (`--cov-fail-under=80`).
 
 **Kỹ thuật:**
 - Python 3.11, type hints đầy đủ. Pydantic v2 cho mọi schema I/O ở `backend/`. Trong `engine/` dùng `dataclass(frozen=True)` cho `Instance`, `Solution`, `LaborRules`, `SolveResult` (không kéo Pydantic vào lõi).

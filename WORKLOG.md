@@ -16,18 +16,18 @@ Lập ngày 2026-10-26 từ `CLAUDE.md` và trạng thái repo thực tế (khun
 
 | Giai đoạn | Nội dung | Phụ thuộc | Trạng thái |
 |---|---|---|---|
-| 0 | Chốt nền: đặc tả, quyết định mở, dữ liệu, tài liệu gốc | — | chưa làm |
+| 0 | Chốt nền: đặc tả, quyết định mở, dữ liệu, tài liệu gốc | — | bản nháp (0.1, 0.2 soạn bởi Claude theo ủy quyền, chờ nhóm duyệt; 0.3 một phần; 0.4 xong) |
 | 1 | Engine: lưới thời gian, domain, quy đổi nhu cầu → số người | 0 | xong (Erlang A làm ở 6.2) |
 | 2 | Engine: validator độc lập + KPI | 1 | xong (Đ.109 dời sang 3.3) |
 | 3 | Engine: lớp solver chung + mô hình tổng hợp (Dantzig) | 1 | xong (3.1–3.3) |
 | 4 | Engine: mô hình theo nhân viên (CP-SAT) | 2, 3 | xong (4.1–4.4; phá đối xứng tắt mặc định, phân rã chưa bật tự động) |
 | 5 | Engine: phân tích độ nhạy | 3, 4 | xong (5.1–5.3) |
 | 6 | Pipeline dữ liệu nhu cầu (FreshRetailNet, tổng đài) | 0, 1 | xong (6.1–6.3; tổng đài công khai còn mở) |
-| 7 | Backend: service, job giải, API, test tích hợp | 2–6 | code xong (7.1–7.5); test tích hợp chưa chạy, MySQL80 không khởi động được |
-| 8 | Frontend: các màn hình MVP | 7 (OpenAPI) | code xong (8.1–8.7); chưa chạy với backend thật, chưa duyệt trên trình duyệt |
-| 9 | Kiểm chứng: benchmark, so sánh solver, tái lập, nghiệm thu | 4, 5, 7, 8 | chưa làm |
-| 10 | Hoàn thiện CI, Docker, bảo mật, bật ngưỡng coverage | 9 | chưa làm |
-| 11 | Đặc tả cuối, báo cáo, demo | 9 | chưa làm |
+| 7 | Backend: service, job giải, API, test tích hợp | 2–6 | xong (7.1–7.5); 102 test pass trên MySQL 8.4.10, không skip |
+| 8 | Frontend: các màn hình MVP | 7 (OpenAPI) | code xong (8.1–8.7); chạy với backend thật qua Compose (smoke flow đạt); chưa có người duyệt trên trình duyệt |
+| 9 | Kiểm chứng: benchmark, so sánh solver, tái lập, nghiệm thu | 4, 5, 7, 8 | xong trừ 9.5 (chờ người duyệt UI); kịch bản căng 8 nhân viên không đạt, ghi nhận |
+| 10 | Hoàn thiện CI, Docker, bảo mật, bật ngưỡng coverage | 9 | xong (10.1–10.4) |
+| 11 | Đặc tả cuối, báo cáo, demo | 9 | bản nháp (11.2 chờ nhóm duyệt; 11.3 chạy hai lần chưa đạt, xem mục 11.3) |
 
 Đã xong từ bước dựng khung (không làm lại): dataclass engine, `LaborRules`, settings, ORM model, Pydantic schema, `create_app`, router, React router/layout, Alembic env + migration baseline, Compose, CI, Makefile, pre-commit, `check_conventions.py`, `openapi.json` + `types/api.ts`.
 
@@ -40,14 +40,17 @@ Mục tiêu: không bắt đầu code nghiệp vụ trên giả định chưa đ
 - [ ] **0.1 Chốt các quyết định mở, ghi vào `docs/đặc tả.md`**
   - Hỏi nhóm và ghi lại câu trả lời cho: ca đêm tính từ 22h hay theo hợp đồng riêng; giá trị mặc định `alpha`, `p`, `r_min`; một "ngày" bắt đầu lúc mấy giờ; `K` ngày liên tiếp tối đa mặc định (6 hay khác); 48 hay 40 giờ/tuần cho kịch bản cơ sở; doanh thu giả định cho labor cost %; giá trị `M_u`, `lambda_F` và cách chọn.
   - Xong khi: mỗi quyết định có giá trị cụ thể, lý do, người chốt; các hằng này được đưa vào config hoặc `LaborRules`, không còn nằm trong đầu.
+  - Trạng thái (2026-11-05): D1–D17 có trong `docs/đặc tả.md` mục 3, người chốt là Claude theo ủy quyền, chờ nhóm xác nhận. `p = 4` là giá trị kịch bản cơ sở; `DEFAULT_PRODUCTIVITY` trong code vẫn 1,0, cần đổi kèm chạy lại test. Chưa tick.
 - [ ] **0.2 Viết `docs/đặc tả.md` (nguồn sự thật mới) và đồng bộ lại `CLAUDE.md`**
   - Trích điều luật trực tiếp từ văn bản 45/2019/QH14 và NĐ 145/2020 (Đ.98, 105, 106, 107, 109, 110, 111), không qua trang thứ cấp; xác nhận lại khung đêm thuộc Đ.106.
   - Viết yêu cầu chức năng, tiêu chí nghiệm thu, phạm vi (theo CLAUDE.md mục 13–14) thành văn bản có thể kiểm chứng.
   - Xong khi: đặc tả được nhóm duyệt; `CLAUDE.md` được cập nhật khớp, ghi rõ chỗ nào đặc tả thắng.
+  - Trạng thái (2026-11-05): bản nháp đã viết; `CLAUDE.md` đã đồng bộ (trỏ đặc tả, bỏ "skeleton"). Chưa đối chiếu nguyên văn 45/2019/QH14 và NĐ 145/2020 (trang trả HTTP 403; chỉ có nguồn thứ cấp). Chưa tick đến khi nhóm duyệt và đối chiếu luật.
 - [ ] **0.3 Dọn tài liệu gốc và thư mục dữ liệu**
   - Chuyển `Báo cáo nghiên cứu nền Xếp ca nhâ.md` vào `docs/` (hiện không có trong git), sửa link trong CLAUDE.md.
   - Tạo `data/raw/` (gitignore), `data/processed/`, `data/benchmarks/curtois_qu/`; kiểm tra `.gitignore`.
   - Xong khi: cấu trúc khớp CLAUDE.md mục 11, `git status` sạch, không file dữ liệu thô nào bị track.
+  - Trạng thái (2026-11-05): `data/` đã có đủ thư mục, `.gitignore` đúng. Báo cáo nền không có trong repo nên không chuyển được (D17); link trong CLAUDE.md đã bỏ. Chưa tick vì chưa kiểm `git status` sau khi commit.
 - [x] **0.4 Chốt ADR-002 thư viện biểu đồ**
   - So sánh tối thiểu 2 ứng viên trên đúng nhu cầu của dự án: cột + đường chồng (coverage), heatmap 24 ô (chi phí biên), đường cong `z(lambda)`. Tiêu chí: kích thước bundle, hỗ trợ React 19, khả năng tô màu theo điều kiện (đỏ thiếu / xanh thừa), a11y.
   - Xong khi: ADR-002 có trạng thái "đã chốt", dependency được ghim chính xác, bản phát hành ≥ 2 tuần tuổi.
@@ -231,10 +234,10 @@ Mục tiêu: nối engine vào HTTP đúng quy tắc: router mỏng, solver khô
 - [x] **7.5 Cố định hợp đồng API và sinh lại OpenAPI**
   - `make openapi`, `npm run gen:api`; CI kiểm tra khớp. Thêm migration Alembic nếu đổi model (autogenerate → review tay MySQL → bỏ comment → `alembic check`).
   - Xong khi: `openapi.json` và `types/api.ts` khớp code; không còn endpoint stub trả `NotImplementedError`.
-  - Trạng thái (chưa tick vì tiêu chí "test tích hợp MySQL" chưa đạt): code 7.1–7.5 đã viết; `ruff`, `mypy` strict, `check_conventions`, `npm run ci` đạt; unit test 45 pass; 19 test tích hợp bị skip vì thiếu `SHIFTOPT_TEST_DATABASE_URL`. Migration `89510c048e94` sinh bằng SQLite tạm, chưa review trên MySQL thật, chưa chạy `alembic check`.
+  - Cập nhật 2026-11-05: test tích hợp chạy trên MySQL 8.4.10 (container tạm): 102 pass, 0 skip. `alembic upgrade head` và `alembic check` sạch; head `3a7c9e1f2b40` (thêm `employees.max_weekly_hours`) khớp model.
   - Mới: `backend/src/jobs.py` (ProcessPoolExecutor, `run_in_child`), `schedules/snapshot.py`, `schedules/worker.py`, `analysis/worker.py`; endpoint `POST /demand-profiles/from-csv`, `from-call-center`, `DELETE /demand-profiles/{id}`, `POST /schedules/{id}/edits`, `GET /schedules/{id}/{assignments,coverage,kpi}.csv`.
   - Lệch so với kế hoạch: độ nhạy quét 168 giờ (không 24); giới hạn đầu vào của job độ nhạy kiểm trên từng lần giải (`time_limit_seconds`), còn tổng thời gian job là `max_analysis_seconds`; `LaborRules` qua API chỉ đổi `max_weekly_hours` và `max_consecutive_days`; sửa tay có vi phạm cứng → run `failed` kèm lý do; `objective` của run roster là giá trị tầng cuối của lexicographic, chi phí lấy từ KPI.
-  - Việc còn mở: chạy test tích hợp và `alembic check` trên MySQL 8.4; giết tiến trình con khi quá hạn (hiện chỉ bỏ chờ, CP-SAT tự dừng theo time limit).
+  - Việc còn mở: giết tiến trình con khi quá hạn (không làm, D15; CP-SAT tự dừng theo time limit).
 
 ---
 
@@ -264,6 +267,7 @@ Mục tiêu: luồng "nhập nhu cầu → Optimize → xem lịch, coverage, c�
 - [ ] **8.7 Hoàn thiện trải nghiệm**
   - Responsive cơ bản, a11y (tương phản, nhãn, bàn phím), trạng thái rỗng/lỗi/chờ ở mọi màn, văn bản UI tiếng Anh (quy ước code), không còn class `.todo`.
   - Xong khi: `npm run ci` sạch; duyệt tay toàn bộ luồng trên trình duyệt thật.
+  - Trạng thái (2026-11-05): `npm run ci` sạch. Ảnh các màn trong `docs/acceptance/`, chụp bằng Playwright trên Compose. Chưa có người duyệt tay; chưa tick.
   - Trạng thái giai đoạn 8 (chưa tick vì chưa chạy với backend + MySQL thật và chưa duyệt trên trình duyệt; máy không có Chrome/Edge):
     - Đã làm: token, font và class dùng chung chuyển từ trang chủ sang `styles/`; component dùng chung `components/ui/*`, `components/solve/SolveRequestForm`; `apiFetch` đọc lỗi 422 thành lỗi theo ô; năm màn hình Demand, Employees, Shift templates, Schedule (kèm Compliance, sửa tay, xuất CSV), What-if (sweep, heatmap chi phí biên / dual LP, so sánh run). Nguồn UI ghi trong `docs/ui-references.md`.
     - Backend thêm cho UI: `ShiftTemplateRead.night_hours`, `break_required` (tính bằng engine), `SolveRunRead.employee_codes`, `shift_types` (từ snapshot), `GET /api/labor-rules`.
@@ -291,6 +295,7 @@ Mục tiêu: chứng minh độ đúng bằng bằng chứng, chỉ kết luận
 - [ ] **9.5 Nghiệm thu bản đầu theo CLAUDE.md mục 13**
   - Chạy lần lượt từng dòng bảng nghiệm thu, lưu bằng chứng (lệnh, kết quả, ảnh UI). Bao gồm hai ca pháp lý: 14h–22h → 06h–14h bị cấm; 22h–06h rồi nghỉ đủ 24 giờ không vi phạm Đ.111.
   - Xong khi: tất cả 9 tiêu chí đạt hoặc có ghi chú sai lệch được nhóm chấp nhận bằng văn bản.
+  - Trạng thái (2026-11-05): đối chiếu xong trong `docs/acceptance.md`. Dòng 1, 3, 6, 7, 8 đạt; dòng 2 đạt có điều kiện; dòng 4 sai lệch; dòng 5 và 9 chờ người duyệt UI. Chưa tick đến khi nhóm chấp nhận.
 
 ---
 
@@ -316,12 +321,15 @@ Mục tiêu: chứng minh độ đúng bằng bằng chứng, chỉ kết luận
 - [ ] **11.1 Đồng bộ tài liệu kỹ thuật**
   - `docs/model.md` khớp mô hình đã cài (công thức, biến, ràng buộc, lexicographic); ADR-001/002 cập nhật; `docs/đặc tả.md` bản cuối; `CLAUDE.md` đồng bộ trạng thái repo (bỏ chú thích "skeleton").
   - Xong khi: không có mâu thuẫn giữa đặc tả, `model.md`, code.
+  - Trạng thái (2026-11-05): `model.md` đã cập nhật (giờ tối đa theo nhân viên, Đ.109). `CLAUDE.md` đã đồng bộ. Chưa làm: ADR-001/002 không đổi; `docs/đặc tả.md` là bản nháp; lệch `DEFAULT_PRODUCTIVITY` (xem 0.1). Chưa tick.
 - [ ] **11.2 Báo cáo cuối**
   - Nội dung: bài toán, mô hình, ràng buộc pháp lý, kết quả benchmark, so sánh solver, độ nhạy, hạn chế. Tuân thủ CLAUDE.md mục 15: nêu mâu thuẫn SKU 863/865; split eval ghi đúng mức đã kiểm; số liệu bài báo FreshRetailNet ghi "bản v5"; "CP-SAT không trả dual" ghi là suy luận từ tài liệu; FreshRetailNet không gọi là dữ liệu nhân sự; mọi kết luận hiệu năng chỉ áp cho instance đã đo.
   - Xong khi: nhóm duyệt; mỗi số liệu truy ra được lệnh/bảng nguồn.
+  - Trạng thái (2026-11-05): bản để nhóm duyệt ở `docs/báo cáo.md`; số liệu trỏ tới `benchmarks.md` và `acceptance.md`. Chưa tick đến khi nhóm duyệt.
 - [ ] **11.3 Demo**
   - Kịch bản demo ngắn chạy trên dữ liệu có sẵn: nhập nhu cầu → Optimize → coverage + cảnh báo → sửa tay gây vi phạm → kéo λ → heatmap chi phí biên. Có bản dự phòng (ảnh/video) nếu solver chậm.
   - Xong khi: chạy thử trọn kịch bản không lỗi ít nhất hai lần liên tiếp.
+  - Trạng thái (2026-11-05): kịch bản ở `docs/demo.md`. Smoke flow đạt lần 1 trên Compose; lần 2 thất bại vì DB đã đủ 200 nhân viên từ các lần smoke trước. Khắc phục cần làm rỗng DB (`docker compose down -v`), chưa được phép thực hiện. Chưa tick.
 
 ---
 

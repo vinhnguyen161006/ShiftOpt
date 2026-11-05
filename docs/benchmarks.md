@@ -136,6 +136,21 @@ uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 
 | 1 | optimal | 0.0 | 16,91 | 0 | 1.0000 | 0 | ortools-cp-sat 9.15.6755 |
 | 2 | optimal | 0.0 | 12,03 | 0 | 1.0000 | 0 | ortools-cp-sat 9.15.6755 |
 
+Kịch bản căng (8 nhân viên, cùng nhu cầu và giả định, sức chứa 384 giờ-người nhỏ hơn 468 giờ-người nhu cầu):
+
+```
+cd backend
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 --productivity 4 --time-limit 60 --workers 1 --seeds 0 1 2
+```
+
+| Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng |
+|---|---|---|---|---|---|---|
+| 0 | feasible | 1,0 | 60,26 | 139 | 0,7030 | 0 |
+| 1 | feasible | 1,0 | 60,35 | 139 | 0,7030 | 0 |
+| 2 | feasible | 1,0 | 60,43 | 139 | 0,7030 | 0 |
+
+Kết quả: không chứng minh được tối ưu trong 60 giây (gap 1,0 ở tầng cuối). Lịch vẫn hợp lệ theo validator. Đây là giới hạn của solver với time limit này, không phải lỗi ràng buộc. Không hạ ràng buộc. Hướng xử lý nếu cần: tăng time limit, bật phân rã hai pha (4.4) để có nghiệm ban đầu, hoặc tăng nhân viên.
+
 Kết luận trong phạm vi đã đo:
 - 3/3 `OPTIMAL`, coverage 1,0, 0 vi phạm cứng, mọi lần dưới 60 giây.
 - Kịch bản này dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người. Cần kịch bản căng (ít nhân viên hơn) để kiểm tiêu chí đó; chưa đo.
