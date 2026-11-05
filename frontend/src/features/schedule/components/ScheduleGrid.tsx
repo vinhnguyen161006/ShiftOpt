@@ -34,6 +34,22 @@ export function shiftLook(shiftTypes: ShiftTypeRead[], name: string): ShiftLook 
   return SHIFT_LOOKS[index] ?? EXTRA_LOOK;
 }
 
+export function shiftLabels(shiftTypes: ShiftTypeRead[]): Map<string, string> {
+  const labels = new Map<string, string>();
+  const used = new Set<string>();
+  for (const shift of shiftTypes) {
+    const upper = shift.name.toUpperCase();
+    let length = 1;
+    while (length < upper.length && used.has(upper.slice(0, length))) {
+      length += 1;
+    }
+    const label = upper.slice(0, length);
+    used.add(label);
+    labels.set(shift.name, label);
+  }
+  return labels;
+}
+
 function cellTitle(day: number, shift: ShiftTypeRead | undefined, assignment: AssignmentRead) {
   const span = shift ? ` ${shiftSpan(shift.start_hour, shift.length)}` : "";
   const rest =
@@ -51,6 +67,7 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
     ]),
   );
   const shiftsByName = new Map(run.shift_types.map((shift) => [shift.name, shift]));
+  const labels = shiftLabels(run.shift_types);
   const shiftCount = (code: string) => DAYS.filter((_, day) => byCell.has(`${code}|${day}`)).length;
 
   return (
@@ -68,15 +85,15 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
                   {day}
                 </th>
               ))}
-              <th scope="col" className="num">
-                Shifts
-              </th>
             </tr>
           </thead>
           <tbody>
             {run.employee_codes.map((code) => (
               <tr key={code}>
-                <th scope="row">{code}</th>
+                <th scope="row">
+                  <span className="roster-name">{code}</span>
+                  <span className="roster-sub">{shiftCount(code)} shifts</span>
+                </th>
                 {DAYS.map((day, dayIndex) => {
                   const assignment = byCell.get(`${code}|${dayIndex}`);
                   if (!assignment) {
@@ -102,12 +119,11 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
                           assignment,
                         )}
                       >
-                        {assignment.shift_name}
+                        {labels.get(assignment.shift_name) ?? assignment.shift_name}
                       </span>
                     </td>
                   );
                 })}
-                <td className="num">{shiftCount(code)}</td>
               </tr>
             ))}
           </tbody>

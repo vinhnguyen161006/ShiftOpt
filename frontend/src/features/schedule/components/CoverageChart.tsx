@@ -1,58 +1,56 @@
 import { useState } from "react";
+import { type HourBar, HourBars } from "../../../components/ui/HourBars";
+import { WorkspaceBlock } from "../../../components/ui/Workspace";
 import { DAY_NAMES, DAYS, formatHour, HOURS, HOURS_PER_DAY } from "../../../lib/time";
 import type { KpiRead } from "../../../types/models";
 import "../schedule.css";
 
 type CoverageChartProps = {
   kpi: KpiRead;
+  meta: string;
 };
 
-const CHART_HEIGHT = 140;
-const TICK_EVERY = 3;
+const CHART_HEIGHT = 120;
+const SHORT_WEIGHT = 1000;
 
-type HourBar = {
-  hour: number;
-  required: number;
-  staffed: number;
-};
-
-function dayHours(kpi: KpiRead, day: number): HourBar[] {
+function dayBars(kpi: KpiRead, day: number): HourBar[] {
   return HOURS.map((hour) => ({
     hour,
     required: kpi.required_by_hour[day * HOURS_PER_DAY + hour] ?? 0,
-    staffed: kpi.staff_by_hour[day * HOURS_PER_DAY + hour] ?? 0,
+    assigned: kpi.staff_by_hour[day * HOURS_PER_DAY + hour] ?? 0,
   }));
 }
 
-function describe(day: number, bar: HourBar): string {
-  const gap = bar.staffed - bar.required;
-  const status = gap < 0 ? `${-gap} short` : gap > 0 ? `${gap} over` : "exact";
-  return `${DAYS[day]} ${formatHour(bar.hour)}: required ${bar.required}, staffed ${bar.staffed} (${status})`;
-}
-
-function dayTotals(kpi: KpiRead, day: number) {
-  return dayHours(kpi, day).reduce(
+function dayTotals(bars: HourBar[]) {
+  return bars.reduce(
     (totals, bar) => ({
-      short: totals.short + Math.max(0, bar.required - bar.staffed),
-      over: totals.over + Math.max(0, bar.staffed - bar.required),
+      short: totals.short + Math.max(0, bar.required - bar.assigned),
+      over: totals.over + Math.max(0, bar.assigned - bar.required),
+      required: totals.required + bar.required,
     }),
-    { short: 0, over: 0 },
+    { short: 0, over: 0, required: 0 },
   );
 }
 
-export function CoverageChart({ kpi }: CoverageChartProps) {
-  const [day, setDay] = useState(0);
-  const bars = dayHours(kpi, day);
+function defaultDay(kpi: KpiRead): number {
+  const scores = DAYS.map((_, day) => {
+    const totals = dayTotals(dayBars(kpi, day));
+    return totals.short * SHORT_WEIGHT + totals.required;
+  });
+  return scores.indexOf(Math.max(...scores));
+}
+
+export function CoverageChart({ kpi, meta }: CoverageChartProps) {
+  const [day, setDay] = useState(() => defaultDay(kpi));
+  const bars = dayBars(kpi, day);
+  const totals = dayTotals(bars);
   const peak = Math.max(1, ...kpi.required_by_hour, ...kpi.staff_by_hour);
-  const unit = CHART_HEIGHT / (peak + 1);
-  const totals = dayTotals(kpi, day);
 
   return (
-    <div className="coverage">
-      <div className="coverage-head">
-        <p className="coverage-summary">
-          {DAY_NAMES[day]}: {totals.short} staff-hours short, {totals.over} staff-hours over
-        </p>
+    <WorkspaceBlock
+      title="Staffing coverage"
+      caption={`${DAY_NAMES[day]}: ${totals.short} staff-hours short, ${totals.over} over`}
+      aside={
         <fieldset className="toggle-group">
           <legend className="visually-hidden">Day shown in the chart</legend>
           {DAYS.map((label, index) => (
@@ -67,57 +65,29 @@ export function CoverageChart({ kpi }: CoverageChartProps) {
             </button>
           ))}
         </fieldset>
-      </div>
-      <div
-        className="coverage-bars"
-        style={{ height: CHART_HEIGHT }}
-        role="img"
-        aria-label={`Staffing against demand by hour on ${DAY_NAMES[day]}. ${totals.short} staff-hours short, ${totals.over} over. Exact values are in the table below.`}
-      >
-        {bars.map((bar) => {
-          const covered = Math.min(bar.staffed, bar.required);
-          const over = Math.max(0, bar.staffed - bar.required);
-          const short = Math.max(0, bar.required - bar.staffed);
-          return (
-            <div key={bar.hour} className="coverage-bar" title={describe(day, bar)}>
-              <div className="coverage-covered" style={{ height: covered * unit }} />
-              <div
-                className="coverage-over"
-                style={{ bottom: covered * unit, height: over * unit }}
-              />
-              <div
-                className="coverage-short"
-                style={{ bottom: covered * unit, height: short * unit }}
-              />
-              <div className="coverage-required" style={{ bottom: bar.required * unit }} />
-            </div>
-          );
-        })}
-      </div>
-      <div className="coverage-ticks" aria-hidden="true">
-        {bars.map((bar) => (
-          <span key={bar.hour}>
-            {bar.hour % TICK_EVERY === 0 ? String(bar.hour).padStart(2, "0") : ""}
-          </span>
-        ))}
-      </div>
-      <div className="legend coverage-legend">
+      }
+    >
+      <HourBars
+        bars={bars}
+        height={CHART_HEIGHT}
+        peak={peak}
+        dayLabel={DAYS[day]}
+        label={`Staffing against demand by hour on ${DAY_NAMES[day]}. ${totals.short} staff-hours short, ${totals.over} over. Exact values are in the table below.`}
+      />
+      <div className="chart-legend">
         <span className="legend-item">
-          <span className="swatch coverage-covered-swatch" />
-          Staff covering demand
+          <span className="swatch swatch-assigned" />
+          Assigned staff (above the line = overstaffed)
         </span>
         <span className="legend-item">
-          <span className="swatch coverage-over-swatch" />
-          Overstaffed (above the line)
-        </span>
-        <span className="legend-item">
-          <span className="swatch coverage-short-swatch" />
-          Understaffed
-        </span>
-        <span className="legend-item">
-          <span className="swatch coverage-required-swatch" />
+          <span className="swatch swatch-required" />
           Required staff
         </span>
+        <span className="legend-item">
+          <span className="swatch swatch-under" />
+          Understaffed
+        </span>
+        <span className="chart-meta">{meta}</span>
       </div>
       <details className="data-details">
         <summary>Show {DAY_NAMES[day]} as a table</summary>
@@ -131,7 +101,7 @@ export function CoverageChart({ kpi }: CoverageChartProps) {
                   Required
                 </th>
                 <th scope="col" className="num">
-                  Staffed
+                  Assigned
                 </th>
                 <th scope="col" className="num">
                   Difference
@@ -143,14 +113,14 @@ export function CoverageChart({ kpi }: CoverageChartProps) {
                 <tr key={bar.hour}>
                   <th scope="row">{formatHour(bar.hour)}</th>
                   <td className="num">{bar.required}</td>
-                  <td className="num">{bar.staffed}</td>
-                  <td className="num">{bar.staffed - bar.required}</td>
+                  <td className="num">{bar.assigned}</td>
+                  <td className="num">{bar.assigned - bar.required}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </details>
-    </div>
+    </WorkspaceBlock>
   );
 }

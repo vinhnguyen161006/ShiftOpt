@@ -1,12 +1,16 @@
+import os
+from concurrent.futures import ProcessPoolExecutor
+from itertools import repeat
 from typing import Any
 
 from shiftopt.domain import Instance
 from shiftopt.sensitivity.lp_duals import compare_duals_with_marginal_cost, lp_relaxation_duals
 from shiftopt.sensitivity.parametric import (
+    Evaluation,
     aggregate_resolver,
     discrete_marginal_cost,
     roster_resolver,
-    sweep_demand_multiplier,
+    scale_demand,
 )
 from shiftopt.solvers.base import SolveParams
 
@@ -27,23 +31,46 @@ def run_analysis(kind: str, request: dict[str, Any]) -> dict[str, Any]:
     raise ValueError(f"unknown analysis kind {kind}")
 
 
+def parallel_points(point_count: int, workers_per_point: int) -> int:
+    """How many sweep points to solve at once: as many as the CPUs hold when each point uses
+    workers_per_point threads, never more than the number of points."""
+    capacity = (os.cpu_count() or 1) // max(1, workers_per_point)
+    return max(1, min(point_count, capacity))
+
+
+def solve_sweep_point(instance: Instance, multiplier: float, params: SolveParams) -> dict[str, Any]:
+    scaled = scale_demand(instance, multiplier)
+    evaluation = roster_resolver(params)(scaled)
+    return _sweep_row(multiplier, evaluation, scaled)
+
+
+def _sweep_row(multiplier: float, evaluation: Evaluation, scaled: Instance) -> dict[str, Any]:
+    return {
+        "multiplier": multiplier,
+        "solve_status": evaluation.result.status.value,
+        "proven": evaluation.proven,
+        "labor_cost": evaluation.labor_cost,
+        "understaffed_hours": evaluation.understaffed_hours,
+        "staffed_hours": evaluation.staffed_hours,
+        "staff_by_hour": _optional_list(evaluation.staff_by_hour),
+        "required_by_hour": list(scaled.demand),
+    }
+
+
 def _demand_sweep(
     instance: Instance, multipliers: list[float], params: SolveParams
 ) -> dict[str, Any]:
-    points = sweep_demand_multiplier(instance, multipliers, roster_resolver(params))
-    return {
-        "points": [
-            {
-                "multiplier": point.multiplier,
-                "solve_status": point.evaluation.result.status.value,
-                "proven": point.proven,
-                "labor_cost": point.evaluation.labor_cost,
-                "understaffed_hours": point.evaluation.understaffed_hours,
-                "staffed_hours": point.evaluation.staffed_hours,
-            }
-            for point in points
-        ]
-    }
+    parallel = parallel_points(len(multipliers), params.num_workers)
+    if parallel == 1:
+        rows = [solve_sweep_point(instance, multiplier, params) for multiplier in multipliers]
+        return {"points": rows}
+    with ProcessPoolExecutor(max_workers=parallel) as pool:
+        rows = list(pool.map(solve_sweep_point, repeat(instance), multipliers, repeat(params)))
+    return {"points": rows}
+
+
+def _optional_list(values: tuple[int, ...] | None) -> list[int] | None:
+    return None if values is None else list(values)
 
 
 def _marginal_cost(instance: Instance, hourly_wage: int, params: SolveParams) -> dict[str, Any]:

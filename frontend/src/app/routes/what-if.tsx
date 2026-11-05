@@ -149,6 +149,8 @@ export function WhatIfRoute() {
   const marginalId = numberParam(params, "marginal");
   const sweep = useAnalysisRun(sweepId);
   const marginal = useAnalysisRun(marginalId);
+  const sweepResult =
+    sweep.data?.status === "succeeded" && isSweep(sweep.data) ? sweep.data.result : undefined;
 
   function setParam(key: string, value: number | undefined) {
     const next = new URLSearchParams(params);
@@ -170,22 +172,26 @@ export function WhatIfRoute() {
       <Panel title="Set up an analysis" labelledBy="whatif-setup-title">
         <SetupPanel onStarted={(kind, runId) => setParam(kind, runId)} />
       </Panel>
-      <Panel title="Demand sweep z(lambda)" labelledBy="sweep-title">
-        {sweepId === undefined && (
-          <EmptyState title="No sweep yet">
-            Run a demand sweep above to draw the cost curve.
-          </EmptyState>
-        )}
-        {sweep.isError && <Notice kind="error" title={errorMessage(sweep.error)} />}
-        {sweep.data && (
-          <AnalysisStatus
-            run={sweep.data}
-            activeLabel={`Re-solving at each multiplier (analysis ${sweep.data.id})`}
-          >
-            {isSweep(sweep.data) && <SweepView result={sweep.data.result} />}
-          </AnalysisStatus>
-        )}
-      </Panel>
+      {sweepResult ? (
+        <SweepView key={sweep.data?.id} result={sweepResult} />
+      ) : (
+        <Panel title="Demand sweep z(lambda)" labelledBy="sweep-title">
+          {sweepId === undefined && (
+            <EmptyState title="No sweep yet">
+              Run a demand sweep above to draw the cost curve.
+            </EmptyState>
+          )}
+          {sweep.isError && <Notice kind="error" title={errorMessage(sweep.error)} />}
+          {sweep.data && (
+            <AnalysisStatus
+              run={sweep.data}
+              activeLabel={`Re-solving at each multiplier (analysis ${sweep.data.id})`}
+            >
+              {null}
+            </AnalysisStatus>
+          )}
+        </Panel>
+      )}
       <Panel title="Marginal cost by hour" labelledBy="marginal-title">
         {marginalId === undefined && (
           <EmptyState title="No marginal cost yet">

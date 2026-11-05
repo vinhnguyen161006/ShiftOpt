@@ -1,3 +1,4 @@
+import os
 from dataclasses import asdict
 from typing import Any
 
@@ -5,9 +6,9 @@ import pytest
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.validation import validate
 
-from src.analysis.worker import run_analysis
+from src.analysis.worker import parallel_points, run_analysis, solve_sweep_point
 from src.schedules.snapshot import instance_from_snapshot, solution_from_rows
-from src.schedules.worker import solve_snapshot
+from src.schedules.worker import solve_snapshot, to_solve_params
 
 PARAMS: dict[str, float] = {
     "time_limit_seconds": 10.0,
@@ -69,6 +70,18 @@ def test_demand_sweep_marks_each_point() -> None:
     assert all(point["proven"] for point in result["points"])
 
 
+def test_demand_sweep_returns_hourly_staffing_and_scaled_demand() -> None:
+    result = run_analysis(
+        "demand_sweep",
+        {"snapshot": _snapshot(), "params": PARAMS, "multipliers": [1.0, 2.0]},
+    )
+
+    for point, scale in zip(result["points"], (1, 2), strict=True):
+        assert len(point["staff_by_hour"]) == 168
+        assert point["required_by_hour"] == [value * scale for value in _day_zero_demand()]
+        assert sum(point["staff_by_hour"]) > 0
+
+
 def test_marginal_cost_is_labeled_approximate_for_duals() -> None:
     result = run_analysis(
         "marginal_cost",
@@ -94,3 +107,35 @@ def test_lp_duals_return_one_value_per_hour() -> None:
 def test_unknown_analysis_kind_is_rejected() -> None:
     with pytest.raises(ValueError, match="unknown analysis kind"):
         run_analysis("bogus", {"snapshot": _snapshot(), "params": PARAMS})
+
+
+@pytest.mark.parametrize(
+    ("cpus", "points", "workers", "expected"),
+    [(16, 6, 1, 6), (16, 6, 8, 2), (16, 20, 1, 16), (4, 6, 8, 1), (None, 6, 1, 1), (16, 1, 1, 1)],
+)
+def test_parallel_points_respects_cpus_and_point_count(
+    monkeypatch: pytest.MonkeyPatch,
+    cpus: int | None,
+    points: int,
+    workers: int,
+    expected: int,
+) -> None:
+    monkeypatch.setattr(os, "cpu_count", lambda: cpus)
+
+    assert parallel_points(points, workers) == expected
+
+
+def test_parallel_sweep_matches_solving_each_point_alone() -> None:
+    multipliers = [1.0, 2.0]
+
+    parallel = run_analysis(
+        "demand_sweep",
+        {"snapshot": _snapshot(), "params": PARAMS, "multipliers": multipliers},
+    )
+
+    instance = instance_from_snapshot(_snapshot())
+    alone = [
+        solve_sweep_point(instance, multiplier, to_solve_params(PARAMS))
+        for multiplier in multipliers
+    ]
+    assert parallel["points"] == alone

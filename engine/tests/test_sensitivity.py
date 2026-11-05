@@ -229,3 +229,12 @@ def test_roster_resolver_reports_cost_from_kpi(
         instance.shift_by_name(assignment.shift_name).length
         for assignment in outcome.solution.assignments
     )
+    assert evaluation.staff_by_hour == kpi.staff_by_hour(instance, outcome.solution)
+    assert len(evaluation.staff_by_hour or ()) == HOURS_PER_WEEK
+
+
+def test_aggregate_evaluation_has_no_per_hour_staffing(
+    build_instance: InstanceFactory,
+) -> None:
+    evaluation = aggregate_resolver(100, PARAMS)(build_instance(demand_per_hour=1))
+    assert evaluation.staff_by_hour is None

@@ -1458,9 +1458,37 @@
             "title": "Proven",
             "type": "boolean"
           },
+          "required_by_hour": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required By Hour"
+          },
           "solve_status": {
             "title": "Solve Status",
             "type": "string"
+          },
+          "staff_by_hour": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff By Hour"
           },
           "staffed_hours": {
             "anyOf": [

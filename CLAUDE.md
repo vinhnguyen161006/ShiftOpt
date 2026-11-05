@@ -235,7 +235,7 @@ Kéo-thả chỉnh tay là mức mở rộng, và nếu làm thì phải kiểm 
 - Ngôn ngữ đó gồm: nền `#f2f2f3`, chữ `#1d1f20`, accent `#5980a6` cùng thang `accent-100..900` và `neutral-100..900`; tiêu đề Barlow Condensed 600, thân Barlow 400; khung "blueprint" (viền hairline `--color-divider`, góc vuông, bốn dấu góc `.corner`); nút `.btn` / `.btn-primary` / `.btn-secondary`; tag viền (`.tag-outline`); nhãn chữ hoa cỡ nhỏ giãn chữ; biểu đồ cột accent-500, vạch nhu cầu nét đứt, vùng thiếu người là sọc chéo viền accent-700.
 - Không thêm font, bảng màu, bo góc, bóng đổ nặng hay gradient trang trí. Khi trang chủ chưa có component cần dùng (bảng, form, modal, heatmap, cảnh báo), dựng từ token có sẵn, không đưa style riêng của nguồn tham khảo vào.
 - Màu không được là kênh duy nhất truyền thông tin (thiếu/thừa người, vi phạm, trạng thái solver): luôn kèm hình (sọc, nét, biểu tượng) hoặc chữ. Mã hóa vùng thiếu người theo trang chủ; vùng thừa người chưa có ở trang chủ, chọn khi dựng chart từ thang accent/neutral.
-- Token, `@font-face` và class dùng chung nằm ở `styles/` (`fonts.css`, `tokens.css`, `components.css`, nạp qua `global.css`); `features/home/home.css` chỉ còn bố cục riêng của trang chủ. Component dùng chung ở `components/ui/` (BrandMark, Corners, Button, Table, Modal, Slider, Field, DayPicker, Feedback, Layout). Do `features/` không import chéo nhau (mục 11), trang app không import từ `features/home`.
+- Token, `@font-face` và class dùng chung nằm ở `styles/` (`fonts.css`, `tokens.css`, `components.css`, nạp qua `global.css`); `features/home/home.css` chỉ còn bố cục riêng của trang chủ. Component dùng chung ở `components/ui/` (BrandMark, Corners, Button, Table, Modal, Slider, Field, DayPicker, Feedback, Layout, Workspace, HourBars). Do `features/` không import chéo nhau (mục 11), trang app không import từ `features/home`.
 
 **UI/UX lấy từ trang web hoặc repo có thật trên mạng.**
 
@@ -345,7 +345,7 @@ frontend/
     main.tsx
     app/                    providers.tsx (TanStack Query), router.tsx ("/" = trang chủ, app ở /demand...), layout.tsx (header theo trang chủ), routes/*.tsx (ghép feature; schedule.tsx, what-if.tsx ghép nhiều feature)
     assets/fonts/           Barlow + Barlow Condensed (woff2, OFL)
-    components/ui/          BrandMark, Corners, Button, Table, Modal (<dialog>), Slider, Field, DayPicker, Feedback (Notice, ErrorSummary, EmptyState, Loading), Layout (PageHeader, Panel, KpiStrip)
+    components/ui/          BrandMark, Corners, Button, Table, Modal (<dialog>), Slider, Field, DayPicker, Feedback (Notice, ErrorSummary, EmptyState, Loading), Layout (PageHeader, Panel, KpiStrip), Workspace (WorkspacePanel, WorkspaceBlock), HourBars (cột nhân sự theo giờ)
     components/solve/       SolveRequestForm: form SolveRequest dùng chung cho Schedule và What-if
     config/env.ts
     lib/                    api-client.ts (apiFetch, ApiError + lỗi theo ô từ 422), form.ts, time.ts, labor-rules.ts
@@ -357,7 +357,7 @@ frontend/
       demand/               api, DemandPage, DemandProfileList, DemandProfileView, DemandGridEditor (lưới 7x24), NewProfileForm (tay, CSV, FreshRetailNet, tổng đài), ConversionParamsForm
       employees/            api, EmployeesPage, EmployeeTable, EmployeeForm
       shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip
-      schedule/             api (poll), NewRunForm, RunsTable, SolveStatusPanel, ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
+      schedule/             api (poll), NewRunForm, RunsTable, RunWorkspace (panel kết quả như trang chủ), SolveStatusPanel (SolveNotice, SolveDetails), ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
       compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới)
       what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
 data/                       (chưa tạo) raw/ gitignore, processed/, benchmarks/curtois_qu/

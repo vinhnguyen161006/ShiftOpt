@@ -4,13 +4,14 @@
 }
 
 .roster-scroll {
-  overflow-x: auto;
+  max-height: 360px;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .roster-grid {
   width: 100%;
-  min-width: 640px;
+  min-width: 470px;
   border-collapse: separate;
   border-spacing: 3px;
   table-layout: fixed;
@@ -26,34 +27,46 @@
   text-align: center;
 }
 
-.roster-grid thead th:first-child {
-  width: 120px;
-  text-align: left;
+.roster-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-neutral-100);
 }
 
-.roster-grid thead th:last-child {
-  width: 60px;
+.roster-grid thead th:first-child {
+  width: 118px;
+  text-align: left;
 }
 
 .roster-grid tbody th {
-  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
   letter-spacing: 0;
   text-transform: none;
   text-align: left;
-  color: var(--color-text);
+}
+
+.roster-name {
+  display: block;
+  font-size: 12px;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--color-text);
+}
+
+.roster-sub {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
 }
 
 .roster-grid td {
   padding: 0;
-}
-
-.roster-grid td.num {
-  text-align: right;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
 }
 
 .roster-cell {
@@ -78,107 +91,6 @@
 
 .roster-legend {
   margin-top: 10px;
-}
-
-.coverage-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.coverage-head .toggle-group {
-  margin-left: auto;
-}
-
-.coverage-summary {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--color-text-muted);
-}
-
-.coverage-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.coverage-bar {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  height: 100%;
-}
-
-.coverage-covered,
-.coverage-over,
-.coverage-short {
-  position: absolute;
-  left: 0;
-  right: 0;
-}
-
-.coverage-covered {
-  bottom: 0;
-  background: var(--color-accent-500);
-}
-
-.coverage-over {
-  background: var(--color-accent-300);
-  border-top: 1px solid var(--color-accent-500);
-}
-
-.coverage-short {
-  background: var(--hatch-short);
-  border-top: 1px solid var(--color-accent-700);
-}
-
-.coverage-required {
-  position: absolute;
-  left: -1px;
-  right: -1px;
-  height: 0;
-  border-top: 1px dashed var(--color-text);
-}
-
-.coverage-ticks {
-  display: flex;
-  gap: 2px;
-  margin-top: 5px;
-}
-
-.coverage-ticks span {
-  flex: 1 1 0;
-  min-width: 0;
-  text-align: center;
-  font-size: 9px;
-  color: var(--color-text-faint);
-}
-
-.coverage-legend {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-divider);
-}
-
-.coverage-covered-swatch {
-  background: var(--color-accent-500);
-}
-
-.coverage-over-swatch {
-  background: var(--color-accent-300);
-  border-top: 1px solid var(--color-accent-500);
-}
-
-.coverage-short-swatch {
-  background: var(--hatch-short);
-  border: 1px solid var(--color-accent-700);
-}
-
-.coverage-required-swatch {
-  height: 0;
-  border-top: 1px dashed var(--color-text);
 }
 
 .cost-assumption {

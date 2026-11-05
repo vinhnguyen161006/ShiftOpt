@@ -15,12 +15,15 @@ DEFAULT_MULTIPLIERS = (0.8, 0.9, 1.0, 1.1, 1.2, 1.3)
 @dataclass(frozen=True)
 class Evaluation:
     """Outcome of one re-solve. labor_cost is in hundredths of the wage unit, night premium
-    included. staffed_hours counts paid shift hours, breaks included. None means no solution."""
+    included. staffed_hours counts paid shift hours, breaks included. staff_by_hour is the head
+    count on the floor in each of the 168 hours, or None when the model has no per-person
+    schedule. None means no solution."""
 
     result: SolveResult
     labor_cost: float | None
     understaffed_hours: int | None
     staffed_hours: int | None
+    staff_by_hour: tuple[int, ...] | None = None
 
     @property
     def proven(self) -> bool:
@@ -76,6 +79,7 @@ def roster_resolver(params: SolveParams = DEFAULT_PARAMS) -> Resolver:
             labor_cost=float(kpi.labor_cost(instance, outcome.solution)) if solved else None,
             understaffed_hours=outcome.understaffed_hours,
             staffed_hours=_paid_hours(instance, outcome.solution) if solved else None,
+            staff_by_hour=kpi.staff_by_hour(instance, outcome.solution) if solved else None,
         )
 
     return resolve
