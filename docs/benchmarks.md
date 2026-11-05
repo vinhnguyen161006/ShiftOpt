@@ -118,3 +118,26 @@ uv run --locked python -u benchmarks/run_roster_scale.py --sizes 20 30 40 --seed
 - `objective` là giá trị tầng cuối của lexicographic (vi phạm sở thích), nên bằng 1,0 ở mọi dòng; không so sánh chi phí giữa các dòng qua cột này.
 - Cùng seed với `num_workers = 1` cho cùng kết quả (test `test_roster_repeats_objective_and_assignments`). Dòng 8 worker không đảm bảo tái lập.
 - 3 seed × 3 cỡ. Không suy ra cho instance khác.
+
+## 4. Kịch bản cơ sở: FreshRetailNet store 18 (acceptance dòng 2)
+
+Nhu cầu: `dataset_required_staff` trên `data/processed/demand_store_18.parquet` (split train; ô hết hàng đã thay bằng nhu cầu ẩn; giờ 22h–06h đặt sàn đêm). Giả định của nhóm, chưa được duyệt (WORKLOG 0.1, đặc tả D7–D9): `alpha = 1.0`, `p = 4.0` (chọn để giờ đỉnh cần 8 người), `min_staff = 1`, `night_min_staff = 1`. Ca: 0h, 8h, 16h, mỗi ca 8 giờ. 30 nhân viên, lương 100, không yêu cầu cá nhân. Luật: 48 giờ/tuần, `K = 6`. Time limit 60 giây, gap 0,01, 1 worker, không phá đối xứng.
+
+Lệnh:
+
+```
+cd backend
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 --productivity 4 --time-limit 60 --workers 1 --seeds 0 1 2
+```
+
+| Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng | Solver |
+|---|---|---|---|---|---|---|---|
+| 0 | optimal | 0.0 | 19,54 | 0 | 1.0000 | 0 | ortools-cp-sat 9.15.6755 |
+| 1 | optimal | 0.0 | 16,91 | 0 | 1.0000 | 0 | ortools-cp-sat 9.15.6755 |
+| 2 | optimal | 0.0 | 12,03 | 0 | 1.0000 | 0 | ortools-cp-sat 9.15.6755 |
+
+Kết luận trong phạm vi đã đo:
+- 3/3 `OPTIMAL`, coverage 1,0, 0 vi phạm cứng, mọi lần dưới 60 giây.
+- Kịch bản này dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người. Cần kịch bản căng (ít nhân viên hơn) để kiểm tiêu chí đó; chưa đo.
+- Kết quả phụ thuộc `alpha`, `p`, các sàn. Đổi `p` đổi toàn bộ nhu cầu; xem độ nhạy theo giả định (`sweep_staffing_assumption`, mục 8.6).
+- 1 store, 3 seed. Không suy ra cho store khác.
