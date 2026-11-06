@@ -118,7 +118,7 @@ function StaffingCoverage() {
           ))}
         </div>
       </div>
-      <StaffingBars bars={dayBars(day)} />
+      <StaffingBars bars={dayBars(day)} size="preview" />
       <div className="home-chart-legend">
         <span className="home-legend-item">
           <span className="home-swatch home-swatch-assigned" />

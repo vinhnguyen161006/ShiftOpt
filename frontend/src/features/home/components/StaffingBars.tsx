@@ -1,9 +1,9 @@
 import type { Bar } from "../sample-data";
 
-export function StaffingBars({ bars }: { bars: Bar[] }) {
+export function StaffingBars({ bars, size }: { bars: Bar[]; size: "preview" | "scenario" }) {
   return (
     <>
-      <div className="home-bars home-bars-preview">
+      <div className={`home-bars home-bars-${size}`}>
         {bars.map((bar) => (
           <div key={bar.hour} className="home-bar">
             <div className="home-bar-assigned" style={{ height: bar.assignedPx }} />
@@ -15,7 +15,7 @@ export function StaffingBars({ bars }: { bars: Bar[] }) {
           </div>
         ))}
       </div>
-      <div className="home-ticks">
+      <div className={size === "scenario" ? "home-ticks home-ticks-spaced" : "home-ticks"}>
         {bars.map((bar) => (
           <div key={bar.hour} className="home-tick">
             {bar.tick}

@@ -354,7 +354,7 @@ frontend/
     types/api.ts            sinh từ backend/openapi.json (npm run gen:api), không sửa tay
     types/models.ts         alias tên schema từ api.ts
     features/
-      home/                 trang chủ tối giản (header, hero kèm xem trước lịch, footer): components/, sample-data.ts (số liệu minh họa), home.css, links.ts
+      home/                 trang chủ port từ "ShiftOpt Homepage.html", chữ tiếng Việt lấy từ locales/vi.ts: components/, sample-data.ts (số liệu minh họa), home.css, links.ts
       demand/               api, DemandPage, DemandProfileList, DemandProfileView, DemandGridEditor (lưới 7x24), NewProfileForm (tay, CSV, FreshRetailNet, tổng đài), ConversionParamsForm
       employees/            api, EmployeesPage, EmployeeTable, EmployeeForm
       shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip

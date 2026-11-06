@@ -27,9 +27,17 @@ export function Hero() {
               {vi.home.primary}
               <Corners />
             </Link>
-            <Link className="btn btn-secondary home-hero-secondary" to={WORKSPACE_LINKS.demand}>
+            <a className="btn btn-secondary home-hero-secondary" href="#features">
               {vi.home.secondary}
-            </Link>
+            </a>
+          </div>
+          <div className="home-principles">
+            {vi.home.principles.map((principle) => (
+              <div key={principle.title} className="home-principle">
+                <div className="home-principle-title">{principle.title}</div>
+                <p className="home-principle-body">{principle.body}</p>
+              </div>
+            ))}
           </div>
         </div>
         <WorkspacePreview />
