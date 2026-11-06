@@ -1,3 +1,5 @@
+import { vi } from "../../locales/vi";
+
 type ShiftCode = "E" | "D" | "L" | "N" | "O";
 
 export interface ShiftLook {
@@ -31,66 +33,59 @@ export interface RosterRow {
   cells: RosterCell[];
 }
 
-export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DAY_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+export const DAYS = vi.time.days;
+const DAY_FULL = vi.time.dayNames;
 const DAY_MULT = [0.86, 0.86, 0.9, 0.95, 1.0, 1.1, 1.04];
 const BASE_DEMAND = [0, 0, 0, 0, 0, 0, 4, 5, 6, 6, 9, 11, 12, 12, 12, 12, 11, 9, 7, 6, 5, 4, 0, 0];
 const NIGHT_MIN_STAFF = 3;
 
-export const SCENARIO_CAPTION =
-  "Store 1284, demand derived from FreshRetailNet-50K hourly sales (alpha 1.0, p 42, r_min 3).";
+function look(
+  code: ShiftCode,
+  span: string,
+  start: number | null,
+  colors: [string, string, string],
+  bs: "solid" | "dashed" = "solid",
+): ShiftLook {
+  return {
+    label: vi.home.sample.shiftLabels[code],
+    name: vi.home.sample.shiftNames[code],
+    span,
+    start,
+    bg: colors[0],
+    fg: colors[1],
+    bd: colors[2],
+    bs,
+  };
+}
 
 const SHIFTS: Record<ShiftCode, ShiftLook> = {
-  E: {
-    label: "E",
-    name: "Early",
-    span: "06:00-14:00",
-    start: 6,
-    bg: "var(--color-accent-200)",
-    fg: "var(--color-accent-900)",
-    bd: "var(--color-accent-300)",
-    bs: "solid",
-  },
-  D: {
-    label: "D",
-    name: "Day",
-    span: "10:00-18:00",
-    start: 10,
-    bg: "var(--color-accent-400)",
-    fg: "var(--color-accent-900)",
-    bd: "var(--color-accent-500)",
-    bs: "solid",
-  },
-  L: {
-    label: "L",
-    name: "Late",
-    span: "14:00-22:00",
-    start: 14,
-    bg: "var(--color-accent-600)",
-    fg: "var(--color-neutral-100)",
-    bd: "var(--color-accent-700)",
-    bs: "solid",
-  },
-  N: {
-    label: "N",
-    name: "Night",
-    span: "22:00-06:00",
-    start: 22,
-    bg: "var(--color-accent-900)",
-    fg: "var(--color-neutral-200)",
-    bd: "var(--color-accent-900)",
-    bs: "solid",
-  },
-  O: {
-    label: "",
-    name: "Off",
-    span: "",
-    start: null,
-    bg: "transparent",
-    fg: "var(--color-neutral-500)",
-    bd: "var(--color-divider)",
-    bs: "dashed",
-  },
+  E: look("E", "06:00-14:00", 6, [
+    "var(--color-accent-200)",
+    "var(--color-accent-900)",
+    "var(--color-accent-300)",
+  ]),
+  D: look("D", "10:00-18:00", 10, [
+    "var(--color-accent-400)",
+    "var(--color-accent-900)",
+    "var(--color-accent-500)",
+  ]),
+  L: look("L", "14:00-22:00", 14, [
+    "var(--color-accent-600)",
+    "var(--color-neutral-100)",
+    "var(--color-accent-700)",
+  ]),
+  N: look("N", "22:00-06:00", 22, [
+    "var(--color-accent-900)",
+    "var(--color-neutral-200)",
+    "var(--color-accent-900)",
+  ]),
+  O: look(
+    "O",
+    "",
+    null,
+    ["transparent", "var(--color-neutral-500)", "var(--color-divider)"],
+    "dashed",
+  ),
 };
 
 const PATTERNS = [
@@ -105,50 +100,24 @@ const PATTERNS = [
   "OLOLLLL",
   "LOOLLLL",
 ];
+const { nights, rotating, fullTime, partTime } = vi.home.sample.contracts;
 const CONTRACTS = [
-  "Nights",
-  "Rotating",
-  "Full-time",
-  "Full-time",
-  "Part-time",
-  "Full-time",
-  "Full-time",
-  "Full-time",
-  "Full-time",
-  "Full-time",
+  nights,
+  rotating,
+  fullTime,
+  fullTime,
+  partTime,
+  fullTime,
+  fullTime,
+  fullTime,
+  fullTime,
+  fullTime,
 ];
-const NAMES = [
-  "M. Alvarez",
-  "J. Okafor",
-  "L. Fontaine",
-  "S. Rahman",
-  "K. Nowak",
-  "T. Brennan",
-  "P. Iyer",
-  "R. Castillo",
-  "H. Lindqvist",
-  "D. Moreau",
-  "A. Haddad",
-  "N. Petrova",
-  "C. Mbeki",
-  "V. Duarte",
-  "E. Kowalski",
-  "B. Aoki",
-  "G. Rossi",
-  "F. Delgado",
-  "W. Mensah",
-  "O. Sandberg",
-  "Y. Tanaka",
-  "Z. Mahmud",
-  "Q. Trinh",
-  "I. Barros",
-  "U. Erdem",
-  "X. Chen",
-  "J. Adeyemi",
-  "R. Kovacs",
-  "S. Thibault",
-  "L. Marchetti",
-];
+const EMPLOYEE_COUNT = 30;
+const NAMES = Array.from(
+  { length: EMPLOYEE_COUNT },
+  (_, index) => `E${String(index + 1).padStart(2, "0")}`,
+);
 
 const VISIBLE_ROWS = 10;
 const SHIFT_HOURS = 8;
@@ -158,18 +127,9 @@ const NIGHT_FROM = 22;
 const NIGHT_TO = 6;
 const HOURS_PER_DAY = 24;
 const TICK_EVERY = 3;
-const COST_FACTORS = [0.86, 0.93, 1.0, 1.11, 1.235, 1.385];
-const CURVE_LEFT = 6;
-const CURVE_WIDTH = 188;
-const CURVE_BOTTOM = 64;
-const CURVE_HEIGHT = 56;
 
-export const LAMBDAS = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
 export const DEFAULT_DAY = 5;
-export const DEFAULT_LAMBDA_INDEX = 2;
 const PREVIEW_CHART_HEIGHT = 120;
-const SCENARIO_CHART_HEIGHT = 132;
-const SCENARIO_DAY = 5;
 
 function shiftOf(code: string): ShiftLook {
   if (code in SHIFTS) {
@@ -188,10 +148,10 @@ function isNight(hour: number): boolean {
   return hour >= NIGHT_FROM || hour < NIGHT_TO;
 }
 
-function requiredGrid(lambda: number): number[][] {
+function requiredGrid(): number[][] {
   return DAYS.map((_, day) =>
     BASE_DEMAND.map((base, hour) => {
-      const raw = isNight(hour) ? 0 : Math.ceil(base * DAY_MULT[day] * lambda);
+      const raw = isNight(hour) ? 0 : Math.ceil(base * DAY_MULT[day]);
       return Math.max(NIGHT_MIN_STAFF, raw);
     }),
   );
@@ -234,7 +194,7 @@ function weeklyCost(): number {
 }
 
 function money(value: number): string {
-  return `$${Math.round(value).toLocaleString("en-US")}`;
+  return `$${Math.round(value).toLocaleString("vi-VN")}`;
 }
 
 function bars(required: number[], assigned: number[], height: number): Bar[] {
@@ -252,21 +212,20 @@ function bars(required: number[], assigned: number[], height: number): Bar[] {
   });
 }
 
-function countHours(required: number[][], test: (staffed: number, need: number) => boolean) {
+const ASSIGNED = assignedGrid();
+const REQUIRED = requiredGrid();
+
+function countShortHours(): number {
   let hours = 0;
-  required.forEach((row, day) => {
+  REQUIRED.forEach((row, day) => {
     row.forEach((need, hour) => {
-      if (test(ASSIGNED[day][hour], need)) {
+      if (ASSIGNED[day][hour] < need) {
         hours += 1;
       }
     });
   });
   return hours;
 }
-
-const ASSIGNED = assignedGrid();
-const REQUIRED = requiredGrid(1);
-const WEEKLY_COST = weeklyCost();
 
 function coveragePercent(): number {
   let covered = 0;
@@ -285,19 +244,16 @@ const TOTAL_SHIFTS = ROSTER.reduce(
   0,
 );
 
-const SEPARATOR = `  ${String.fromCodePoint(0xb7)}  `;
-
 export const SUMMARY = {
-  coverage: `${coveragePercent().toFixed(1)}%`,
-  cost: money(WEEKLY_COST),
-  shortHours: `${countHours(REQUIRED, (staffed, need) => staffed < need)} h`,
-  overHours: `${countHours(REQUIRED, (staffed, need) => staffed > need)} h`,
-  rosterCaption: [
-    `${ROSTER.length} employees`,
-    `${TOTAL_SHIFTS} assigned shifts`,
-    `${(TOTAL_SHIFTS * SHIFT_HOURS).toLocaleString("en-US")} h`,
-  ].join(SEPARATOR),
-  rosterMore: `+ ${ROSTER.length - VISIBLE_ROWS} more employees in this run`,
+  coverage: `${coveragePercent().toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`,
+  cost: money(weeklyCost()),
+  shortHours: vi.home.sample.hours(countShortHours()),
+  rosterCaption: vi.home.sample.rosterCaption(
+    ROSTER.length,
+    TOTAL_SHIFTS,
+    (TOTAL_SHIFTS * SHIFT_HOURS).toLocaleString("vi-VN"),
+  ),
+  rosterMore: vi.home.sample.rosterMore(ROSTER.length - VISIBLE_ROWS),
 };
 
 function describe(shift: ShiftLook): string {
@@ -307,10 +263,10 @@ function describe(shift: ShiftLook): string {
 export const ROSTER_ROWS: RosterRow[] = ROSTER.slice(0, VISIBLE_ROWS).map((employee) => ({
   name: employee.name,
   contract: employee.contract,
-  cells: employee.days.map((look, day) => ({
+  cells: employee.days.map((shift, day) => ({
     day: DAYS[day],
-    look,
-    title: `${DAY_FULL[day]} - ${describe(look)}`,
+    look: shift,
+    title: `${DAY_FULL[day]} - ${describe(shift)}`,
   })),
 }));
 
@@ -321,27 +277,4 @@ export const LEGEND = (["E", "D", "L", "N", "O"] as const).map((code) => ({
 
 export function dayBars(day: number): Bar[] {
   return bars(REQUIRED[day], ASSIGNED[day], PREVIEW_CHART_HEIGHT);
-}
-
-const CURVE_VALUES = COST_FACTORS.map((factor) => WEEKLY_COST * factor);
-const CURVE_LOW = Math.min(...CURVE_VALUES);
-const CURVE_HIGH = Math.max(...CURVE_VALUES);
-const CURVE_POINTS = CURVE_VALUES.map((value, index) => ({
-  x: Math.round((CURVE_LEFT + (index / (LAMBDAS.length - 1)) * CURVE_WIDTH) * 10) / 10,
-  y:
-    Math.round(
-      (CURVE_BOTTOM - ((value - CURVE_LOW) / (CURVE_HIGH - CURVE_LOW || 1)) * CURVE_HEIGHT) * 10,
-    ) / 10,
-}));
-
-export function scenarioView(lambdaIndex: number) {
-  const required = requiredGrid(LAMBDAS[lambdaIndex]);
-  return {
-    lambdaLabel: `${LAMBDAS[lambdaIndex].toFixed(1)}x`,
-    bars: bars(required[SCENARIO_DAY], ASSIGNED[SCENARIO_DAY], SCENARIO_CHART_HEIGHT),
-    curvePoints: CURVE_POINTS.map((point) => `${point.x},${point.y}`).join(" "),
-    marker: CURVE_POINTS[lambdaIndex],
-    cost: money(CURVE_VALUES[lambdaIndex]),
-    shortHours: `${countHours(required, (staffed, need) => staffed < need)} h`,
-  };
 }

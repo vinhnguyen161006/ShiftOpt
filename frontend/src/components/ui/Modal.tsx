@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useId, useRef } from "react";
+import { vi } from "../../locales/vi";
 
 type ModalProps = {
   title: string;
@@ -39,7 +40,7 @@ export function Modal({ title, open, onClose, children, wide = false }: ModalPro
               {title}
             </h2>
             <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-              Close
+              {vi.common.close}
             </button>
           </div>
           {children}

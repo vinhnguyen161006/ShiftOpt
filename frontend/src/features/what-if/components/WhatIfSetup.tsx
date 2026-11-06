@@ -17,6 +17,7 @@ import type {
 } from "../../../types/models";
 import { useDemandSweep, useMarginalCost, useStaffingSweep } from "../api/analysis";
 import "../what-if.css";
+import { vi } from "../../../locales/vi";
 
 type WhatIfSetupProps = {
   profiles: DemandProfileRead[];
@@ -100,8 +101,8 @@ export function WhatIfSetup({
       />
       <Field
         id={`${PREFIX}wage`}
-        label="Hourly wage for the marginal cost model (team assumption)"
-        hint="The marginal cost and LP dual use the aggregate model, which prices every shift with one hourly wage."
+        label={vi.whatIf.form.wage}
+        hint={vi.whatIf.form.wageHint}
         error={errorsByPath(error).get("hourly_wage")}
       >
         {(control) => (
@@ -116,16 +117,12 @@ export function WhatIfSetup({
           />
         )}
       </Field>
-      <p className="muted">
-        The demand sweep re-solves the full roster at lambda {MULTIPLIERS.join(", ")}, each with the
-        time limit above, so it takes up to {MULTIPLIERS.length} times that limit. The marginal cost
-        re-solves the aggregate model 169 times.
-      </p>
+      <p className="muted">{vi.whatIf.form.note(MULTIPLIERS.join("; "), MULTIPLIERS.length)}</p>
       <div className="form-grid">
         <Field
           id={`${PREFIX}assumption`}
-          label="Conversion assumption to vary"
-          hint="Re-derives the head count from the FreshRetailNet load with each value. Needs a FreshRetailNet profile."
+          label={vi.whatIf.form.assumption}
+          hint={vi.whatIf.form.assumptionHint}
         >
           {(control) => (
             <select
@@ -134,17 +131,17 @@ export function WhatIfSetup({
               value={assumption}
               onChange={(event) => setAssumption(event.target.value as StaffingField)}
             >
-              <option value="alpha">alpha</option>
-              <option value="productivity">p (productivity)</option>
-              <option value="min_staff">min_staff</option>
-              <option value="night_min_staff">night_min_staff</option>
+              <option value="alpha">{vi.whatIf.form.options.alpha}</option>
+              <option value="productivity">{vi.whatIf.form.options.productivity}</option>
+              <option value="min_staff">{vi.whatIf.form.options.min_staff}</option>
+              <option value="night_min_staff">{vi.whatIf.form.options.night_min_staff}</option>
             </select>
           )}
         </Field>
         <Field
           id={`${PREFIX}staffing-values`}
-          label="Values to try"
-          hint="Comma-separated, up to 20. Floors must be whole numbers."
+          label={vi.whatIf.form.values}
+          hint={vi.whatIf.form.valuesHint}
         >
           {(control) => (
             <input
@@ -156,11 +153,7 @@ export function WhatIfSetup({
           )}
         </Field>
       </div>
-      {!canSweepAssumption && (
-        <p className="muted">
-          The assumption sweep is available only for a FreshRetailNet demand profile.
-        </p>
-      )}
+      {!canSweepAssumption && <p className="muted">{vi.whatIf.form.onlyFreshRetailNet}</p>}
       {general && <Notice kind="error" title={general} />}
       <div className="whatif-actions">
         <Button
@@ -174,7 +167,7 @@ export function WhatIfSetup({
             );
           }}
         >
-          {marginal.isPending ? "Submitting..." : "Run marginal cost by hour"}
+          {marginal.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runMarginal}
         </Button>
         <Button
           variant="primary"
@@ -188,7 +181,7 @@ export function WhatIfSetup({
             );
           }}
         >
-          {sweep.isPending ? "Submitting..." : "Run demand sweep"}
+          {sweep.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runSweep}
         </Button>
         <Button
           disabled={staffing.isPending || !canSweepAssumption}
@@ -205,7 +198,7 @@ export function WhatIfSetup({
             );
           }}
         >
-          {staffing.isPending ? "Submitting..." : "Run assumption sweep"}
+          {staffing.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runStaffing}
         </Button>
       </div>
     </div>

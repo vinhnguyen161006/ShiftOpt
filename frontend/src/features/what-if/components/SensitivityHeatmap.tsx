@@ -3,6 +3,7 @@ import { Notice } from "../../../components/ui/Feedback";
 import { DAY_NAMES, DAYS, formatHour, HOURS, HOURS_PER_DAY } from "../../../lib/time";
 import type { MarginalCostResult } from "../../../types/models";
 import "../what-if.css";
+import { vi } from "../../../locales/vi";
 
 type SensitivityHeatmapProps = {
   result: MarginalCostResult;
@@ -15,8 +16,8 @@ const STEPS = 5;
 
 function format(value: number | null | undefined): string {
   return value === null || value === undefined
-    ? "no solution"
-    : (value / COST_SCALE).toLocaleString("en-US", { maximumFractionDigits: 1 });
+    ? vi.whatIf.heatmap.noSolution
+    : (value / COST_SCALE).toLocaleString("vi-VN", { maximumFractionDigits: 1 });
 }
 
 function bucket(value: number | null | undefined, peak: number): number {
@@ -41,7 +42,7 @@ export function SensitivityHeatmap({ result }: SensitivityHeatmapProps) {
     const proven = result.proven_by_hour[hour];
     const day = Math.floor(hour / HOURS_PER_DAY);
     const time = formatHour(hour % HOURS_PER_DAY);
-    const note = measure === "marginal" && !proven ? " (not proven, read as an estimate)" : "";
+    const note = measure === "marginal" && !proven ? vi.whatIf.heatmap.notProvenNote : "";
     return `${DAY_NAMES[day]} ${time}: ${format(value)}${note}`;
   }
 
@@ -49,14 +50,14 @@ export function SensitivityHeatmap({ result }: SensitivityHeatmapProps) {
     <div className="form-stack">
       <div className="heatmap-head">
         <fieldset className="toggle-group">
-          <legend className="visually-hidden">Value shown in each cell</legend>
+          <legend className="visually-hidden">{vi.whatIf.heatmap.measureLegend}</legend>
           <button
             type="button"
             className="toggle"
             aria-pressed={measure === "marginal"}
             onClick={() => setMeasure("marginal")}
           >
-            Marginal cost (re-solve)
+            {vi.whatIf.heatmap.marginal}
           </button>
           <button
             type="button"
@@ -64,36 +65,38 @@ export function SensitivityHeatmap({ result }: SensitivityHeatmapProps) {
             aria-pressed={measure === "dual"}
             onClick={() => setMeasure("dual")}
           >
-            LP dual (approximate)
+            {vi.whatIf.heatmap.dual}
           </button>
         </fieldset>
         <p className="muted heatmap-note">
-          Base weekly cost {format(result.base_cost)} ({result.base_status}). Each cell is the cost
-          of one more person required in that hour.
+          {vi.whatIf.heatmap.note(
+            format(result.base_cost),
+            vi.schedule.solveStatus[result.base_status] ?? result.base_status,
+          )}
         </p>
       </div>
       {measure === "dual" ? (
-        <Notice kind="warning" title="Approximate">
-          {result.label}. The LP dual is not a shadow price of the integer schedule; compare it with
-          the re-solved marginal cost.
+        <Notice kind="warning" title={vi.whatIf.heatmap.approxTitle}>
+          {vi.whatIf.heatmap.approxBody}
         </Notice>
       ) : (
         unproven > 0 && (
-          <Notice kind="warning" title={`${unproven} of 168 hours not proven optimal`}>
-            Hatched cells come from a solve that stopped before proving optimality, so the
-            difference may include part of the gap.
+          <Notice kind="warning" title={vi.whatIf.heatmap.unprovenTitle(unproven)}>
+            {vi.whatIf.heatmap.unprovenBody}
           </Notice>
         )
       )}
       <div className="heatmap-scroll">
         <table className="heatmap">
           <caption className="visually-hidden">
-            {measure === "marginal" ? "Marginal cost" : "LP dual"} for each hour of the week
+            {vi.whatIf.heatmap.caption(
+              measure === "marginal" ? vi.whatIf.heatmap.marginalCost : vi.whatIf.heatmap.lpDual,
+            )}
           </caption>
           <thead>
             <tr>
               <th scope="col">
-                <span className="visually-hidden">Day</span>
+                <span className="visually-hidden">{vi.whatIf.heatmap.day}</span>
               </th>
               {HOURS.map((hour) => (
                 <th key={hour} scope="col">
@@ -141,13 +144,13 @@ export function SensitivityHeatmap({ result }: SensitivityHeatmapProps) {
         {thresholds(peak).map((label, step) => (
           <span key={label} className="legend-item">
             <span className={`swatch heatmap-cell heat-${step + 1}`} />
-            up to {label}
+            {vi.whatIf.heatmap.upTo(label)}
           </span>
         ))}
         {measure === "marginal" && (
           <span className="legend-item">
             <span className="swatch heatmap-cell heat-0 is-unproven" />
-            Not proven
+            {vi.whatIf.heatmap.notProven}
           </span>
         )}
       </div>

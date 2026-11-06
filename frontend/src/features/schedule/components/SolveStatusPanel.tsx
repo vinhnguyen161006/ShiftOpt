@@ -3,46 +3,55 @@ import { KpiStrip } from "../../../components/ui/Layout";
 import type { SolveRunRead } from "../../../types/models";
 import { isActive } from "../api/schedules";
 import "../schedule.css";
+import { formatDecimal, formatPercent } from "../../../lib/number";
+import { vi } from "../../../locales/vi";
 
 type SolveRunProps = {
   run: SolveRunRead;
 };
 
 function percent(value: number | null | undefined): string {
-  return value === null || value === undefined ? "-" : `${(value * 100).toFixed(2)}%`;
+  return value === null || value === undefined ? "-" : formatPercent(value, 2);
 }
 
 function number(value: number | null | undefined): string {
-  return value === null || value === undefined ? "-" : value.toLocaleString("en-US");
+  return value === null || value === undefined ? "-" : value.toLocaleString("vi-VN");
 }
 
 export function solveVerdict(run: SolveRunRead): { value: string; sub: string } {
   if (run.solver === "manual") {
-    return { value: "MANUAL EDIT", sub: `edited from run ${run.parent_run_id ?? "-"}` };
+    return {
+      value: vi.schedule.verdict.manualValue,
+      sub: vi.schedule.verdict.manualSub(String(run.parent_run_id ?? "-")),
+    };
   }
   if (run.solve_status === "optimal") {
-    return { value: "OPTIMAL", sub: "proven optimal for this instance and time limit" };
+    return { value: "OPTIMAL", sub: vi.schedule.verdict.optimalSub };
   }
   if (run.solve_status === "feasible") {
-    return { value: "FEASIBLE", sub: `gap ${percent(run.gap)}, not proven optimal` };
+    return { value: "FEASIBLE", sub: vi.schedule.verdict.feasibleSub(percent(run.gap)) };
   }
-  return { value: (run.solve_status ?? run.status).toUpperCase(), sub: "no proven result" };
+  return {
+    value: (run.solve_status ?? run.status).toUpperCase(),
+    sub: vi.schedule.verdict.noProven,
+  };
 }
 
 export function SolveNotice({ run }: SolveRunProps) {
   if (isActive(run.status)) {
     return (
-      <Notice kind="info" title={run.status === "queued" ? "Queued" : "Solving"}>
-        <Loading
-          label={`The solver is working with a ${run.params.time_limit_seconds ?? "-"} s time limit. This page updates by itself.`}
-        />
+      <Notice
+        kind="info"
+        title={run.status === "queued" ? vi.schedule.notice.queued : vi.schedule.notice.solving}
+      >
+        <Loading label={vi.schedule.notice.working(String(run.params.time_limit_seconds ?? "-"))} />
       </Notice>
     );
   }
   if (run.status === "failed") {
     return (
-      <Notice kind="error" title="This run is not a valid schedule">
-        {run.error ?? "The run failed."}
+      <Notice kind="error" title={vi.schedule.notice.failedTitle}>
+        {run.error ?? vi.schedule.notice.failedBody}
       </Notice>
     );
   }
@@ -55,29 +64,39 @@ export function SolveDetails({ run }: SolveRunProps) {
     <div className="form-stack">
       <KpiStrip
         items={[
-          { label: "Gap", value: percent(run.gap), sub: `best bound ${number(run.best_bound)}` },
           {
-            label: "Objective",
+            label: vi.schedule.details.gap,
+            value: percent(run.gap),
+            sub: vi.schedule.details.bestBound(number(run.best_bound)),
+          },
+          {
+            label: vi.schedule.details.objective,
             value: number(run.objective),
-            sub: "last lexicographic tier",
+            sub: vi.schedule.details.lastTier,
           },
           {
-            label: "Wall time",
-            value: run.wall_time_seconds === null ? "-" : `${run.wall_time_seconds.toFixed(1)} s`,
-            sub: `limit ${run.params.time_limit_seconds ?? "-"} s`,
+            label: vi.schedule.details.wallTime,
+            value:
+              run.wall_time_seconds === null
+                ? "-"
+                : vi.schedule.workspace.seconds(formatDecimal(run.wall_time_seconds, 1)),
+            sub: vi.schedule.details.limit(String(run.params.time_limit_seconds ?? "-")),
           },
           {
-            label: "Hard violations",
+            label: vi.schedule.details.hard,
             value: run.hard_violations === null ? "-" : String(hardViolations),
-            sub: hardViolations === 0 ? "checked by the validator" : "schedule not compliant",
+            sub:
+              hardViolations === 0 ? vi.schedule.details.checked : vi.schedule.details.notCompliant,
           },
         ]}
       />
       <p className="muted run-meta">
-        {run.solver}
-        {run.solver_version ? ` ${run.solver_version}` : ""} &middot; seed{" "}
-        {run.params.random_seed ?? "-"} &middot; {run.params.num_workers ?? "-"} worker(s) &middot;
-        gap limit {percent(run.params.relative_gap_limit)}
+        {vi.schedule.details.meta(
+          `${run.solver}${run.solver_version ? ` ${run.solver_version}` : ""}`,
+          String(run.params.random_seed ?? "-"),
+          String(run.params.num_workers ?? "-"),
+          percent(run.params.relative_gap_limit),
+        )}
       </p>
     </div>
   );

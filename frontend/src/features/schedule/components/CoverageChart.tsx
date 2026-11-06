@@ -4,6 +4,7 @@ import { WorkspaceBlock } from "../../../components/ui/Workspace";
 import { DAY_NAMES, DAYS, formatHour, HOURS, HOURS_PER_DAY } from "../../../lib/time";
 import type { KpiRead } from "../../../types/models";
 import "../schedule.css";
+import { vi } from "../../../locales/vi";
 
 type CoverageChartProps = {
   kpi: KpiRead;
@@ -48,11 +49,11 @@ export function CoverageChart({ kpi, meta }: CoverageChartProps) {
 
   return (
     <WorkspaceBlock
-      title="Staffing coverage"
-      caption={`${DAY_NAMES[day]}: ${totals.short} staff-hours short, ${totals.over} over`}
+      title={vi.schedule.coverage.title}
+      caption={vi.schedule.coverage.caption(DAY_NAMES[day], totals.short, totals.over)}
       aside={
         <fieldset className="toggle-group">
-          <legend className="visually-hidden">Day shown in the chart</legend>
+          <legend className="visually-hidden">{vi.schedule.coverage.dayLegend}</legend>
           {DAYS.map((label, index) => (
             <button
               key={label}
@@ -72,39 +73,41 @@ export function CoverageChart({ kpi, meta }: CoverageChartProps) {
         height={CHART_HEIGHT}
         peak={peak}
         dayLabel={DAYS[day]}
-        label={`Staffing against demand by hour on ${DAY_NAMES[day]}. ${totals.short} staff-hours short, ${totals.over} over. Exact values are in the table below.`}
+        label={vi.schedule.coverage.aria(DAY_NAMES[day], totals.short, totals.over)}
       />
       <div className="chart-legend">
         <span className="legend-item">
           <span className="swatch swatch-assigned" />
-          Assigned staff (above the line = overstaffed)
+          {vi.schedule.coverage.assigned}
         </span>
         <span className="legend-item">
           <span className="swatch swatch-required" />
-          Required staff
+          {vi.schedule.coverage.required}
         </span>
         <span className="legend-item">
           <span className="swatch swatch-under" />
-          Understaffed
+          {vi.schedule.coverage.under}
         </span>
         <span className="chart-meta">{meta}</span>
       </div>
       <details className="data-details">
-        <summary>Show {DAY_NAMES[day]} as a table</summary>
+        <summary>{vi.schedule.coverage.showTable(DAY_NAMES[day])}</summary>
         <div className="table-wrap">
           <table className="table">
-            <caption className="visually-hidden">Hourly coverage on {DAY_NAMES[day]}</caption>
+            <caption className="visually-hidden">
+              {vi.schedule.coverage.tableCaption(DAY_NAMES[day])}
+            </caption>
             <thead>
               <tr>
-                <th scope="col">Hour</th>
+                <th scope="col">{vi.schedule.coverage.hour}</th>
                 <th scope="col" className="num">
-                  Required
+                  {vi.schedule.coverage.requiredColumn}
                 </th>
                 <th scope="col" className="num">
-                  Assigned
+                  {vi.schedule.coverage.assignedColumn}
                 </th>
                 <th scope="col" className="num">
-                  Difference
+                  {vi.schedule.coverage.difference}
                 </th>
               </tr>
             </thead>

@@ -1,5 +1,7 @@
 import { buttonClass } from "../../../components/ui/Button";
 import { KpiStrip } from "../../../components/ui/Layout";
+import { formatDecimal, formatPercent } from "../../../lib/number";
+import { vi } from "../../../locales/vi";
 import type { KpiRead } from "../../../types/models";
 import { exportUrl } from "../api/schedules";
 
@@ -8,21 +10,29 @@ export function ScheduleKpis({ kpi }: { kpi: KpiRead }) {
     <KpiStrip
       items={[
         {
-          label: "Coverage ratio",
-          value: `${(kpi.coverage_ratio * 100).toFixed(1)}%`,
-          sub: "min(staff, required) / required",
-        },
-        { label: "Understaffed", value: `${kpi.understaffed_hours} h`, sub: "staff-hours short" },
-        { label: "Overstaffed", value: `${kpi.overstaffed_hours} h`, sub: "staff-hours over" },
-        {
-          label: "Efficiency",
-          value: `${(kpi.schedule_efficiency * 100).toFixed(1)}%`,
-          sub: "required / staffed",
+          label: vi.schedule.kpis.coverage,
+          value: formatPercent(kpi.coverage_ratio, 1),
+          sub: vi.schedule.kpis.coverageSub,
         },
         {
-          label: "Night shift spread",
-          value: kpi.night_shift_stddev.toFixed(2),
-          sub: `std dev; weekend ${kpi.weekend_shift_stddev.toFixed(2)}`,
+          label: vi.schedule.kpis.under,
+          value: vi.home.sample.hours(kpi.understaffed_hours),
+          sub: vi.schedule.kpis.underSub,
+        },
+        {
+          label: vi.schedule.kpis.over,
+          value: vi.home.sample.hours(kpi.overstaffed_hours),
+          sub: vi.schedule.kpis.overSub,
+        },
+        {
+          label: vi.schedule.kpis.efficiency,
+          value: formatPercent(kpi.schedule_efficiency, 1),
+          sub: vi.schedule.kpis.efficiencySub,
+        },
+        {
+          label: vi.schedule.kpis.nightSpread,
+          value: formatDecimal(kpi.night_shift_stddev, 2),
+          sub: vi.schedule.kpis.nightSpreadSub(formatDecimal(kpi.weekend_shift_stddev, 2)),
         },
       ]}
     />
@@ -30,9 +40,9 @@ export function ScheduleKpis({ kpi }: { kpi: KpiRead }) {
 }
 
 const EXPORTS = [
-  { kind: "assignments", label: "Roster CSV" },
-  { kind: "coverage", label: "Coverage CSV" },
-  { kind: "kpi", label: "KPI CSV" },
+  { kind: "assignments", label: vi.schedule.exports.assignments },
+  { kind: "coverage", label: vi.schedule.exports.coverage },
+  { kind: "kpi", label: vi.schedule.exports.kpi },
 ] as const;
 
 export function ExportLinks({ runId }: { runId: number }) {

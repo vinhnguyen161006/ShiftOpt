@@ -4,6 +4,7 @@ import { ErrorSummary, Notice } from "../../../components/ui/Feedback";
 import { Field } from "../../../components/ui/Field";
 import { errorsByPath, generalError, summaryErrors, toNumber } from "../../../lib/form";
 import { HOURS_PER_WEEK } from "../../../lib/time";
+import { vi } from "../../../locales/vi";
 import type {
   CallCenterDemandRequest,
   ConversionParams,
@@ -19,12 +20,9 @@ import { ConversionParamsForm, conversionFieldId } from "./ConversionParamsForm"
 
 type SourceChoice = "manual" | "csv" | "freshretailnet" | "call_center";
 
-const SOURCES: { value: SourceChoice; label: string }[] = [
-  { value: "manual", label: "Manual grid" },
-  { value: "csv", label: "CSV import" },
-  { value: "freshretailnet", label: "FreshRetailNet" },
-  { value: "call_center", label: "Call center" },
-];
+const SOURCES: { value: SourceChoice; label: string }[] = (
+  ["manual", "csv", "freshretailnet", "call_center"] as const
+).map((value) => ({ value, label: vi.demand.form.sources[value] }));
 
 const DEFAULT_CONVERSION: Required<ConversionParams> = {
   alpha: 1,
@@ -64,7 +62,7 @@ function FormShell({ error, pending, submitLabel, onSubmit, children }: FormShel
       {general && <Notice kind="error" title={general} />}
       <div className="form-actions">
         <Button type="submit" variant="primary" disabled={pending}>
-          {pending ? "Creating..." : submitLabel}
+          {pending ? vi.demand.form.creating : submitLabel}
         </Button>
       </div>
     </form>
@@ -81,7 +79,7 @@ function NameField({
   errors: Map<string, string>;
 }) {
   return (
-    <Field id="new-name" label="Profile name" error={errors.get("name")}>
+    <Field id="new-name" label={vi.demand.profileName} error={errors.get("name")}>
       {(control) => (
         <input
           {...control}
@@ -104,7 +102,7 @@ function ManualForm({ onCreated }: { onCreated: CreatedHandler }) {
     <FormShell
       error={create.error}
       pending={create.isPending}
-      submitLabel="Create profile"
+      submitLabel={vi.demand.form.createProfile}
       onSubmit={() =>
         create.mutate(
           {
@@ -120,11 +118,7 @@ function ManualForm({ onCreated }: { onCreated: CreatedHandler }) {
       }
     >
       <NameField value={name} onChange={setName} errors={errors} />
-      <Field
-        id="new-fill"
-        label="Start every hour at"
-        hint="You can edit each of the 168 hours after the profile is created."
-      >
+      <Field id="new-fill" label={vi.demand.form.fill} hint={vi.demand.form.fillHint}>
         {(control) => (
           <input
             {...control}
@@ -150,15 +144,11 @@ function CsvForm({ onCreated }: { onCreated: CreatedHandler }) {
     <FormShell
       error={create.error}
       pending={create.isPending}
-      submitLabel="Import CSV"
+      submitLabel={vi.demand.form.importCsv}
       onSubmit={() => create.mutate({ name, csv_text: text }, { onSuccess: onCreated })}
     >
       <NameField value={name} onChange={setName} errors={errors} />
-      <Field
-        id="new-file"
-        label="CSV file"
-        hint="7 rows of 24 hourly head counts (Monday first), or one column of 168 values. Header rows, blank lines and , ; or tab separators are accepted."
-      >
+      <Field id="new-file" label={vi.demand.form.csvFile} hint={vi.demand.form.csvFileHint}>
         {(control) => (
           <input
             {...control}
@@ -176,8 +166,8 @@ function CsvForm({ onCreated }: { onCreated: CreatedHandler }) {
       </Field>
       <Field
         id="new-csv-text"
-        label="CSV content"
-        hint="Loaded from the file above, or paste it here."
+        label={vi.demand.form.csvContent}
+        hint={vi.demand.form.csvContentHint}
         error={errors.get("csv_text")}
       >
         {(control) => (
@@ -203,7 +193,7 @@ function DatasetForm({ onCreated }: { onCreated: CreatedHandler }) {
     <FormShell
       error={create.error}
       pending={create.isPending}
-      submitLabel="Derive profile"
+      submitLabel={vi.demand.form.derive}
       onSubmit={() =>
         create.mutate(
           { name, store_id: toNumber(storeId), conversion_params: conversion },
@@ -211,17 +201,14 @@ function DatasetForm({ onCreated }: { onCreated: CreatedHandler }) {
         )
       }
     >
-      <Notice kind="warning" title="Normalized sales, not staffing demand">
-        FreshRetailNet-50K holds normalized hourly sales of e-commerce front warehouses. It is not
-        staffing data and not a 24/7 physical store. Head counts come from the team assumptions
-        below: r = max(floor, ceil(alpha &middot; D / p)). Stockout hours use the estimated latent
-        demand.
+      <Notice kind="warning" title={vi.demand.salesTitle}>
+        {vi.demand.form.datasetBody}
       </Notice>
       <NameField value={name} onChange={setName} errors={errors} />
       <Field
         id="new-store-id"
-        label="Store id"
-        hint="The store must already be processed with build_demand_store."
+        label={vi.demand.form.storeId}
+        hint={vi.demand.form.storeIdHint}
         error={errors.get("store_id")}
       >
         {(control) => (
@@ -241,35 +228,17 @@ function DatasetForm({ onCreated }: { onCreated: CreatedHandler }) {
   );
 }
 
+const CALL_TEXT = vi.demand.form.callFields;
+
 const CALL_FIELDS = [
-  { key: "base_rate", label: "Base arrival rate (calls per hour)", hint: "Required.", step: "any" },
-  { key: "handle_seconds", label: "Average handle time (seconds)", hint: "Required.", step: "any" },
-  {
-    key: "patience_seconds",
-    label: "Average patience (seconds)",
-    hint: "Required team assumption, at most 3600. Used by Erlang A for abandonment.",
-    step: "any",
-  },
-  {
-    key: "service_level",
-    label: "Service level target",
-    hint: "Share answered within the answer time, 0.8 = 80%.",
-    step: "any",
-  },
-  { key: "answer_seconds", label: "Answer within (seconds)", hint: "", step: "any" },
-  { key: "min_staff", label: "Minimum staff per hour", hint: "", step: "1" },
-  {
-    key: "noise",
-    label: "Noise (0 to 1)",
-    hint: "Random variation of the simulated rates.",
-    step: "any",
-  },
-  {
-    key: "seed",
-    label: "Random seed",
-    hint: "Same seed gives the same simulated week.",
-    step: "1",
-  },
+  { key: "base_rate", ...CALL_TEXT.base_rate, step: "any" },
+  { key: "handle_seconds", ...CALL_TEXT.handle_seconds, step: "any" },
+  { key: "patience_seconds", ...CALL_TEXT.patience_seconds, step: "any" },
+  { key: "service_level", ...CALL_TEXT.service_level, step: "any" },
+  { key: "answer_seconds", ...CALL_TEXT.answer_seconds, step: "any" },
+  { key: "min_staff", ...CALL_TEXT.min_staff, step: "1" },
+  { key: "noise", ...CALL_TEXT.noise, step: "any" },
+  { key: "seed", ...CALL_TEXT.seed, step: "1" },
 ] as const;
 
 type CallFieldKey = (typeof CALL_FIELDS)[number]["key"];
@@ -303,12 +272,11 @@ function CallCenterForm({ onCreated }: { onCreated: CreatedHandler }) {
     <FormShell
       error={create.error}
       pending={create.isPending}
-      submitLabel="Simulate and staff"
+      submitLabel={vi.demand.form.simulate}
       onSubmit={submit}
     >
-      <Notice kind="info" title="Simulated arrivals">
-        Arrival rates are simulated with a fixed seed, not observed call data. Staffing per hour
-        comes from Erlang A with the service target below.
+      <Notice kind="info" title={vi.demand.callTitle}>
+        {vi.demand.form.callBody}
       </Notice>
       <NameField value={name} onChange={setName} errors={errors} />
       <div className="form-grid">
@@ -343,7 +311,7 @@ export function NewProfileForm({ onCreated }: { onCreated: CreatedHandler }) {
   return (
     <div className="form-stack">
       <fieldset className="field">
-        <legend>Source</legend>
+        <legend>{vi.demand.form.source}</legend>
         <div className="seg">
           {SOURCES.map((option) => (
             <label key={option.value} className="seg-opt">

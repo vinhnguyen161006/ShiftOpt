@@ -1,6 +1,7 @@
 import { Corners } from "../../../components/ui/Corners";
 import type { StaffingSweepPoint, StaffingSweepResult } from "../../../types/models";
 import "../what-if.css";
+import { vi } from "../../../locales/vi";
 
 type StaffingSweepViewProps = {
   result: StaffingSweepResult;
@@ -8,21 +9,19 @@ type StaffingSweepViewProps = {
 
 const COST_SCALE = 100;
 
-const ASSUMPTION_LABELS: Record<StaffingSweepResult["assumption"], string> = {
-  alpha: "alpha (scale factor on normalized sales)",
-  productivity: "p (sales units one person handles per hour)",
-  min_staff: "min_staff (floor for every hour)",
-  night_min_staff: "night_min_staff (floor for 22h-06h)",
-};
+const ASSUMPTION_LABELS: Record<StaffingSweepResult["assumption"], string> =
+  vi.whatIf.staffing.labels;
 
 function money(hundredths: number | null): string {
   return hundredths === null
     ? "-"
-    : (hundredths / COST_SCALE).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    : (hundredths / COST_SCALE).toLocaleString("vi-VN", { maximumFractionDigits: 0 });
 }
 
 function statusText(point: StaffingSweepPoint): string {
-  return point.proven ? "optimal (proven)" : `${point.solve_status}, not proven optimal`;
+  return point.proven
+    ? vi.whatIf.sweep.statusProven
+    : vi.whatIf.sweep.statusNotProven(point.solve_status);
 }
 
 export function StaffingSweepView({ result }: StaffingSweepViewProps) {
@@ -32,36 +31,35 @@ export function StaffingSweepView({ result }: StaffingSweepViewProps) {
       <Corners />
       <div className="scenario-head">
         <h2 className="scenario-title">
-          Conversion assumption: {ASSUMPTION_LABELS[result.assumption]}
+          {vi.whatIf.staffing.title(ASSUMPTION_LABELS[result.assumption])}
         </h2>
         {unproven > 0 && (
           <span className="tag tag-outline scenario-tag">
-            {unproven} of {result.points.length} not proven optimal
+            {vi.whatIf.sweep.unproven(unproven, result.points.length)}
           </span>
         )}
       </div>
       <p className="scenario-caption">
-        {result.label}. Each row derives the required head count from the FreshRetailNet load with
-        that value, then re-solves the roster at the same time limit and seed.
+        {vi.whatIf.staffing.label}. {vi.whatIf.staffing.caption}
       </p>
       <div className="table-wrap">
         <table className="table">
-          <caption className="visually-hidden">Staffing assumption sweep points</caption>
+          <caption className="visually-hidden">{vi.whatIf.staffing.tableCaption}</caption>
           <thead>
             <tr>
               <th scope="col" className="num">
-                Value
+                {vi.whatIf.staffing.value}
               </th>
               <th scope="col" className="num">
-                Weekly cost
+                {vi.whatIf.sweep.weeklyCost}
               </th>
               <th scope="col" className="num">
-                Short hours
+                {vi.whatIf.sweep.short}
               </th>
               <th scope="col" className="num">
-                Paid hours
+                {vi.whatIf.sweep.paid}
               </th>
-              <th scope="col">Solver result</th>
+              <th scope="col">{vi.whatIf.sweep.solverResult}</th>
             </tr>
           </thead>
           <tbody>

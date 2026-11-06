@@ -4,6 +4,8 @@ import { type HourBar, HourBars } from "../../../components/ui/HourBars";
 import { DAY_NAMES, DAYS, HOURS, HOURS_PER_DAY } from "../../../lib/time";
 import type { DemandSweepResult, SweepPoint } from "../../../types/models";
 import "../what-if.css";
+import { formatDecimal } from "../../../lib/number";
+import { vi } from "../../../locales/vi";
 import { LambdaSlider } from "./LambdaSlider";
 
 type SweepViewProps = {
@@ -19,7 +21,7 @@ const BARS_HEIGHT = 132;
 function money(hundredths: number | null | undefined): string {
   return hundredths === null || hundredths === undefined
     ? "-"
-    : (hundredths / COST_SCALE).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    : (hundredths / COST_SCALE).toLocaleString("vi-VN", { maximumFractionDigits: 0 });
 }
 
 function curvePoints(points: SweepPoint[]) {
@@ -40,7 +42,9 @@ function curvePoints(points: SweepPoint[]) {
 }
 
 function statusText(point: SweepPoint): string {
-  return point.proven ? "optimal (proven)" : `${point.solve_status}, not proven optimal`;
+  return point.proven
+    ? vi.whatIf.sweep.statusProven
+    : vi.whatIf.sweep.statusNotProven(point.solve_status);
 }
 
 function barsFor(point: SweepPoint, day: number): HourBar[] | null {
@@ -102,15 +106,15 @@ export function SweepView({ result }: SweepViewProps) {
       <section className="blueprint scenario">
         <Corners />
         <div className="scenario-head">
-          <h2 className="scenario-title">Demand vs. staffing</h2>
+          <h2 className="scenario-title">{vi.whatIf.sweep.title}</h2>
           {unproven > 0 && (
             <span className="tag tag-outline scenario-tag">
-              {unproven} of {points.length} not proven optimal
+              {vi.whatIf.sweep.unproven(unproven, points.length)}
             </span>
           )}
           {bars && (
             <fieldset className="toggle-group scenario-days">
-              <legend className="visually-hidden">Day shown in the chart</legend>
+              <legend className="visually-hidden">{vi.whatIf.sweep.dayLegend}</legend>
               {DAYS.map((label, dayIndex) => (
                 <button
                   key={label}
@@ -126,9 +130,8 @@ export function SweepView({ result }: SweepViewProps) {
           )}
         </div>
         <p className="scenario-caption">
-          Hourly demand is multiplied by lambda and the roster is solved again at a fixed time limit
-          and seed.
-          {bars ? ` Bars show ${DAY_NAMES[day]}.` : ""}
+          {vi.whatIf.sweep.caption}
+          {bars ? vi.whatIf.sweep.captionDay(DAY_NAMES[day]) : ""}
         </p>
         {bars ? (
           <>
@@ -138,28 +141,28 @@ export function SweepView({ result }: SweepViewProps) {
               peak={weekPeak(points)}
               dayLabel={DAYS[day]}
               spaced
-              label={`Staffing against demand by hour on ${DAY_NAMES[day]} at ${selected.multiplier.toFixed(1)} times demand.`}
+              label={vi.whatIf.sweep.barsAria(
+                DAY_NAMES[day],
+                formatDecimal(selected.multiplier, 1),
+              )}
             />
             <div className="legend scenario-legend">
               <span className="legend-item">
                 <span className="swatch swatch-assigned" />
-                Assigned staff (above the line = overstaffed)
+                {vi.schedule.coverage.assigned}
               </span>
               <span className="legend-item">
                 <span className="swatch swatch-required" />
-                Required staff
+                {vi.schedule.coverage.required}
               </span>
               <span className="legend-item">
                 <span className="swatch swatch-under" />
-                Understaffed
+                {vi.schedule.coverage.under}
               </span>
             </div>
           </>
         ) : (
-          <p className="muted scenario-missing">
-            Hourly staffing was not stored for this older analysis. Run the sweep again to see the
-            bars.
-          </p>
+          <p className="muted scenario-missing">{vi.whatIf.sweep.missing}</p>
         )}
         <div className="scenario-lambda">
           <LambdaSlider
@@ -170,13 +173,13 @@ export function SweepView({ result }: SweepViewProps) {
         </div>
         <div className="scenario-results">
           <div className="scenario-curve">
-            <div className="label-caps scenario-curve-label">Cost curve z(lambda)</div>
+            <div className="label-caps scenario-curve-label">{vi.whatIf.sweep.curve}</div>
             <svg
               className="scenario-curve-svg"
               viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
               preserveAspectRatio="none"
               role="img"
-              aria-label={`Weekly labor cost for each demand multiplier. ${unproven} of ${points.length} points are not proven optimal. Values are in the table below.`}
+              aria-label={vi.whatIf.sweep.curveAria(unproven, points.length)}
             >
               <line
                 x1="0"
@@ -220,69 +223,74 @@ export function SweepView({ result }: SweepViewProps) {
             <div className="legend scenario-legend">
               <span className="legend-item">
                 <span className="swatch curve-dot" />
-                Proven optimal
+                {vi.whatIf.sweep.provenLegend}
               </span>
               <span className="legend-item">
                 <span className="swatch curve-dot curve-dot-open" />
-                Not proven: the gap may hide part of the cost change
+                {vi.whatIf.sweep.notProvenLegend}
               </span>
             </div>
           </div>
           <div className="scenario-figures">
             <div>
-              <div className="label-caps">Weekly cost</div>
+              <div className="label-caps">{vi.whatIf.sweep.weeklyCost}</div>
               <div className="scenario-figure-value">{money(selected.labor_cost)}</div>
             </div>
             <div>
-              <div className="label-caps">Short hours</div>
+              <div className="label-caps">{vi.whatIf.sweep.short}</div>
               <div className="scenario-figure-value">
-                {selected.understaffed_hours === null ? "-" : `${selected.understaffed_hours} h`}
+                {selected.understaffed_hours === null
+                  ? "-"
+                  : vi.home.sample.hours(selected.understaffed_hours)}
               </div>
             </div>
             <div>
-              <div className="label-caps">Paid hours</div>
+              <div className="label-caps">{vi.whatIf.sweep.paid}</div>
               <div className="scenario-figure-value">
-                {selected.staffed_hours === null ? "-" : `${selected.staffed_hours} h`}
+                {selected.staffed_hours === null
+                  ? "-"
+                  : vi.home.sample.hours(selected.staffed_hours)}
               </div>
             </div>
             <div>
-              <div className="label-caps">Solver result</div>
+              <div className="label-caps">{vi.whatIf.sweep.solverResult}</div>
               <div className="scenario-figure-value">
                 {selected.proven ? "OPTIMAL" : selected.solve_status.toUpperCase()}
               </div>
-              {!selected.proven && <div className="scenario-figure-sub">not proven optimal</div>}
+              {!selected.proven && (
+                <div className="scenario-figure-sub">{vi.whatIf.sweep.notProven}</div>
+              )}
             </div>
-            <div className="scenario-note">
-              Each point is a separate re-solve at a fixed time limit and seed. Points that did not
-              reach OPTIMAL are drawn as open circles and flagged in the table below.
-            </div>
+            <div className="scenario-note">{vi.whatIf.sweep.note}</div>
           </div>
         </div>
       </section>
       <details className="data-details">
-        <summary>Show all points as a table</summary>
+        <summary>{vi.whatIf.sweep.showTable}</summary>
         <div className="table-wrap">
           <table className="table">
-            <caption className="visually-hidden">Demand sweep points</caption>
+            <caption className="visually-hidden">{vi.whatIf.sweep.tableCaption}</caption>
             <thead>
               <tr>
-                <th scope="col">Lambda</th>
+                <th scope="col">{vi.whatIf.sweep.lambda}</th>
                 <th scope="col" className="num">
-                  Labor cost
+                  {vi.whatIf.sweep.laborCost}
                 </th>
                 <th scope="col" className="num">
-                  Short hours
+                  {vi.whatIf.sweep.short}
                 </th>
                 <th scope="col" className="num">
-                  Paid hours
+                  {vi.whatIf.sweep.paid}
                 </th>
-                <th scope="col">Solver result</th>
+                <th scope="col">{vi.whatIf.sweep.solverResult}</th>
               </tr>
             </thead>
             <tbody>
               {points.map((point) => (
                 <tr key={point.multiplier}>
-                  <th scope="row">{point.multiplier.toFixed(1)}x</th>
+                  <th scope="row">
+                    {vi.whatIf.sweep.sliderValue(formatDecimal(point.multiplier, 1))}
+                  </th>
                   <td className="num">{money(point.labor_cost)}</td>
                   <td className="num">{point.understaffed_hours ?? "-"}</td>
                   <td className="num">{point.staffed_hours ?? "-"}</td>

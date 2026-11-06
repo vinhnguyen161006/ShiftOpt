@@ -1,5 +1,7 @@
 import { Link } from "react-router";
 import { Table } from "../../../components/ui/Table";
+import { formatPercent } from "../../../lib/number";
+import { vi } from "../../../locales/vi";
 import type { SolveRunRead } from "../../../types/models";
 
 type RunsTableProps = {
@@ -8,31 +10,37 @@ type RunsTableProps = {
 
 function statusLabel(run: SolveRunRead): string {
   if (run.status !== "succeeded") {
-    return run.status;
+    return vi.schedule.runStatus[run.status] ?? run.status;
   }
-  return run.solver === "manual" ? "manual edit" : (run.solve_status ?? run.status);
+  if (run.solver === "manual") {
+    return vi.schedule.runs.manualEdit;
+  }
+  const status = run.solve_status ?? run.status;
+  return vi.schedule.solveStatus[status] ?? status;
 }
 
 export function RunsTable({ runs }: RunsTableProps) {
   return (
     <Table
-      caption="Optimization runs"
+      caption={vi.schedule.runs.caption}
       rows={runs}
       rowKey={(run) => run.id}
       columns={[
         {
           key: "run",
-          label: "Run",
-          render: (run) => <Link to={`/schedule/${run.id}`}>Run {run.id}</Link>,
+          label: vi.schedule.runs.run,
+          render: (run) => (
+            <Link to={`/schedule/${run.id}`}>{vi.schedule.runs.runLink(run.id)}</Link>
+          ),
         },
         {
           key: "created",
-          label: "Created",
-          render: (run) => new Date(run.created_at).toLocaleString("en-GB"),
+          label: vi.schedule.runs.created,
+          render: (run) => new Date(run.created_at).toLocaleString("vi-VN"),
         },
         {
           key: "status",
-          label: "Result",
+          label: vi.schedule.runs.result,
           render: (run) => (
             <span className={run.status === "failed" ? "tag tag-strong" : "tag tag-outline"}>
               {statusLabel(run)}
@@ -41,30 +49,32 @@ export function RunsTable({ runs }: RunsTableProps) {
         },
         {
           key: "gap",
-          label: "Gap",
+          label: vi.schedule.runs.gap,
           align: "end",
-          render: (run) => (run.gap === null ? "-" : `${(run.gap * 100).toFixed(2)}%`),
+          render: (run) => (run.gap === null ? "-" : formatPercent(run.gap, 2)),
         },
         {
           key: "short",
-          label: "Short hours",
+          label: vi.schedule.runs.short,
           align: "end",
           render: (run) => run.understaffed_hours ?? "-",
         },
         {
           key: "violations",
-          label: "Hard violations",
+          label: vi.schedule.runs.violations,
           align: "end",
           render: (run) => run.hard_violations ?? "-",
         },
         {
           key: "parent",
-          label: "Edited from",
+          label: vi.schedule.runs.editedFrom,
           render: (run) =>
             run.parent_run_id === null ? (
               "-"
             ) : (
-              <Link to={`/schedule/${run.parent_run_id}`}>Run {run.parent_run_id}</Link>
+              <Link to={`/schedule/${run.parent_run_id}`}>
+                {vi.schedule.runs.runLink(run.parent_run_id)}
+              </Link>
             ),
         },
       ]}

@@ -4,6 +4,7 @@ import { DayPicker } from "../../../components/ui/DayPicker";
 import { ErrorSummary, Notice } from "../../../components/ui/Feedback";
 import { Field } from "../../../components/ui/Field";
 import { errorsByPath, generalError, summaryErrors, toNumber } from "../../../lib/form";
+import { vi } from "../../../locales/vi";
 import type { EmployeeRead } from "../../../types/models";
 import { useSaveEmployee } from "../api/employees";
 
@@ -60,8 +61,8 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
       <div className="form-grid">
         <Field
           id={FIELD_IDS.code}
-          label="Code"
-          hint="Unique, shown on the roster."
+          label={vi.employees.form.code}
+          hint={vi.employees.form.codeHint}
           error={errors.get("code")}
         >
           {(control) => (
@@ -75,7 +76,7 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
             />
           )}
         </Field>
-        <Field id={FIELD_IDS.name} label="Name" error={errors.get("name")}>
+        <Field id={FIELD_IDS.name} label={vi.employees.form.name} error={errors.get("name")}>
           {(control) => (
             <input
               {...control}
@@ -88,8 +89,8 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
         </Field>
         <Field
           id={FIELD_IDS.hourly_wage}
-          label="Hourly wage"
-          hint="Whole units of your wage currency."
+          label={vi.employees.form.wage}
+          hint={vi.employees.form.wageHint}
           error={errors.get("hourly_wage")}
         >
           {(control) => (
@@ -106,8 +107,8 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
         </Field>
         <Field
           id={FIELD_IDS.max_weekly_hours}
-          label="Max hours per week"
-          hint="Optional. Leave empty for the legal limit (48). Lower values are a hard limit for this employee."
+          label={vi.employees.form.maxHours}
+          hint={vi.employees.form.maxHoursHint}
           error={errors.get("max_weekly_hours")}
         >
           {(control) => (
@@ -126,25 +127,29 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
       </div>
       <DayPicker
         id={FIELD_IDS.unavailable_days}
-        legend="Cannot work on"
-        hint="Hard rule: the solver never assigns a shift on these days."
+        legend={vi.employees.form.cannotWork}
+        hint={vi.employees.form.cannotWorkHint}
         error={errors.get("unavailable_days")}
         value={unavailable}
         onChange={setUnavailable}
       />
       <DayPicker
         id={FIELD_IDS.preferred_days_off}
-        legend="Would like off"
-        hint="Soft request: honored when it does not cost coverage, labor cost or fairness."
+        legend={vi.employees.form.wouldLikeOff}
+        hint={vi.employees.form.wouldLikeOffHint}
         error={errors.get("preferred_days_off")}
         value={preferred}
         onChange={setPreferred}
       />
       {general && <Notice kind="error" title={general} />}
       <div className="form-actions">
-        <Button onClick={onDone}>Cancel</Button>
+        <Button onClick={onDone}>{vi.common.cancel}</Button>
         <Button type="submit" variant="primary" disabled={save.isPending}>
-          {save.isPending ? "Saving..." : employee ? "Save employee" : "Add employee"}
+          {save.isPending
+            ? vi.common.saving
+            : employee
+              ? vi.employees.form.save
+              : vi.employees.form.add}
         </Button>
       </div>
     </form>

@@ -1,5 +1,6 @@
 import type { ClipboardEvent, KeyboardEvent } from "react";
 import { DAYS, formatHour, HOURS, HOURS_PER_DAY, HOURS_PER_WEEK } from "../../../lib/time";
+import { vi } from "../../../locales/vi";
 
 type DemandGridEditorProps = {
   value: number[];
@@ -99,7 +100,7 @@ export function DemandGridEditor({
         <thead>
           <tr>
             <th scope="col">
-              <span className="visually-hidden">Day</span>
+              <span className="visually-hidden">{vi.demand.grid.day}</span>
             </th>
             {HOURS.map((hour) => (
               <th key={hour} scope="col" title={formatHour(hour)}>
@@ -119,14 +120,16 @@ export function DemandGridEditor({
                 return (
                   <td key={hour} className={shadeClass(count, peak)}>
                     {readOnly ? (
-                      <span title={`${day} ${formatHour(hour)}: ${count} staff`}>{count}</span>
+                      <span title={vi.demand.grid.cellTitle(day, formatHour(hour), count)}>
+                        {count}
+                      </span>
                     ) : (
                       <input
                         id={cellId(index)}
                         className="demand-cell"
                         inputMode="numeric"
                         autoComplete="off"
-                        aria-label={`${day} ${formatHour(hour)} required staff`}
+                        aria-label={vi.demand.grid.cellAria(day, formatHour(hour))}
                         aria-invalid={invalid || undefined}
                         value={String(count)}
                         onFocus={(event) => event.currentTarget.select()}
@@ -143,9 +146,7 @@ export function DemandGridEditor({
         </tbody>
       </table>
       <p className="demand-grid-help muted">
-        {readOnly
-          ? "Head count required in each hour, Monday 00:00 first."
-          : "Type a head count per hour. Arrow keys move between cells, Home and End jump to the start or end of a day. Paste a block copied from a spreadsheet to fill several cells."}
+        {readOnly ? vi.demand.grid.helpRead : vi.demand.grid.helpEdit}
       </p>
     </div>
   );

@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 import { BrandMark, Wordmark } from "../../../components/ui/BrandMark";
 import { Corners } from "../../../components/ui/Corners";
-import { SECTION_LINKS, WORKSPACE_LINKS } from "../links";
+import { vi } from "../../../locales/vi";
+import { WORKSPACE_LINKS } from "../links";
 
 export function SiteHeader() {
   return (
@@ -11,15 +12,8 @@ export function SiteHeader() {
           <BrandMark />
           <Wordmark />
         </a>
-        <nav className="site-nav" aria-label="Page sections">
-          {SECTION_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="site-nav-link">
-              {link.label}
-            </a>
-          ))}
-        </nav>
         <Link className="btn btn-primary blueprint home-header-cta" to={WORKSPACE_LINKS.demand}>
-          Open Workspace
+          {vi.home.headerCta}
           <Corners />
         </Link>
       </div>

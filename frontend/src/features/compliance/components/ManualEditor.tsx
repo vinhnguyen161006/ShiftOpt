@@ -6,6 +6,7 @@ import { DAYS, formatHour } from "../../../lib/time";
 import type { AssignmentWrite, ShiftTypeRead, SolveRunRead } from "../../../types/models";
 import { useCreateManualEdit } from "../api/compliance";
 import "../compliance.css";
+import { vi } from "../../../locales/vi";
 
 type ManualEditorProps = {
   run: SolveRunRead;
@@ -63,34 +64,31 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
 
   return (
     <form className="form-stack" onSubmit={handleSubmit}>
-      <p className="muted manual-intro">
-        Change, add or remove assignments, then re-check. Run {run.id} stays as it is: the edited
-        schedule becomes a new run and the validator checks it again.
-      </p>
+      <p className="muted manual-intro">{vi.compliance.manual.intro(run.id)}</p>
       <div className="table-wrap manual-table">
         <table className="table">
-          <caption className="visually-hidden">Assignments of run {run.id}</caption>
+          <caption className="visually-hidden">{vi.compliance.manual.caption(run.id)}</caption>
           <thead>
             <tr>
-              <th scope="col">Employee</th>
-              <th scope="col">Day</th>
-              <th scope="col">Shift</th>
-              <th scope="col">Break starts</th>
+              <th scope="col">{vi.compliance.manual.employee}</th>
+              <th scope="col">{vi.compliance.manual.day}</th>
+              <th scope="col">{vi.compliance.manual.shift}</th>
+              <th scope="col">{vi.compliance.manual.breakStarts}</th>
               <th scope="col" className="actions">
-                <span className="visually-hidden">Remove</span>
+                <span className="visually-hidden">{vi.compliance.manual.remove}</span>
               </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, index) => {
               const shift = shifts.get(row.shift_name);
-              const label = `row ${index + 1}`;
+              const label = vi.compliance.manual.row(index + 1);
               return (
                 <tr key={row.key}>
                   <td>
                     <select
                       className="input"
-                      aria-label={`Employee, ${label}`}
+                      aria-label={vi.compliance.manual.employeeAria(label)}
                       value={row.employee_code}
                       onChange={(event) => update(row.key, { employee_code: event.target.value })}
                     >
@@ -104,7 +102,7 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
                   <td>
                     <select
                       className="input"
-                      aria-label={`Day, ${label}`}
+                      aria-label={vi.compliance.manual.dayAria(label)}
                       value={row.day}
                       onChange={(event) => update(row.key, { day: Number(event.target.value) })}
                     >
@@ -118,7 +116,7 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
                   <td>
                     <select
                       className="input"
-                      aria-label={`Shift, ${label}`}
+                      aria-label={vi.compliance.manual.shiftAria(label)}
                       value={row.shift_name}
                       onChange={(event) =>
                         update(row.key, { shift_name: event.target.value, break_offset: null })
@@ -134,7 +132,7 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
                   <td>
                     <select
                       className="input"
-                      aria-label={`Break start, ${label}`}
+                      aria-label={vi.compliance.manual.breakAria(label)}
                       value={row.break_offset ?? ""}
                       onChange={(event) =>
                         update(row.key, {
@@ -143,7 +141,7 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
                         })
                       }
                     >
-                      <option value="">No break</option>
+                      <option value="">{vi.compliance.manual.noBreak}</option>
                       {breakOptions(shift).map((offset) => (
                         <option key={offset} value={offset}>
                           {formatHour((shift?.start_hour ?? 0) + offset)}
@@ -156,7 +154,8 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
                       size="sm"
                       onClick={() => setRows(rows.filter((item) => item.key !== row.key))}
                     >
-                      Remove<span className="visually-hidden"> {label}</span>
+                      {vi.compliance.manual.remove}
+                      <span className="visually-hidden"> {label}</span>
                     </Button>
                   </td>
                 </tr>
@@ -167,10 +166,10 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
       </div>
       {edit.isError && <Notice kind="error" title={errorMessage(edit.error)} />}
       <div className="form-actions">
-        <Button onClick={addRow}>Add assignment</Button>
-        <Button onClick={() => setRows(toRows(run))}>Reset to run {run.id}</Button>
+        <Button onClick={addRow}>{vi.compliance.manual.add}</Button>
+        <Button onClick={() => setRows(toRows(run))}>{vi.compliance.manual.reset(run.id)}</Button>
         <Button type="submit" variant="primary" disabled={edit.isPending}>
-          {edit.isPending ? "Checking..." : "Save as new run and re-check"}
+          {edit.isPending ? vi.compliance.manual.checking : vi.compliance.manual.submit}
         </Button>
       </div>
     </form>

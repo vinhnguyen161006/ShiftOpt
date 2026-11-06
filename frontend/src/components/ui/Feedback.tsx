@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useId, useRef } from "react";
+import { vi } from "../../locales/vi";
 
 type NoticeKind = "info" | "success" | "warning" | "error";
 
@@ -9,12 +10,7 @@ const NOTICE_ICONS: Record<NoticeKind, ReactNode> = {
   error: "!",
 };
 
-const NOTICE_LABELS: Record<NoticeKind, string> = {
-  info: "Information",
-  success: "Done",
-  warning: "Warning",
-  error: "Error",
-};
+const NOTICE_LABELS: Record<NoticeKind, string> = vi.common.noticeLabels;
 
 type NoticeProps = {
   kind?: NoticeKind;
@@ -52,7 +48,7 @@ export function ErrorSummary({ errors }: { errors: SummaryError[] }) {
   }
   return (
     <div ref={ref} className="error-summary" role="alert" tabIndex={-1} aria-labelledby={titleId}>
-      <h2 id={titleId}>There is a problem</h2>
+      <h2 id={titleId}>{vi.common.errorSummaryTitle}</h2>
       <ul>
         {errors.map((error) => (
           <li key={`${error.fieldId}-${error.message}`}>

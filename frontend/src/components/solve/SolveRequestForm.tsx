@@ -1,5 +1,6 @@
 import { toNumber } from "../../lib/form";
 import { shiftSpan } from "../../lib/time";
+import { vi } from "../../locales/vi";
 import type {
   DemandProfileRead,
   LaborRulesRead,
@@ -76,46 +77,15 @@ type NumberSetting = {
 };
 
 const SETTINGS: NumberSetting[] = [
-  {
-    key: "timeLimitSeconds",
-    path: "time_limit_seconds",
-    label: "Time limit (seconds)",
-    hint: "The solver stops here and reports the best schedule found.",
-    step: "any",
-  },
-  {
-    key: "relativeGapLimit",
-    path: "relative_gap_limit",
-    label: "Gap limit",
-    hint: "Stop once the proven gap is below this, 0.01 = 1%.",
-    step: "any",
-  },
-  {
-    key: "numWorkers",
-    path: "num_workers",
-    label: "Solver workers",
-    hint: "Use 1 with a fixed seed to reproduce a run exactly.",
-    step: "1",
-  },
-  {
-    key: "randomSeed",
-    path: "random_seed",
-    label: "Random seed",
-    hint: "Stored with the run.",
-    step: "1",
-  },
-  {
-    key: "maxWeeklyHours",
-    path: "max_weekly_hours",
-    label: "Max hours per week",
-    hint: "Article 105: 48. Lower it for a 40-hour scenario.",
-    step: "1",
-  },
+  { key: "timeLimitSeconds", path: "time_limit_seconds", ...vi.solve.timeLimit, step: "any" },
+  { key: "relativeGapLimit", path: "relative_gap_limit", ...vi.solve.gap, step: "any" },
+  { key: "numWorkers", path: "num_workers", ...vi.solve.workers, step: "1" },
+  { key: "randomSeed", path: "random_seed", ...vi.solve.seed, step: "1" },
+  { key: "maxWeeklyHours", path: "max_weekly_hours", ...vi.solve.weeklyHours, step: "1" },
   {
     key: "maxConsecutiveDays",
     path: "max_consecutive_days",
-    label: "Max consecutive working days",
-    hint: "6 keeps at least one day off in every 7.",
+    ...vi.solve.consecutiveDays,
     step: "1",
   },
 ];
@@ -143,7 +113,7 @@ export function SolveRequestForm({
       <div className="form-grid">
         <Field
           id={fieldId("demand_profile_id")}
-          label="Demand profile"
+          label={vi.solve.profile}
           error={errors.get("demand_profile_id")}
         >
           {(control) => (
@@ -153,7 +123,7 @@ export function SolveRequestForm({
               value={draft.demandProfileId}
               onChange={(event) => onChange({ ...draft, demandProfileId: event.target.value })}
             >
-              <option value="">Choose a profile</option>
+              <option value="">{vi.solve.chooseProfile}</option>
               {profiles.map((profile) => (
                 <option key={profile.id} value={profile.id}>
                   {profile.name}
@@ -163,15 +133,15 @@ export function SolveRequestForm({
           )}
         </Field>
         <div className="field">
-          <span className="field-label-static">Employees</span>
-          <span className="solve-employees">All {employeeCount} employees</span>
+          <span className="field-label-static">{vi.solve.employees}</span>
+          <span className="solve-employees">{vi.solve.allEmployees(employeeCount)}</span>
         </div>
       </div>
       <fieldset className="field" id={fieldId("shift_template_ids")} tabIndex={-1}>
-        <legend>Shift templates the solver may use</legend>
+        <legend>{vi.solve.templates}</legend>
         {errors.get("shift_template_ids") && (
           <span className="field-error">
-            <span className="visually-hidden">Error:</span>
+            <span className="visually-hidden">{vi.common.errorPrefix}</span>
             {errors.get("shift_template_ids")}
           </span>
         )}
@@ -195,7 +165,7 @@ export function SolveRequestForm({
         className="data-details"
         open={SETTINGS.some((setting) => errors.has(setting.path)) || undefined}
       >
-        <summary>Solver and labor-rule settings</summary>
+        <summary>{vi.solve.settings}</summary>
         <div className="form-grid solve-settings">
           {SETTINGS.map((setting) => (
             <Field

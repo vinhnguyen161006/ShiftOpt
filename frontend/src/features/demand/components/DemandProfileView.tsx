@@ -5,6 +5,7 @@ import { Field } from "../../../components/ui/Field";
 import { Panel } from "../../../components/ui/Layout";
 import { Modal } from "../../../components/ui/Modal";
 import { errorsByPath, generalError, summaryErrors } from "../../../lib/form";
+import { vi } from "../../../locales/vi";
 import type { DemandProfileRead } from "../../../types/models";
 import {
   useCreateDemandProfile,
@@ -18,12 +19,7 @@ type DemandProfileViewProps = {
   onSelect: (profileId: number | undefined) => void;
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  manual: "Manual",
-  csv: "CSV",
-  freshretailnet: "FreshRetailNet-50K",
-  call_center: "Call center (simulated)",
-};
+const SOURCE_LABELS = vi.demand.sources;
 
 const EDITABLE_SOURCES = new Set(["manual", "csv"]);
 const PARAMS_PREFIX = "required_staff.";
@@ -48,18 +44,15 @@ function fieldIdFor(path: string): string | undefined {
 function SourceNotice({ profile }: { profile: DemandProfileRead }) {
   if (profile.source === "freshretailnet") {
     return (
-      <Notice kind="warning" title="Normalized sales, not staffing demand">
-        {profile.source_metadata.label ??
-          "Normalized sales of an e-commerce front warehouse; not staffing demand."}{" "}
-        Head counts below come from the team assumptions alpha, p and the two floors, which are
-        listed with this profile.
+      <Notice kind="warning" title={vi.demand.salesTitle}>
+        {vi.demand.salesBody}
       </Notice>
     );
   }
   if (profile.source === "call_center") {
     return (
-      <Notice kind="info" title="Simulated arrivals">
-        {profile.source_metadata.label ?? "Simulated call arrivals, not observed call data."}
+      <Notice kind="info" title={vi.demand.callTitle}>
+        {vi.demand.callBody}
       </Notice>
     );
   }
@@ -74,7 +67,7 @@ function Assumptions({ profile }: { profile: DemandProfileRead }) {
   }
   return (
     <details className="data-details" open={profile.source !== "manual"}>
-      <summary>Assumptions and method</summary>
+      <summary>{vi.demand.assumptions}</summary>
       <dl className="dl">
         {params.map(([key, value]) => (
           <div key={`param-${key}`} className="dl-row">
@@ -119,7 +112,7 @@ export function DemandProfileView({ profile, onSelect }: DemandProfileViewProps)
   function copyAsManual() {
     copy.mutate(
       {
-        name: `${profile.name} (edited copy)`.slice(0, 120),
+        name: `${profile.name}${vi.demand.copySuffix}`.slice(0, 120),
         source: "manual",
         mode: profile.mode,
         required_staff: profile.required_staff,
@@ -135,7 +128,9 @@ export function DemandProfileView({ profile, onSelect }: DemandProfileViewProps)
       aside={
         <span className="tag-row">
           <span className="tag tag-outline">{SOURCE_LABELS[profile.source] ?? profile.source}</span>
-          <span className="tag tag-neutral">{profile.mode === "erlang" ? "Erlang" : "Linear"}</span>
+          <span className="tag tag-neutral">
+            {profile.mode === "erlang" ? vi.demand.modeErlang : vi.demand.modeLinear}
+          </span>
         </span>
       }
     >
@@ -143,10 +138,10 @@ export function DemandProfileView({ profile, onSelect }: DemandProfileViewProps)
         <ErrorSummary errors={summaryErrors(error, fieldIdFor)} />
         <SourceNotice profile={profile} />
         <p className="muted profile-stats">
-          {total.toLocaleString("en-US")} staff-hours per week &middot; peak {peak} people
+          {vi.demand.stats(total.toLocaleString("vi-VN"), peak)}
         </p>
         {editable && (
-          <Field id="profile-name" label="Profile name" error={errors.get("name")}>
+          <Field id="profile-name" label={vi.demand.profileName} error={errors.get("name")}>
             {(control) => (
               <input
                 {...control}
@@ -159,22 +154,17 @@ export function DemandProfileView({ profile, onSelect }: DemandProfileViewProps)
           </Field>
         )}
         <DemandGridEditor
-          caption={`Required staff per hour for ${profile.name}`}
+          caption={vi.demand.gridCaption(profile.name)}
           value={grid}
           onChange={editable ? setGrid : undefined}
           invalidCells={invalidCells(errors)}
         />
-        {!editable && (
-          <p className="muted">
-            This grid is derived from its source and assumptions, so it is read-only. Copy it to a
-            manual profile to edit hours by hand.
-          </p>
-        )}
+        {!editable && <p className="muted">{vi.demand.readOnlyNote}</p>}
         <Assumptions profile={profile} />
         {general && <Notice kind="error" title={general} />}
-        {update.isSuccess && !dirty && <Notice kind="success" title="Profile saved" />}
+        {update.isSuccess && !dirty && <Notice kind="success" title={vi.demand.saved} />}
         <div className="form-actions">
-          <Button onClick={() => setConfirmDelete(true)}>Delete profile</Button>
+          <Button onClick={() => setConfirmDelete(true)}>{vi.demand.deleteProfile}</Button>
           {editable ? (
             <>
               <Button
@@ -184,30 +174,27 @@ export function DemandProfileView({ profile, onSelect }: DemandProfileViewProps)
                   setGrid(profile.required_staff);
                 }}
               >
-                Discard changes
+                {vi.demand.discard}
               </Button>
               <Button variant="primary" disabled={!dirty || update.isPending} onClick={save}>
-                {update.isPending ? "Saving..." : "Save profile"}
+                {update.isPending ? vi.common.saving : vi.demand.save}
               </Button>
             </>
           ) : (
             <Button variant="primary" disabled={copy.isPending} onClick={copyAsManual}>
-              {copy.isPending ? "Copying..." : "Copy to editable profile"}
+              {copy.isPending ? vi.demand.copying : vi.demand.copy}
             </Button>
           )}
         </div>
       </div>
       <Modal
-        title="Delete demand profile?"
+        title={vi.demand.deleteTitle}
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
       >
-        <p>
-          &ldquo;{profile.name}&rdquo; will be removed. Schedules already solved keep their own copy
-          of this demand.
-        </p>
+        <p>{vi.demand.deleteBody(profile.name)}</p>
         <div className="form-actions">
-          <Button onClick={() => setConfirmDelete(false)}>Cancel</Button>
+          <Button onClick={() => setConfirmDelete(false)}>{vi.common.cancel}</Button>
           <Button
             variant="primary"
             disabled={remove.isPending}
@@ -220,7 +207,7 @@ export function DemandProfileView({ profile, onSelect }: DemandProfileViewProps)
               })
             }
           >
-            Delete
+            {vi.common.delete}
           </Button>
         </div>
       </Modal>

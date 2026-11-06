@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../config/env";
+import { vi } from "../locales/vi";
 
 export type FieldError = {
   path: (string | number)[];
@@ -15,8 +16,8 @@ export class ApiError extends Error {
   }
 }
 
-const UNREACHABLE = "Cannot reach the ShiftOpt API. Check that the backend is running.";
-const FIELD_ERRORS = "Some fields need attention.";
+const UNREACHABLE = vi.common.unreachable;
+const FIELD_ERRORS = vi.common.fieldErrors;
 
 type ValidationItem = { loc?: (string | number)[]; msg?: string };
 
@@ -70,15 +71,15 @@ function toApiError(status: number, body: unknown): ApiError {
   if (Array.isArray(detail)) {
     const fieldErrors = detail.map((item: ValidationItem) => ({
       path: (item.loc ?? []).filter((part, index) => !(index === 0 && part === "body")),
-      message: item.msg ?? "Invalid value",
+      message: item.msg ?? vi.common.invalidValue,
     }));
     return new ApiError(status, FIELD_ERRORS, fieldErrors);
   }
-  return new ApiError(status, `Request failed with status ${status}.`);
+  return new ApiError(status, vi.common.requestFailed(status));
 }
 
 export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Something went wrong.";
+  return error instanceof Error ? error.message : vi.common.somethingWrong;
 }
 
 export function fieldErrorsOf(error: unknown): FieldError[] {

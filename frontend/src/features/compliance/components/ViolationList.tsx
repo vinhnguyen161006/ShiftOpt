@@ -3,6 +3,7 @@ import { Table } from "../../../components/ui/Table";
 import { DAY_NAMES } from "../../../lib/time";
 import type { ComplianceRead, ViolationRead } from "../../../types/models";
 import "../compliance.css";
+import { vi } from "../../../locales/vi";
 
 type ViolationListProps = {
   compliance: ComplianceRead;
@@ -32,38 +33,40 @@ function groupViolations(violations: ViolationRead[]): Group[] {
 }
 
 function kindLabel(kind: string): string {
-  return kind.replaceAll("_", " ");
+  return vi.compliance.kinds[kind] ?? kind.replaceAll("_", " ");
+}
+
+function basisLabel(basis: string): string {
+  return vi.compliance.basis[basis] ?? basis;
 }
 
 export function ViolationList({ compliance }: ViolationListProps) {
   if (compliance.violations.length === 0) {
     return (
-      <Notice kind="success" title="0 hard violations">
-        The independent validator re-checked this schedule against every hard rule (Articles 105,
-        109, 110 and 111, consecutive working days, availability) and found nothing.
+      <Notice kind="success" title={vi.compliance.noneTitle}>
+        {vi.compliance.noneBody}
       </Notice>
     );
   }
   const groups = groupViolations(compliance.violations);
   return (
     <div className="form-stack">
-      <Notice kind="error" title={`${compliance.violations.length} hard violations`}>
-        This schedule breaks hard rules and is not compliant. Each group below names the rule and
-        the people affected.
+      <Notice kind="error" title={vi.compliance.someTitle(compliance.violations.length)}>
+        {vi.compliance.someBody}
       </Notice>
       {groups.map((group) => (
         <section
           key={group.key}
           className="violation-group"
-          aria-label={`${group.legalBasis} ${kindLabel(group.kind)}`}
+          aria-label={`${basisLabel(group.legalBasis)} ${kindLabel(group.kind)}`}
         >
           <h3 className="violation-title">
-            <span className="tag tag-strong">{group.legalBasis}</span>
+            <span className="tag tag-strong">{basisLabel(group.legalBasis)}</span>
             <span>{kindLabel(group.kind)}</span>
             <span className="muted">{group.violations.length}</span>
           </h3>
           <Table
-            caption={`${group.legalBasis}: ${kindLabel(group.kind)}`}
+            caption={`${basisLabel(group.legalBasis)}: ${kindLabel(group.kind)}`}
             rows={group.violations}
             rowKey={(violation) =>
               `${violation.employee_code}-${violation.day}-${violation.detail}`
@@ -71,18 +74,22 @@ export function ViolationList({ compliance }: ViolationListProps) {
             columns={[
               {
                 key: "employee",
-                label: "Employee",
+                label: vi.compliance.employee,
                 render: (violation) => violation.employee_code,
               },
               {
                 key: "day",
-                label: "Day",
+                label: vi.compliance.day,
                 render: (violation) =>
                   violation.day === null || violation.day === undefined
-                    ? "Week"
+                    ? vi.compliance.week
                     : DAY_NAMES[violation.day],
               },
-              { key: "detail", label: "Detail", render: (violation) => violation.detail },
+              {
+                key: "detail",
+                label: vi.compliance.detail,
+                render: (violation) => violation.detail,
+              },
             ]}
           />
         </section>

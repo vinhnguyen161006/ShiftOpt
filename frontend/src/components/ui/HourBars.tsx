@@ -1,4 +1,5 @@
 import { formatHour } from "../../lib/time";
+import { vi } from "../../locales/vi";
 
 export type HourBar = {
   hour: number;
@@ -20,14 +21,20 @@ const TICK_EVERY = 3;
 function status(bar: HourBar): string {
   const gap = bar.assigned - bar.required;
   if (gap < 0) {
-    return `${-gap} short`;
+    return vi.hourBars.short(-gap);
   }
-  return gap > 0 ? `${gap} over` : "exact";
+  return gap > 0 ? vi.hourBars.over(gap) : vi.hourBars.exact;
 }
 
 function describe(bar: HourBar, dayLabel: string | undefined): string {
   const prefix = dayLabel ? `${dayLabel} ` : "";
-  return `${prefix}${formatHour(bar.hour)}: required ${bar.required}, assigned ${bar.assigned} (${status(bar)})`;
+  return vi.hourBars.describe(
+    prefix,
+    formatHour(bar.hour),
+    bar.required,
+    bar.assigned,
+    status(bar),
+  );
 }
 
 export function HourBars({ bars, height, label, peak, spaced = false, dayLabel }: HourBarsProps) {

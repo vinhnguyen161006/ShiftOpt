@@ -1,6 +1,7 @@
 import { Button } from "../../../components/ui/Button";
 import { Table } from "../../../components/ui/Table";
 import { dayList } from "../../../lib/time";
+import { vi } from "../../../locales/vi";
 import type { EmployeeRead } from "../../../types/models";
 
 type EmployeeTableProps = {
@@ -12,44 +13,46 @@ type EmployeeTableProps = {
 export function EmployeeTable({ employees, onEdit, onDelete }: EmployeeTableProps) {
   return (
     <Table
-      caption="Employees"
+      caption={vi.employees.table.caption}
       rows={employees}
       rowKey={(employee) => employee.id}
       columns={[
-        { key: "code", label: "Code", render: (employee) => employee.code },
-        { key: "name", label: "Name", render: (employee) => employee.name },
+        { key: "code", label: vi.employees.table.code, render: (employee) => employee.code },
+        { key: "name", label: vi.employees.table.name, render: (employee) => employee.name },
         {
           key: "wage",
-          label: "Hourly wage",
+          label: vi.employees.table.wage,
           align: "end",
-          render: (employee) => employee.hourly_wage.toLocaleString("en-US"),
+          render: (employee) => employee.hourly_wage.toLocaleString("vi-VN"),
         },
         {
           key: "max_hours",
-          label: "Max hours/week",
+          label: vi.employees.table.maxHours,
           align: "end",
-          render: (employee) => employee.max_weekly_hours ?? "Law limit (48)",
+          render: (employee) => employee.max_weekly_hours ?? vi.employees.table.lawLimit,
         },
         {
           key: "unavailable",
-          label: "Cannot work",
+          label: vi.employees.table.cannotWork,
           render: (employee) => dayList(employee.unavailable_days),
         },
         {
           key: "preferred",
-          label: "Prefers off",
+          label: vi.employees.table.prefersOff,
           render: (employee) => dayList(employee.preferred_days_off),
         },
         {
           key: "actions",
-          label: "Actions",
+          label: vi.common.actions,
           render: (employee) => (
             <span className="tag-row">
               <Button size="sm" onClick={() => onEdit(employee)}>
-                Edit<span className="visually-hidden"> {employee.code}</span>
+                {vi.common.edit}
+                <span className="visually-hidden"> {employee.code}</span>
               </Button>
               <Button size="sm" onClick={() => onDelete(employee)}>
-                Delete<span className="visually-hidden"> {employee.code}</span>
+                {vi.common.delete}
+                <span className="visually-hidden"> {employee.code}</span>
               </Button>
             </span>
           ),
