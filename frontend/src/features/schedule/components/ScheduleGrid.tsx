@@ -1,6 +1,7 @@
 import { DAY_NAMES, DAYS, formatHour, shiftSpan } from "../../../lib/time";
 import type { AssignmentRead, ShiftTypeRead, SolveRunRead } from "../../../types/models";
 import "../schedule.css";
+import { vi } from "../../../locales/vi";
 
 type ScheduleGridProps = {
   run: SolveRunRead;
@@ -54,7 +55,7 @@ function cellTitle(day: number, shift: ShiftTypeRead | undefined, assignment: As
   const span = shift ? ` ${shiftSpan(shift.start_hour, shift.length)}` : "";
   const rest =
     shift && assignment.break_offset !== null && assignment.break_offset !== undefined
-      ? `, break at ${formatHour(shift.start_hour + assignment.break_offset)}`
+      ? vi.schedule.grid.breakAt(formatHour(shift.start_hour + assignment.break_offset))
       : "";
   return `${DAY_NAMES[day]}: ${assignment.shift_name}${span}${rest}`;
 }
@@ -74,12 +75,10 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
     <div className="roster">
       <div className="roster-scroll">
         <table className="roster-grid">
-          <caption className="visually-hidden">
-            Weekly roster: one row per employee, one column per day
-          </caption>
+          <caption className="visually-hidden">{vi.schedule.grid.caption}</caption>
           <thead>
             <tr>
-              <th scope="col">Employee</th>
+              <th scope="col">{vi.schedule.grid.employee}</th>
               {DAYS.map((day, index) => (
                 <th key={day} scope="col" title={DAY_NAMES[index]}>
                   {day}
@@ -92,7 +91,7 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
               <tr key={code}>
                 <th scope="row">
                   <span className="roster-name">{code}</span>
-                  <span className="roster-sub">{shiftCount(code)} shifts</span>
+                  <span className="roster-sub">{vi.schedule.grid.shifts(shiftCount(code))}</span>
                 </th>
                 {DAYS.map((day, dayIndex) => {
                   const assignment = byCell.get(`${code}|${dayIndex}`);
@@ -101,9 +100,9 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
                       <td key={day}>
                         <span
                           className="roster-cell roster-off"
-                          title={`${DAY_NAMES[dayIndex]}: off`}
+                          title={vi.schedule.grid.offTitle(DAY_NAMES[dayIndex])}
                         >
-                          <span className="visually-hidden">Off</span>
+                          <span className="visually-hidden">{vi.schedule.grid.off}</span>
                         </span>
                       </td>
                     );
@@ -144,7 +143,7 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
         })}
         <span className="legend-item">
           <span className="swatch roster-off" />
-          Off
+          {vi.schedule.grid.off}
         </span>
       </div>
     </div>

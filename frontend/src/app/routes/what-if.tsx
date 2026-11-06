@@ -15,6 +15,7 @@ import { SweepView } from "../../features/what-if/components/SweepView";
 import { WhatIfSetup } from "../../features/what-if/components/WhatIfSetup";
 import { errorMessage } from "../../lib/api-client";
 import { useLaborRules } from "../../lib/labor-rules";
+import { vi } from "../../locales/vi";
 import type {
   AnalysisRunRead,
   DemandSweepResult,
@@ -58,21 +59,16 @@ function SetupPanel({
   const failed = [profiles, templates, employees, rules].find((query) => query.isError);
   if (failed) {
     return (
-      <Notice kind="error" title="Could not load the inputs">
+      <Notice kind="error" title={vi.whatIf.inputsError}>
         {errorMessage(failed.error)}
       </Notice>
     );
   }
   if (!profiles.data || !templates.data || !employees.data || !rules.data) {
-    return <Loading label="Loading inputs" />;
+    return <Loading label={vi.whatIf.loadingInputs} />;
   }
   if (profiles.data.length === 0 || templates.data.length === 0 || employees.data.length === 0) {
-    return (
-      <EmptyState title="Add inputs first">
-        A what-if analysis re-solves the same instance as an optimization run, so it needs a demand
-        profile, shift templates and employees.
-      </EmptyState>
-    );
+    return <EmptyState title={vi.whatIf.addInputsTitle}>{vi.whatIf.addInputsBody}</EmptyState>;
   }
   return (
     <WhatIfSetup
@@ -86,7 +82,11 @@ function SetupPanel({
 }
 
 function runLabel(run: SolveRunRead): string {
-  return `Run ${run.id} (${run.solver === "manual" ? "manual edit" : (run.solve_status ?? run.status)})`;
+  const status =
+    run.solver === "manual"
+      ? vi.whatIf.compare.manualEdit
+      : (vi.schedule.solveStatus[run.solve_status ?? ""] ?? run.solve_status ?? run.status);
+  return vi.whatIf.runLabel(run.id, status);
 }
 
 function ComparePanel({
@@ -106,15 +106,10 @@ function ComparePanel({
   const scenarioKpi = useScheduleKpi(scenario?.id, scenario !== undefined);
 
   if (runs.isPending) {
-    return <Loading label="Loading runs" />;
+    return <Loading label={vi.whatIf.loadingRuns} />;
   }
   if (finished.length < 2) {
-    return (
-      <EmptyState title="Two runs are needed">
-        Optimize the same demand under two settings, for example 48 and 40 hours per week, then
-        compare them here.
-      </EmptyState>
-    );
+    return <EmptyState title={vi.whatIf.twoRunsTitle}>{vi.whatIf.twoRunsBody}</EmptyState>;
   }
   const picker = (key: "base" | "compare", label: string, value: number | undefined) => (
     <Field id={`compare-${key}`} label={label}>
@@ -125,7 +120,7 @@ function ComparePanel({
           value={value ?? ""}
           onChange={(event) => onChange(key, Number(event.target.value) || undefined)}
         >
-          <option value="">Choose a run</option>
+          <option value="">{vi.whatIf.chooseRun}</option>
           {finished.map((run) => (
             <option key={run.id} value={run.id}>
               {runLabel(run)}
@@ -138,8 +133,8 @@ function ComparePanel({
   return (
     <div>
       <div className="compare-pickers">
-        {picker("base", "Baseline", baselineId)}
-        {picker("compare", "Scenario", scenarioId)}
+        {picker("base", vi.whatIf.baseline, baselineId)}
+        {picker("compare", vi.whatIf.scenario, scenarioId)}
       </div>
       {baseline && scenario && (
         <ScenarioCompare
@@ -174,68 +169,54 @@ export function WhatIfRoute() {
 
   return (
     <div className="page">
-      <PageHeader
-        eyebrow="What-if"
-        title="Sensitivity of cost and coverage"
-        lead="Every number here comes from solving again: the demand sweep re-solves the roster at each multiplier, and the marginal cost of an hour is the cost difference after requiring one more person in it. LP duals are shown only as an approximation."
-      />
-      <Panel title="Set up an analysis" labelledBy="whatif-setup-title">
+      <PageHeader eyebrow={vi.whatIf.eyebrow} title={vi.whatIf.title} lead={vi.whatIf.lead} />
+      <Panel title={vi.whatIf.setup} labelledBy="whatif-setup-title">
         <SetupPanel onStarted={(kind, runId) => setParam(kind, runId)} />
       </Panel>
       {sweepResult ? (
         <SweepView key={sweep.data?.id} result={sweepResult} />
       ) : (
-        <Panel title="Demand sweep z(lambda)" labelledBy="sweep-title">
+        <Panel title={vi.whatIf.sweepPanel} labelledBy="sweep-title">
           {sweepId === undefined && (
-            <EmptyState title="No sweep yet">
-              Run a demand sweep above to draw the cost curve.
-            </EmptyState>
+            <EmptyState title={vi.whatIf.noSweepTitle}>{vi.whatIf.noSweepBody}</EmptyState>
           )}
           {sweep.isError && <Notice kind="error" title={errorMessage(sweep.error)} />}
           {sweep.data && (
-            <AnalysisStatus
-              run={sweep.data}
-              activeLabel={`Re-solving at each multiplier (analysis ${sweep.data.id})`}
-            >
+            <AnalysisStatus run={sweep.data} activeLabel={vi.whatIf.sweepActive(sweep.data.id)}>
               {null}
             </AnalysisStatus>
           )}
         </Panel>
       )}
-      <Panel title="Conversion assumption sweep" labelledBy="staffing-title">
+      <Panel title={vi.whatIf.staffingPanel} labelledBy="staffing-title">
         {staffingId === undefined && (
-          <EmptyState title="No assumption sweep yet">
-            Pick a FreshRetailNet profile and a conversion assumption above to see how the head
-            count and cost move.
-          </EmptyState>
+          <EmptyState title={vi.whatIf.noStaffingTitle}>{vi.whatIf.noStaffingBody}</EmptyState>
         )}
         {staffing.isError && <Notice kind="error" title={errorMessage(staffing.error)} />}
         {staffing.data && (
           <AnalysisStatus
             run={staffing.data}
-            activeLabel={`Re-solving at each value (analysis ${staffing.data.id})`}
+            activeLabel={vi.whatIf.staffingActive(staffing.data.id)}
           >
             {isStaffing(staffing.data) && <StaffingSweepView result={staffing.data.result} />}
           </AnalysisStatus>
         )}
       </Panel>
-      <Panel title="Marginal cost by hour" labelledBy="marginal-title">
+      <Panel title={vi.whatIf.marginalPanel} labelledBy="marginal-title">
         {marginalId === undefined && (
-          <EmptyState title="No marginal cost yet">
-            Run the marginal cost analysis above to fill the 7 x 24 heatmap.
-          </EmptyState>
+          <EmptyState title={vi.whatIf.noMarginalTitle}>{vi.whatIf.noMarginalBody}</EmptyState>
         )}
         {marginal.isError && <Notice kind="error" title={errorMessage(marginal.error)} />}
         {marginal.data && (
           <AnalysisStatus
             run={marginal.data}
-            activeLabel={`Re-solving 169 times (analysis ${marginal.data.id})`}
+            activeLabel={vi.whatIf.marginalActive(marginal.data.id)}
           >
             {isMarginal(marginal.data) && <SensitivityHeatmap result={marginal.data.result} />}
           </AnalysisStatus>
         )}
       </Panel>
-      <Panel title="Compare two runs" labelledBy="compare-title">
+      <Panel title={vi.whatIf.comparePanel} labelledBy="compare-title">
         <ComparePanel
           baselineId={numberParam(params, "base")}
           scenarioId={numberParam(params, "compare")}

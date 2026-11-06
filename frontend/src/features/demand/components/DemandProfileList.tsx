@@ -1,4 +1,5 @@
 import { Table } from "../../../components/ui/Table";
+import { vi } from "../../../locales/vi";
 import type { DemandProfileRead } from "../../../types/models";
 
 type DemandProfileListProps = {
@@ -10,13 +11,13 @@ type DemandProfileListProps = {
 export function DemandProfileList({ profiles, selectedId, onSelect }: DemandProfileListProps) {
   return (
     <Table
-      caption="Demand profiles"
+      caption={vi.demand.listCaption}
       rows={profiles}
       rowKey={(profile) => profile.id}
       columns={[
         {
           key: "name",
-          label: "Profile",
+          label: vi.demand.profile,
           render: (profile) => (
             <button
               type="button"
@@ -30,7 +31,7 @@ export function DemandProfileList({ profiles, selectedId, onSelect }: DemandProf
         },
         {
           key: "peak",
-          label: "Peak",
+          label: vi.demand.peak,
           align: "end",
           render: (profile) => Math.max(0, ...profile.required_staff),
         },

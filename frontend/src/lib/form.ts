@@ -1,4 +1,5 @@
 import type { SummaryError } from "../components/ui/Feedback";
+import { vi } from "../locales/vi";
 import { ApiError, fieldErrorsOf } from "./api-client";
 
 export function errorsByPath(error: unknown): Map<string, string> {
@@ -26,7 +27,7 @@ export function generalError(error: unknown): string | undefined {
   if (error instanceof ApiError && error.fieldErrors.length > 0) {
     return undefined;
   }
-  return error instanceof Error ? error.message : "Something went wrong.";
+  return error instanceof Error ? error.message : vi.common.somethingWrong;
 }
 
 export function toNumber(value: string): number {

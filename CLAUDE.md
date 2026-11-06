@@ -349,11 +349,12 @@ frontend/
     components/solve/       SolveRequestForm: form SolveRequest dùng chung cho Schedule và What-if
     config/env.ts
     lib/                    api-client.ts (apiFetch, ApiError + lỗi theo ô từ 422), form.ts, time.ts, labor-rules.ts
+    locales/vi.ts           toàn bộ text giao diện tiếng Việt (file duy nhất được có ký tự ngoài ASCII)
     styles/                 global.css (nạp fonts, tokens, components + bố cục trang app), fonts.css, tokens.css, components.css
     types/api.ts            sinh từ backend/openapi.json (npm run gen:api), không sửa tay
     types/models.ts         alias tên schema từ api.ts
     features/
-      home/                 trang chủ port từ "ShiftOpt Homepage.html": components/, sample-data.ts (số liệu minh họa), home.css, links.ts
+      home/                 trang chủ tối giản (header, hero kèm xem trước lịch, footer): components/, sample-data.ts (số liệu minh họa), home.css, links.ts
       demand/               api, DemandPage, DemandProfileList, DemandProfileView, DemandGridEditor (lưới 7x24), NewProfileForm (tay, CSV, FreshRetailNet, tổng đài), ConversionParamsForm
       employees/            api, EmployeesPage, EmployeeTable, EmployeeForm
       shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip
@@ -386,8 +387,9 @@ Ranh giới module:
 ## 12. Quy ước khi viết code
 
 **Ngôn ngữ và comment (bắt buộc):**
-- Toàn bộ code viết bằng **tiếng Anh**: tên, docstring, chuỗi lỗi, text UI, file template, metadata package. Tài liệu (`docs/`, `*.md`) có thể dùng tiếng Việt.
-- **Code chỉ ASCII.** Ký hiệu toán học đặt tên bằng chữ Latin (`alpha`, `lam`, `sigma`), không dùng ký tự Hy Lạp hay dấu tiếng Việt trong code.
+- Toàn bộ code viết bằng **tiếng Anh**: tên, docstring, chuỗi lỗi, file template, metadata package. Tài liệu (`docs/`, `*.md`) có thể dùng tiếng Việt.
+- **Text giao diện là tiếng Việt** và chỉ nằm trong `frontend/src/locales/vi.ts` (quyết định 2026-11-06). Component tham chiếu khóa trong `vi`, không viết chữ hiển thị trực tiếp. Lỗi trả về từ backend (kể cả lỗi validate của Pydantic) vẫn là tiếng Anh. Mã trạng thái solver (`OPTIMAL`, `FEASIBLE`) giữ nguyên, kèm giải thích tiếng Việt.
+- **Code chỉ ASCII.** Ký hiệu toán học đặt tên bằng chữ Latin (`alpha`, `lam`, `sigma`), không dùng ký tự Hy Lạp hay dấu tiếng Việt trong code. Ngoại lệ duy nhất: `frontend/src/locales/vi.ts`, khai báo trong `UI_TEXT_PATHS` của `check_conventions.py` (vẫn bị kiểm comment).
 - **Không dùng comment**: `#` trong Python, YAML, TOML, Dockerfile, shell; `//` / `/* */` trong TS, CSS; `--` trong SQL. Code phải tự giải thích qua tên và cấu trúc; điều bắt buộc phải nói (nguồn công thức, điều luật, giả định) đặt trong **docstring** của hàm hoặc class. Ngoại lệ duy nhất: shebang.
 - **Ngoại lệ lint chỉ khai báo trong file cấu hình** (`[tool.ruff.lint.per-file-ignores]`, `biome.json`), không bao giờ inline (`# noqa`, `# type: ignore`, `// biome-ignore` đều là comment).
 - File sinh tự động: migration Alembic phải sạch comment (bỏ dòng `# ###`). `frontend/src/types/api.ts` và `backend/openapi.json` được loại khỏi kiểm tra bằng cấu hình (`GENERATED_PATHS` trong `check_conventions.py`, `files.includes` trong `biome.json`); không sửa tay, sinh lại bằng `make openapi`.

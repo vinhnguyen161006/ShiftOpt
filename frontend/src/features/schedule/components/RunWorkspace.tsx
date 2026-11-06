@@ -1,7 +1,9 @@
 import { Loading } from "../../../components/ui/Feedback";
 import { KpiStrip } from "../../../components/ui/Layout";
 import { WorkspaceBlock, WorkspacePanel } from "../../../components/ui/Workspace";
+import { formatDecimal, formatPercent } from "../../../lib/number";
 import { HOURS_PER_WEEK } from "../../../lib/time";
+import { vi } from "../../../locales/vi";
 import type { KpiRead, SolveRunRead } from "../../../types/models";
 import { CoverageChart } from "./CoverageChart";
 import { ScheduleGrid } from "./ScheduleGrid";
@@ -13,12 +15,11 @@ type RunWorkspaceProps = {
 };
 
 const COST_SCALE = 100;
-const COVERAGE_TARGET = "98.0%";
+const COVERAGE_TARGET = "98,0%";
 const CP_SAT_SOLVER = "ortools-cp-sat";
-const SEPARATOR = ` ${String.fromCharCode(0xb7)} `;
 
 function money(hundredths: number): string {
-  return (hundredths / COST_SCALE).toLocaleString("en-US", {
+  return (hundredths / COST_SCALE).toLocaleString("vi-VN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -34,22 +35,24 @@ function paidHours(run: SolveRunRead): number {
 
 function rosterCaption(run: SolveRunRead): string {
   const shifts = run.assignments?.length ?? 0;
-  const hours = paidHours(run).toLocaleString("en-US");
-  return [`${run.employee_codes.length} employees`, `${shifts} assigned shifts`, `${hours} h`].join(
-    SEPARATOR,
-  );
+  const hours = paidHours(run).toLocaleString("vi-VN");
+  return vi.schedule.workspace.rosterCaption(run.employee_codes.length, shifts, hours);
 }
 
 function runMeta(run: SolveRunRead): string {
   if (run.solver === "manual") {
-    return "Manual edit";
+    return vi.schedule.workspace.manualEdit;
   }
   const solver = run.solver === CP_SAT_SOLVER ? "CP-SAT" : run.solver;
-  const time = run.wall_time_seconds === null ? "-" : `${run.wall_time_seconds.toFixed(1)} s`;
-  const workers = run.params.num_workers ?? "-";
-  const unit = workers === 1 ? "worker" : "workers";
-  return [solver, time, `seed ${run.params.random_seed ?? "-"}`, `${workers} ${unit}`].join(
-    SEPARATOR,
+  const time =
+    run.wall_time_seconds === null
+      ? "-"
+      : vi.schedule.workspace.seconds(formatDecimal(run.wall_time_seconds, 1));
+  return vi.schedule.workspace.runMeta(
+    solver,
+    time,
+    String(run.params.random_seed ?? "-"),
+    String(run.params.num_workers ?? "-"),
   );
 }
 
@@ -57,38 +60,43 @@ export function RunWorkspace({ run, kpi }: RunWorkspaceProps) {
   const verdict = solveVerdict(run);
   return (
     <WorkspacePanel
-      name={`Run ${run.id}`}
-      meta={new Date(run.created_at).toLocaleString("en-GB")}
-      tag={run.solver === "manual" ? "Manual edit" : undefined}
+      name={vi.schedule.workspace.run(run.id)}
+      meta={new Date(run.created_at).toLocaleString("vi-VN")}
+      tag={run.solver === "manual" ? vi.schedule.workspace.manualEdit : undefined}
     >
       {kpi ? (
         <KpiStrip
           flush
           items={[
             {
-              label: "Coverage ratio",
-              value: `${(kpi.coverage_ratio * 100).toFixed(1)}%`,
-              sub: `target ${COVERAGE_TARGET}`,
+              label: vi.schedule.workspace.coverage,
+              value: formatPercent(kpi.coverage_ratio, 1),
+              sub: vi.schedule.workspace.coverageSub(COVERAGE_TARGET),
             },
             {
-              label: "Labor cost",
+              label: vi.schedule.workspace.laborCost,
               value: money(kpi.labor_cost),
-              sub: "incl. night allowance",
+              sub: vi.schedule.workspace.laborCostSub,
             },
             {
-              label: "Understaffed hours",
-              value: `${kpi.understaffed_hours} h`,
-              sub: `of ${HOURS_PER_WEEK} week hours`,
+              label: vi.schedule.workspace.understaffed,
+              value: vi.home.sample.hours(kpi.understaffed_hours),
+              sub: vi.schedule.workspace.understaffedSub(HOURS_PER_WEEK),
             },
-            { label: "Solver status", value: verdict.value, sub: verdict.sub, accent: true },
+            {
+              label: vi.schedule.workspace.solverStatus,
+              value: verdict.value,
+              sub: verdict.sub,
+              accent: true,
+            },
           ]}
         />
       ) : (
         <div className="workspace-block">
-          <Loading label="Computing KPIs" />
+          <Loading label={vi.schedule.workspace.computing} />
         </div>
       )}
-      <WorkspaceBlock title="Weekly roster" caption={rosterCaption(run)}>
+      <WorkspaceBlock title={vi.schedule.workspace.roster} caption={rosterCaption(run)}>
         <ScheduleGrid run={run} />
       </WorkspaceBlock>
       {kpi && <CoverageChart kpi={kpi} meta={runMeta(run)} />}

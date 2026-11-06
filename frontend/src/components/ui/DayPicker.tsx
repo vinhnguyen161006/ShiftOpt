@@ -1,4 +1,5 @@
 import { DAY_NAMES, DAYS } from "../../lib/time";
+import { vi } from "../../locales/vi";
 
 type DayPickerProps = {
   id: string;
@@ -23,7 +24,7 @@ export function DayPicker({ id, legend, hint, error, value, onChange }: DayPicke
       {hint && <span className="field-hint">{hint}</span>}
       {error && (
         <span className="field-error">
-          <span className="visually-hidden">Error:</span>
+          <span className="visually-hidden">{vi.common.errorPrefix}</span>
           {error}
         </span>
       )}

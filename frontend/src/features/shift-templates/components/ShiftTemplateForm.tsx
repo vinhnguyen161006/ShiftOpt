@@ -4,6 +4,7 @@ import { ErrorSummary, Notice } from "../../../components/ui/Feedback";
 import { Field } from "../../../components/ui/Field";
 import { errorsByPath, generalError, summaryErrors, toNumber } from "../../../lib/form";
 import { formatHour, HOURS, shiftSpan } from "../../../lib/time";
+import { vi } from "../../../locales/vi";
 import type { LaborRulesRead, ShiftTemplateRead } from "../../../types/models";
 import { useSaveShiftTemplate } from "../api/shift-templates";
 import { ShiftStrip } from "./ShiftStrip";
@@ -44,8 +45,8 @@ export function ShiftTemplateForm({ template, rules, onDone }: ShiftTemplateForm
       <div className="form-grid">
         <Field
           id={FIELD_IDS.name}
-          label="Name"
-          hint="For example Early, Late or Night."
+          label={vi.shifts.form.name}
+          hint={vi.shifts.form.nameHint}
           error={errors.get("name")}
         >
           {(control) => (
@@ -58,7 +59,11 @@ export function ShiftTemplateForm({ template, rules, onDone }: ShiftTemplateForm
             />
           )}
         </Field>
-        <Field id={FIELD_IDS.start_hour} label="Starts at" error={errors.get("start_hour")}>
+        <Field
+          id={FIELD_IDS.start_hour}
+          label={vi.shifts.form.startsAt}
+          error={errors.get("start_hour")}
+        >
           {(control) => (
             <select
               {...control}
@@ -76,10 +81,8 @@ export function ShiftTemplateForm({ template, rules, onDone }: ShiftTemplateForm
         </Field>
         <Field
           id={FIELD_IDS.length_hours}
-          label="Length (hours)"
-          hint={
-            rules ? `Normal working time is at most ${rules.max_daily_hours} h a day.` : undefined
-          }
+          label={vi.shifts.form.length}
+          hint={rules ? vi.shifts.form.lengthHint(rules.max_daily_hours) : undefined}
           error={errors.get("length_hours")}
         >
           {(control) => (
@@ -110,16 +113,15 @@ export function ShiftTemplateForm({ template, rules, onDone }: ShiftTemplateForm
         </p>
       )}
       {tooLong && rules && (
-        <Notice kind="warning" title={`Longer than ${rules.max_daily_hours} hours`}>
-          Article 105 limits normal working time to {rules.max_daily_hours} hours a day, so this
-          template will be rejected. Split it into two shifts instead.
+        <Notice kind="warning" title={vi.shifts.form.tooLongTitle(rules.max_daily_hours)}>
+          {vi.shifts.form.tooLongBody(rules.max_daily_hours)}
         </Notice>
       )}
       {general && <Notice kind="error" title={general} />}
       <div className="form-actions">
-        <Button onClick={onDone}>Cancel</Button>
+        <Button onClick={onDone}>{vi.common.cancel}</Button>
         <Button type="submit" variant="primary" disabled={save.isPending || tooLong}>
-          {save.isPending ? "Saving..." : template ? "Save template" : "Add template"}
+          {save.isPending ? vi.common.saving : template ? vi.shifts.form.save : vi.shifts.form.add}
         </Button>
       </div>
     </form>

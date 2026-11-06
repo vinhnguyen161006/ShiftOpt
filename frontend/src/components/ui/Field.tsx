@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { vi } from "../../locales/vi";
 
 export type ControlProps = {
   id: string;
@@ -28,7 +29,7 @@ export function Field({ id, label, hint, error, children }: FieldProps) {
       )}
       {error && (
         <span id={errorId} className="field-error">
-          <span className="visually-hidden">Error:</span>
+          <span className="visually-hidden">{vi.common.errorPrefix}</span>
           {error}
         </span>
       )}

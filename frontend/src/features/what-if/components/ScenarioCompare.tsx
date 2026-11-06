@@ -1,4 +1,6 @@
 import { Table } from "../../../components/ui/Table";
+import { formatDecimal, formatPercent } from "../../../lib/number";
+import { vi } from "../../../locales/vi";
 import type { KpiRead, SolveRunRead } from "../../../types/models";
 
 export type ScenarioSide = {
@@ -21,44 +23,44 @@ const COST_SCALE = 100;
 
 const METRICS: Metric[] = [
   {
-    label: "Coverage ratio",
+    label: vi.whatIf.compare.coverage,
     value: (side) => side.kpi?.coverage_ratio ?? null,
-    format: (value) => `${(value * 100).toFixed(1)}%`,
+    format: (value) => formatPercent(value, 1),
   },
   {
-    label: "Understaffed hours",
+    label: vi.whatIf.compare.understaffed,
     value: (side) => side.kpi?.understaffed_hours ?? null,
-    format: (value) => `${value} h`,
+    format: (value) => vi.home.sample.hours(value),
   },
   {
-    label: "Overstaffed hours",
+    label: vi.whatIf.compare.overstaffed,
     value: (side) => side.kpi?.overstaffed_hours ?? null,
-    format: (value) => `${value} h`,
+    format: (value) => vi.home.sample.hours(value),
   },
   {
-    label: "Labor cost",
+    label: vi.whatIf.compare.laborCost,
     value: (side) => (side.kpi ? side.kpi.labor_cost / COST_SCALE : null),
-    format: (value) => value.toLocaleString("en-US", { maximumFractionDigits: 2 }),
+    format: (value) => value.toLocaleString("vi-VN", { maximumFractionDigits: 2 }),
   },
   {
-    label: "Night allowance",
+    label: vi.whatIf.compare.night,
     value: (side) => (side.kpi ? side.kpi.night_premium_cost / COST_SCALE : null),
-    format: (value) => value.toLocaleString("en-US", { maximumFractionDigits: 2 }),
+    format: (value) => value.toLocaleString("vi-VN", { maximumFractionDigits: 2 }),
   },
   {
-    label: "Hard violations",
+    label: vi.whatIf.compare.hard,
     value: (side) => side.run.hard_violations,
     format: (value) => String(value),
   },
   {
-    label: "Gap",
+    label: vi.whatIf.compare.gap,
     value: (side) => side.run.gap,
-    format: (value) => `${(value * 100).toFixed(2)}%`,
+    format: (value) => formatPercent(value, 2),
   },
   {
-    label: "Wall time",
+    label: vi.whatIf.compare.wallTime,
     value: (side) => side.run.wall_time_seconds,
-    format: (value) => `${value.toFixed(1)} s`,
+    format: (value) => vi.schedule.workspace.seconds(formatDecimal(value, 1)),
   },
 ];
 
@@ -75,12 +77,12 @@ function delta(metric: Metric, baseline: ScenarioSide, scenario: ScenarioSide): 
   }
   const difference = after - before;
   const sign = difference > 0 ? "+" : "";
-  return difference === 0 ? "same" : `${sign}${metric.format(difference)}`;
+  return difference === 0 ? vi.whatIf.compare.same : `${sign}${metric.format(difference)}`;
 }
 
 function verdict(run: SolveRunRead): string {
   if (run.solver === "manual") {
-    return "manual edit";
+    return vi.whatIf.compare.manualEdit;
   }
   return run.solve_status === "optimal"
     ? "OPTIMAL"
@@ -92,7 +94,7 @@ type Row = { label: string; baseline: string; scenario: string; change: string }
 export function ScenarioCompare({ baseline, scenario }: ScenarioCompareProps) {
   const rows: Row[] = [
     {
-      label: "Solver result",
+      label: vi.whatIf.compare.solverResult,
       baseline: verdict(baseline.run),
       scenario: verdict(scenario.run),
       change: "",
@@ -106,24 +108,29 @@ export function ScenarioCompare({ baseline, scenario }: ScenarioCompareProps) {
   ];
   return (
     <Table
-      caption={`Run ${baseline.run.id} compared with run ${scenario.run.id}`}
+      caption={vi.whatIf.compare.caption(baseline.run.id, scenario.run.id)}
       rows={rows}
       rowKey={(row) => row.label}
       columns={[
-        { key: "metric", label: "Metric", render: (row) => row.label },
+        { key: "metric", label: vi.whatIf.compare.metric, render: (row) => row.label },
         {
           key: "baseline",
-          label: `Run ${baseline.run.id}`,
+          label: vi.whatIf.compare.run(baseline.run.id),
           align: "end",
           render: (row) => row.baseline,
         },
         {
           key: "scenario",
-          label: `Run ${scenario.run.id}`,
+          label: vi.whatIf.compare.run(scenario.run.id),
           align: "end",
           render: (row) => row.scenario,
         },
-        { key: "change", label: "Change", align: "end", render: (row) => row.change },
+        {
+          key: "change",
+          label: vi.whatIf.compare.change,
+          align: "end",
+          render: (row) => row.change,
+        },
       ]}
     />
   );
