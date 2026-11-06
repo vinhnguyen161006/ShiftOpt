@@ -43,18 +43,35 @@ export const vi = {
       `${prefix}${hour}: cần ${required}, có ${assigned} (${status})`,
   },
   home: {
+    nav: {
+      product: "Sản phẩm",
+      how: "Cách hoạt động",
+      features: "Tính năng",
+      analytics: "Phân tích",
+      sections: "Các mục của trang",
+    },
     eyebrow: "Nền tảng tối ưu nhân sự",
     titleTop: "Xếp ca thông minh.",
     titleBottom: "Quyết định nhân sự tốt hơn.",
-    lead: "Biến nhu cầu theo giờ thành lịch làm việc tối ưu, cân bằng độ phủ, chi phí và luật lao động.",
+    lead: "Biến nhu cầu nhân sự theo giờ thành lịch làm việc tối ưu. Cân bằng độ phủ, chi phí lao động và các ràng buộc xếp ca bằng tối ưu hóa toán học.",
     primary: "Tối ưu lịch",
-    secondary: "Nhập nhu cầu",
+    secondary: "Xem tính năng",
     headerCta: "Mở ứng dụng",
+    principles: [
+      {
+        title: "Solver đề xuất, validator kiểm tra",
+        body: "Mọi lịch được kiểm lại theo các ràng buộc cứng bằng code độc lập với mô hình.",
+      },
+      {
+        title: "Giả định hiện trên màn hình",
+        body: "Hệ số quy đổi và tham số luật lao động là đầu vào bạn thấy và đổi được, không phải hằng số giấu trong code.",
+      },
+    ],
     preview: {
       panelName: "Không gian làm việc ShiftOpt",
       week: "Tuần 10 · 04–10/03/2024",
       illustrative: "Dữ liệu minh họa",
-      note: "Số liệu minh họa từ dữ liệu mẫu, không phải kết quả solver.",
+      note: "Bản xem trước dựng từ dữ liệu mẫu. Số liệu chỉ để minh họa, không phải kết quả solver hay kết quả benchmark.",
       coverage: "Tỷ lệ phủ",
       coverageSub: "mục tiêu 98,0%",
       laborCost: "Chi phí lao động",
@@ -69,6 +86,142 @@ export const vi = {
       required: "Số người cần",
       under: "Thiếu người",
       runMeta: "CP-SAT · 42,6 giây · seed 20240304 · 1 worker",
+    },
+    product: {
+      demandLabel: "Nhu cầu → số người",
+      demandText: "Tải theo giờ thành đường số người cần qua phép quy đổi bạn kiểm soát:",
+      formula: "r = max(r_min, ceil(alpha · D / p))",
+      integerLabel: "Quy hoạch nguyên",
+      integerText:
+        "Mô hình phủ tập và mô hình xếp lịch theo nhân viên, giải bằng CP-SAT và HiGHS, so sánh trên cùng instance.",
+      sensitivityLabel: "Độ nhạy bằng giải lại",
+      sensitivityText:
+        "Chi phí biên mỗi giờ đến từ việc giải lại, không phải giá bóng mà mô hình nguyên không có.",
+    },
+    features: {
+      eyebrow: "Tính năng",
+      title: "Mọi thứ để xây dựng lịch tốt hơn",
+      lead: "Sáu khu làm việc, một instance. Nhu cầu, nhân sự và luật lao động đi vào; lịch, KPI và phân tích kịch bản đi ra.",
+      items: {
+        demand: {
+          title: "Lập kế hoạch nhu cầu",
+          body: "Sửa số người cần theo giờ trên lưới 7 × 24, nhập CSV, hoặc suy ra hồ sơ nhu cầu minh họa từ FreshRetailNet-50K.",
+        },
+        employees: {
+          title: "Quản lý nhân viên",
+          body: "Khai báo ngày làm được, giới hạn giờ theo hợp đồng, sở thích ca và ngày muốn nghỉ, gắn với đúng instance đã giải.",
+        },
+        scheduling: {
+          title: "Xếp lịch tự động",
+          body: "Gửi instance để engine tối ưu giao ca cho nhân viên theo các ràng buộc xếp ca đã ghi rõ.",
+        },
+        coverage: {
+          title: "Phân tích độ phủ",
+          body: "So số người cần với số người được xếp theo từng giờ, đọc giờ thiếu và giờ thừa ngay trên biểu đồ.",
+        },
+        cost: {
+          title: "Phân tích chi phí lao động",
+          body: "Xem chi phí lao động ước tính theo giả định lương, gồm phụ cấp đêm cho giờ làm từ 22:00 đến 06:00.",
+        },
+        sensitivity: {
+          title: "Phân tích độ nhạy",
+          body: "Quét hệ số nhu cầu, so sánh kịch bản và đọc chi phí biên theo giờ của một đơn vị nhu cầu thêm. Mỗi điểm là một lần giải lại thật.",
+        },
+      },
+    },
+    how: {
+      eyebrow: "Cách hoạt động",
+      title: "Bốn bước từ nhu cầu thô đến lịch đã kiểm tra",
+      note: "Mỗi lượt giải là bất biến: đầu vào, tham số, phiên bản solver và seed được lưu cùng kết quả.",
+      steps: [
+        {
+          num: "01",
+          title: "Khai báo nhu cầu",
+          body: "Nhập nhu cầu theo giờ trên lưới 7 × 24, nhập CSV, hoặc tạo hồ sơ từ nguồn dữ liệu được hỗ trợ.",
+        },
+        {
+          num: "02",
+          title: "Cấu hình nhân sự",
+          body: "Thêm nhân viên, mẫu ca và các tham số luật lao động áp dụng cho lượt giải này.",
+        },
+        {
+          num: "03",
+          title: "Chạy tối ưu",
+          body: "Gửi instance, rồi theo dõi trạng thái solver, gap và thời gian giải khi job trả về.",
+        },
+        {
+          num: "04",
+          title: "Phân tích kết quả",
+          body: "Xem lịch, độ phủ, chi phí, kết quả của validator và các kịch bản độ nhạy.",
+        },
+      ],
+    },
+    analytics: {
+      eyebrow: "Hỗ trợ quyết định",
+      title: "Hiểu rõ mọi quyết định xếp lịch",
+      text: "Một lịch là sự đánh đổi giữa ba đại lượng: đường nhu cầu bạn nhập, độ phủ mà lịch thực sự đạt được, và chi phí của lịch đó. ShiftOpt đặt cả ba trên cùng một màn hình để sự đánh đổi hiện rõ.",
+      textLast:
+        "Độ phủ là ràng buộc mềm với mức phạt lớn, nên một tuần thiếu người vẫn trả về lịch chỉ rõ giờ nào thiếu, thay vì một kết quả vô nghiệm không giải thích.",
+      tiles: {
+        coverage: { label: "Tỷ lệ phủ", sub: "min(có, cần) / cần" },
+        under: { label: "Thiếu người", sub: "số giờ dưới mức cần" },
+        over: { label: "Thừa người", sub: "số giờ trên mức cần" },
+        cost: { label: "Chi phí lao động", sub: "mỗi tuần xếp lịch" },
+      },
+      calloutTitle: "Solver đề xuất, validator phán xét",
+      calloutText:
+        "Các ràng buộc cứng được kiểm lại trên lịch đã tạo bằng một validator viết độc lập với mô hình tối ưu. Kết quả chỉ được báo là tuân thủ sau khi kiểm tra này chạy trên chính lịch đó.",
+    },
+    scenario: {
+      title: "Nhu cầu và nhân sự",
+      tag: "Minh họa",
+      caption:
+        "Store 1284, nhu cầu suy từ doanh số theo giờ của FreshRetailNet-50K (alpha 1,0, p 42, r_min 3).",
+      lambda: "Hệ số nhu cầu lambda",
+      curve: "Đường chi phí z(lambda)",
+      curveAria: "Chi phí tuần minh họa theo hệ số nhu cầu",
+      weeklyCost: "Chi phí tuần",
+      shortHours: "Giờ thiếu",
+      note: "Mỗi điểm là một lần giải lại riêng với cùng giới hạn thời gian và seed. Điểm chưa đạt OPTIMAL được đánh dấu trong bảng lượt giải.",
+    },
+    rules: {
+      eyebrow: "Ràng buộc và độ tin cậy",
+      title: "Những quy tắc lịch không được vi phạm",
+      lead: "Giới hạn luật lao động là tham số cấu hình của mỗi lượt, giữ như ràng buộc cứng trong mô hình và được validator kiểm lại sau đó.",
+      items: [
+        {
+          value: "12 giờ",
+          title: "Nghỉ giữa hai ca",
+          body: "Ca muộn rồi ca sớm sáng hôm sau bị mô hình loại ngay, không đợi báo lỗi sau khi xếp.",
+        },
+        {
+          value: "24 giờ",
+          title: "Nghỉ liên tục mỗi tuần",
+          body: "Đo trên trục giờ, nên ca đêm kết thúc buổi sáng không âm thầm ăn mất ngày nghỉ.",
+        },
+        {
+          value: "48 giờ",
+          title: "Giới hạn giờ làm mỗi tuần",
+          body: "Trần giờ theo từng nhân viên, có thể giảm xuống 40 giờ cho kịch bản khác.",
+        },
+        {
+          value: "6 ngày",
+          title: "Số ngày làm liên tiếp",
+          body: "Cửa sổ trượt bảo đảm ít nhất một ngày nghỉ trong mỗi bảy ngày.",
+        },
+        {
+          value: "0",
+          title: "Vi phạm cứng được phép",
+          body: "Validator độc lập kiểm lại lịch đã tạo; lượt có bất kỳ vi phạm cứng nào không được báo là tuân thủ.",
+        },
+      ],
+      note: "Giá trị mặc định theo luật lao động ghi trong tài liệu dự án và có thể đổi theo từng lượt cho kịch bản what-if. Lịch ở trên là dữ liệu mẫu, chưa qua bước kiểm tra.",
+    },
+    cta: {
+      title: "Xây dựng lịch làm việc tốt hơn.",
+      text: "Bắt đầu từ nhu cầu nhân sự, cấu hình đội ngũ và khám phá một kế hoạch xếp lịch tối ưu.",
+      button: "Mở ShiftOpt",
+      hint: "Mở khu làm việc. Không cần tài khoản.",
     },
     sample: {
       shiftNames: { E: "Ca sớm", D: "Ca ngày", L: "Ca chiều", N: "Ca đêm", O: "Nghỉ" },
@@ -85,9 +238,20 @@ export const vi = {
       hours: (count: number) => `${count} giờ`,
     },
     footer: {
-      about: "Xếp ca nhân viên cho dịch vụ có nhu cầu biến động.",
-      workspace: "Ứng dụng",
-      fine: "ShiftOpt: đồ án sinh viên.",
+      about:
+        "Xếp ca nhân viên cho vận hành có nhu cầu biến động. Quy hoạch nguyên, phân tích độ phủ và phân tích độ nhạy trong một khu làm việc.",
+      product: "Sản phẩm",
+      productLinks: {
+        overview: "Tổng quan",
+        features: "Tính năng",
+        how: "Cách hoạt động",
+        analytics: "Phân tích",
+      },
+      workspace: "Khu làm việc",
+      method: "Phương pháp",
+      methodText:
+        "Số liệu trên trang này là dữ liệu mẫu để minh họa. Đây không phải kết quả solver, kết quả benchmark hay kết luận tuân thủ đã được kiểm.",
+      fine: "ShiftOpt: đồ án sinh viên. Xếp ca cho dịch vụ có nhu cầu biến động.",
       solver: "Solver: OR-Tools CP-SAT · PuLP + HiGHS",
     },
   },

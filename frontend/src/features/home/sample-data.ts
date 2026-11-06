@@ -39,6 +39,8 @@ const DAY_MULT = [0.86, 0.86, 0.9, 0.95, 1.0, 1.1, 1.04];
 const BASE_DEMAND = [0, 0, 0, 0, 0, 0, 4, 5, 6, 6, 9, 11, 12, 12, 12, 12, 11, 9, 7, 6, 5, 4, 0, 0];
 const NIGHT_MIN_STAFF = 3;
 
+export const SCENARIO_CAPTION = vi.home.scenario.caption;
+
 function look(
   code: ShiftCode,
   span: string,
@@ -127,9 +129,18 @@ const NIGHT_FROM = 22;
 const NIGHT_TO = 6;
 const HOURS_PER_DAY = 24;
 const TICK_EVERY = 3;
+const COST_FACTORS = [0.86, 0.93, 1.0, 1.11, 1.235, 1.385];
+const CURVE_LEFT = 6;
+const CURVE_WIDTH = 188;
+const CURVE_BOTTOM = 64;
+const CURVE_HEIGHT = 56;
 
+export const LAMBDAS = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
 export const DEFAULT_DAY = 5;
+export const DEFAULT_LAMBDA_INDEX = 2;
 const PREVIEW_CHART_HEIGHT = 120;
+const SCENARIO_CHART_HEIGHT = 132;
+const SCENARIO_DAY = 5;
 
 function shiftOf(code: string): ShiftLook {
   if (code in SHIFTS) {
@@ -148,10 +159,10 @@ function isNight(hour: number): boolean {
   return hour >= NIGHT_FROM || hour < NIGHT_TO;
 }
 
-function requiredGrid(): number[][] {
+function requiredGrid(lambda: number): number[][] {
   return DAYS.map((_, day) =>
     BASE_DEMAND.map((base, hour) => {
-      const raw = isNight(hour) ? 0 : Math.ceil(base * DAY_MULT[day]);
+      const raw = isNight(hour) ? 0 : Math.ceil(base * DAY_MULT[day] * lambda);
       return Math.max(NIGHT_MIN_STAFF, raw);
     }),
   );
@@ -212,20 +223,21 @@ function bars(required: number[], assigned: number[], height: number): Bar[] {
   });
 }
 
-const ASSIGNED = assignedGrid();
-const REQUIRED = requiredGrid();
-
-function countShortHours(): number {
+function countHours(required: number[][], test: (staffed: number, need: number) => boolean) {
   let hours = 0;
-  REQUIRED.forEach((row, day) => {
+  required.forEach((row, day) => {
     row.forEach((need, hour) => {
-      if (ASSIGNED[day][hour] < need) {
+      if (test(ASSIGNED[day][hour], need)) {
         hours += 1;
       }
     });
   });
   return hours;
 }
+
+const ASSIGNED = assignedGrid();
+const REQUIRED = requiredGrid(1);
+const WEEKLY_COST = weeklyCost();
 
 function coveragePercent(): number {
   let covered = 0;
@@ -246,8 +258,9 @@ const TOTAL_SHIFTS = ROSTER.reduce(
 
 export const SUMMARY = {
   coverage: `${coveragePercent().toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`,
-  cost: money(weeklyCost()),
-  shortHours: vi.home.sample.hours(countShortHours()),
+  cost: money(WEEKLY_COST),
+  shortHours: vi.home.sample.hours(countHours(REQUIRED, (staffed, need) => staffed < need)),
+  overHours: vi.home.sample.hours(countHours(REQUIRED, (staffed, need) => staffed > need)),
   rosterCaption: vi.home.sample.rosterCaption(
     ROSTER.length,
     TOTAL_SHIFTS,
@@ -277,4 +290,27 @@ export const LEGEND = (["E", "D", "L", "N", "O"] as const).map((code) => ({
 
 export function dayBars(day: number): Bar[] {
   return bars(REQUIRED[day], ASSIGNED[day], PREVIEW_CHART_HEIGHT);
+}
+
+const CURVE_VALUES = COST_FACTORS.map((factor) => WEEKLY_COST * factor);
+const CURVE_LOW = Math.min(...CURVE_VALUES);
+const CURVE_HIGH = Math.max(...CURVE_VALUES);
+const CURVE_POINTS = CURVE_VALUES.map((value, index) => ({
+  x: Math.round((CURVE_LEFT + (index / (LAMBDAS.length - 1)) * CURVE_WIDTH) * 10) / 10,
+  y:
+    Math.round(
+      (CURVE_BOTTOM - ((value - CURVE_LOW) / (CURVE_HIGH - CURVE_LOW || 1)) * CURVE_HEIGHT) * 10,
+    ) / 10,
+}));
+
+export function scenarioView(lambdaIndex: number) {
+  const required = requiredGrid(LAMBDAS[lambdaIndex]);
+  return {
+    lambdaLabel: `${LAMBDAS[lambdaIndex].toLocaleString("vi-VN", { minimumFractionDigits: 1 })}x`,
+    bars: bars(required[SCENARIO_DAY], ASSIGNED[SCENARIO_DAY], SCENARIO_CHART_HEIGHT),
+    curvePoints: CURVE_POINTS.map((point) => `${point.x},${point.y}`).join(" "),
+    marker: CURVE_POINTS[lambdaIndex],
+    cost: money(CURVE_VALUES[lambdaIndex]),
+    shortHours: vi.home.sample.hours(countHours(required, (staffed, need) => staffed < need)),
+  };
 }

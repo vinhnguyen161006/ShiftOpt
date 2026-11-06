@@ -174,7 +174,7 @@ Mỗi bước gồm: **Làm** (thao tác), **Nói** (gợi ý lời trình bày)
 - **Làm:** mở `http://localhost:3000`.
 - **Nói:** "Bài toán của nhóm là xếp ca nhân viên cho dịch vụ có nhu cầu thay đổi theo giờ, như cửa hàng 24/7 hoặc tổng đài. Hệ thống nhận nhu cầu theo giờ, danh sách nhân viên, mẫu ca và luật lao động; trả về lịch xếp ca, các chỉ số và cảnh báo vi phạm luật, rồi phân tích chi phí khi nhu cầu thay đổi."
 - **Ý nghĩa:** người nghe nắm được đầu vào, đầu ra trước khi xem chi tiết.
-- **Mong đợi:** trang chủ có thanh menu Nhu cầu, Nhân viên, Mẫu ca, Xếp lịch, Độ nhạy. Trang chủ đã rút gọn: chỉ còn tiêu đề, hai nút và khung xem trước lịch minh họa.
+- **Mong đợi:** trang chủ có thanh menu Nhu cầu, Nhân viên, Mẫu ca, Xếp lịch, Độ nhạy. Trang chủ có các mục Sản phẩm, Tính năng, Cách hoạt động, Phân tích, Luật lao động; có thể cuộn qua để giới thiệu nhanh.
 
 ### Bước 2. Nhu cầu (2 phút): trang Demand
 
