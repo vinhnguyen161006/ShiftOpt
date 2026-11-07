@@ -5,10 +5,10 @@ Hướng dẫn cho Claude Code khi làm việc trong repo **ShiftOpt** — xếp
 Nguồn sự thật về yêu cầu, theo thứ tự ưu tiên:
 
 1. Đề bài của nhóm (mục 1).
-2. [docs/đặc tả.md](docs/đặc tả.md) — **chưa có**, sẽ viết dựa trên báo cáo nghiên cứu nền. Khi có, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
-3. [Báo cáo nghiên cứu nền Xếp ca nhâ.md](<Báo cáo nghiên cứu nền Xếp ca nhâ.md>) — nghiên cứu tham chiếu (dữ liệu, mô hình, pháp lý, solver). Đây là khuyến nghị, không phải yêu cầu; chỗ nào báo cáo ghi "nên" thì file này đã chốt thành quy tắc hoặc loại bỏ ở các mục dưới. Nên chuyển báo cáo vào `docs/` khi dựng khung.
+2. [docs/đặc tả.md](docs/đặc tả.md) — **bản nháp, chờ nhóm duyệt** (Claude soạn theo ủy quyền; quyết định D1–D17 và nguồn luật chưa đối chiếu nguyên văn ghi trong file). Khi đặc tả được duyệt, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
+3. Báo cáo nghiên cứu nền (nghiên cứu tham chiếu: dữ liệu, mô hình, pháp lý, solver). File không có trong repo (WORKLOG 0.3, quyết định D17); mọi chỗ nó từng được dùng đã được chốt trong `docs/đặc tả.md` và các mục dưới.
 
-> **Trạng thái repo (2026-10-21):** đã có **khung code (skeleton)**. Mọi hàm nghiệp vụ là stub: docstring `TODO: ...` mô tả việc cần làm + `raise NotImplementedError` (frontend: `throw new Error("TODO: ...")` hoặc `<p className="todo">`). Phần khai báo (dataclass engine, `LaborRules`, settings, ORM model, Pydantic schema), phần nối dây (`create_app`, router, React router/layout, Alembic env, Compose, CI) và công cụ nội bộ (`scripts/`) là code thật. Đã có migration Alembic baseline. Engine coverage hiện ~98%; CI và Makefile đặt ngưỡng `--cov-fail-under=80`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
+> **Trạng thái repo (2026-11-05):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine coverage 98%; CI và Makefile chặn dưới 80%. Backend chạy integration test trên MySQL 8.4. Còn mở: duyệt tay UI trên trình duyệt, nhóm duyệt đặc tả và sai lệch nghiệm thu (`docs/acceptance.md`). Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
 
 ---
 
@@ -235,7 +235,7 @@ Kéo-thả chỉnh tay là mức mở rộng, và nếu làm thì phải kiểm 
 - Ngôn ngữ đó gồm: nền `#f2f2f3`, chữ `#1d1f20`, accent `#5980a6` cùng thang `accent-100..900` và `neutral-100..900`; tiêu đề Barlow Condensed 600, thân Barlow 400; khung "blueprint" (viền hairline `--color-divider`, góc vuông, bốn dấu góc `.corner`); nút `.btn` / `.btn-primary` / `.btn-secondary`; tag viền (`.tag-outline`); nhãn chữ hoa cỡ nhỏ giãn chữ; biểu đồ cột accent-500, vạch nhu cầu nét đứt, vùng thiếu người là sọc chéo viền accent-700.
 - Không thêm font, bảng màu, bo góc, bóng đổ nặng hay gradient trang trí. Khi trang chủ chưa có component cần dùng (bảng, form, modal, heatmap, cảnh báo), dựng từ token có sẵn, không đưa style riêng của nguồn tham khảo vào.
 - Màu không được là kênh duy nhất truyền thông tin (thiếu/thừa người, vi phạm, trạng thái solver): luôn kèm hình (sọc, nét, biểu tượng) hoặc chữ. Mã hóa vùng thiếu người theo trang chủ; vùng thừa người chưa có ở trang chủ, chọn khi dựng chart từ thang accent/neutral.
-- Token, `@font-face` và class dùng chung nằm ở `styles/` (`fonts.css`, `tokens.css`, `components.css`, nạp qua `global.css`); `features/home/home.css` chỉ còn bố cục riêng của trang chủ. Component dùng chung ở `components/ui/` (BrandMark, Corners, Button, Table, Modal, Slider, Field, DayPicker, Feedback, Layout). Do `features/` không import chéo nhau (mục 11), trang app không import từ `features/home`.
+- Token, `@font-face` và class dùng chung nằm ở `styles/` (`fonts.css`, `tokens.css`, `components.css`, nạp qua `global.css`); `features/home/home.css` chỉ còn bố cục riêng của trang chủ. Component dùng chung ở `components/ui/` (BrandMark, Corners, Button, Table, Modal, Slider, Field, DayPicker, Feedback, Layout, Workspace, HourBars). Do `features/` không import chéo nhau (mục 11), trang app không import từ `features/home`.
 
 **UI/UX lấy từ trang web hoặc repo có thật trên mạng.**
 
@@ -336,7 +336,7 @@ engine/
     conftest.py             fixture three_shifts, build_instance
     test_smoke.py           khai báo thật: LaborRules, validate của dataclass
     test_time_grid.py, test_labor_law_vn.py, test_validation.py, test_kpi_and_staffing.py,
-    test_set_covering.py, test_roster_cpsat.py, test_sensitivity.py   kịch bản TODO
+    test_set_covering.py, test_roster_cpsat.py, test_sensitivity.py
   benchmarks/run_curtois_qu.py
 frontend/
   package.json, package-lock.json, vite.config.ts, tsconfig.json, biome.json, index.html
@@ -345,24 +345,25 @@ frontend/
     main.tsx
     app/                    providers.tsx (TanStack Query), router.tsx ("/" = trang chủ, app ở /demand...), layout.tsx (header theo trang chủ), routes/*.tsx (ghép feature; schedule.tsx, what-if.tsx ghép nhiều feature)
     assets/fonts/           Barlow + Barlow Condensed (woff2, OFL)
-    components/ui/          BrandMark, Corners, Button, Table, Modal (<dialog>), Slider, Field, DayPicker, Feedback (Notice, ErrorSummary, EmptyState, Loading), Layout (PageHeader, Panel, KpiStrip)
+    components/ui/          BrandMark, Corners, Button, Table, Modal (<dialog>), Slider, Field, DayPicker, Feedback (Notice, ErrorSummary, EmptyState, Loading), Layout (PageHeader, Panel, KpiStrip), Workspace (WorkspacePanel, WorkspaceBlock), HourBars (cột nhân sự theo giờ)
     components/solve/       SolveRequestForm: form SolveRequest dùng chung cho Schedule và What-if
     config/env.ts
     lib/                    api-client.ts (apiFetch, ApiError + lỗi theo ô từ 422), form.ts, time.ts, labor-rules.ts
+    locales/vi.ts           toàn bộ text giao diện tiếng Việt (file duy nhất được có ký tự ngoài ASCII)
     styles/                 global.css (nạp fonts, tokens, components + bố cục trang app), fonts.css, tokens.css, components.css
     types/api.ts            sinh từ backend/openapi.json (npm run gen:api), không sửa tay
     types/models.ts         alias tên schema từ api.ts
     features/
-      home/                 trang chủ port từ "ShiftOpt Homepage.html": components/, sample-data.ts (số liệu minh họa), home.css, links.ts
+      home/                 trang chủ port từ "ShiftOpt Homepage.html", chữ tiếng Việt lấy từ locales/vi.ts: components/, sample-data.ts (số liệu minh họa), home.css, links.ts
       demand/               api, DemandPage, DemandProfileList, DemandProfileView, DemandGridEditor (lưới 7x24), NewProfileForm (tay, CSV, FreshRetailNet, tổng đài), ConversionParamsForm
       employees/            api, EmployeesPage, EmployeeTable, EmployeeForm
       shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip
-      schedule/             api (poll), NewRunForm, RunsTable, SolveStatusPanel, ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
+      schedule/             api (poll), NewRunForm, RunsTable, RunWorkspace (panel kết quả như trang chủ), SolveStatusPanel (SolveNotice, SolveDetails), ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
       compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới)
       what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
-data/                       (chưa tạo) raw/ gitignore, processed/, benchmarks/curtois_qu/
+data/                       raw/ (gitignore), processed/ (parquet gitignore), benchmarks/curtois_qu/ (script tải)
 docs/
-  đặc tả.md                 (chưa có) nguồn sự thật yêu cầu
+  đặc tả.md                 nguồn sự thật yêu cầu (bản nháp, chờ duyệt)
   model.md                  công thức mô hình
   adr/                      adr-001 chọn solver, adr-002 biểu đồ (đã chốt: tự vẽ, không thư viện)
   ui-references.md          nguồn UI/UX tham chiếu: màn hình, URL, ngày/commit, giấy phép (mục 8.3)
@@ -386,8 +387,9 @@ Ranh giới module:
 ## 12. Quy ước khi viết code
 
 **Ngôn ngữ và comment (bắt buộc):**
-- Toàn bộ code viết bằng **tiếng Anh**: tên, docstring, chuỗi lỗi, text UI, file template, metadata package. Tài liệu (`docs/`, `*.md`) có thể dùng tiếng Việt.
-- **Code chỉ ASCII.** Ký hiệu toán học đặt tên bằng chữ Latin (`alpha`, `lam`, `sigma`), không dùng ký tự Hy Lạp hay dấu tiếng Việt trong code.
+- Toàn bộ code viết bằng **tiếng Anh**: tên, docstring, chuỗi lỗi, file template, metadata package. Tài liệu (`docs/`, `*.md`) có thể dùng tiếng Việt.
+- **Text giao diện là tiếng Việt** và chỉ nằm trong `frontend/src/locales/vi.ts` (quyết định 2026-11-06). Component tham chiếu khóa trong `vi`, không viết chữ hiển thị trực tiếp. Lỗi trả về từ backend (kể cả lỗi validate của Pydantic) vẫn là tiếng Anh. Mã trạng thái solver (`OPTIMAL`, `FEASIBLE`) giữ nguyên, kèm giải thích tiếng Việt.
+- **Code chỉ ASCII.** Ký hiệu toán học đặt tên bằng chữ Latin (`alpha`, `lam`, `sigma`), không dùng ký tự Hy Lạp hay dấu tiếng Việt trong code. Ngoại lệ duy nhất: `frontend/src/locales/vi.ts`, khai báo trong `UI_TEXT_PATHS` của `check_conventions.py` (vẫn bị kiểm comment).
 - **Không dùng comment**: `#` trong Python, YAML, TOML, Dockerfile, shell; `//` / `/* */` trong TS, CSS; `--` trong SQL. Code phải tự giải thích qua tên và cấu trúc; điều bắt buộc phải nói (nguồn công thức, điều luật, giả định) đặt trong **docstring** của hàm hoặc class. Ngoại lệ duy nhất: shebang.
 - **Ngoại lệ lint chỉ khai báo trong file cấu hình** (`[tool.ruff.lint.per-file-ignores]`, `biome.json`), không bao giờ inline (`# noqa`, `# type: ignore`, `// biome-ignore` đều là comment).
 - File sinh tự động: migration Alembic phải sạch comment (bỏ dòng `# ###`). `frontend/src/types/api.ts` và `backend/openapi.json` được loại khỏi kiểm tra bằng cấu hình (`GENERATED_PATHS` trong `check_conventions.py`, `files.includes` trong `biome.json`); không sửa tay, sinh lại bằng `make openapi`.
@@ -405,7 +407,7 @@ Ranh giới module:
 - **Ruff 0.17.1**, `select` tường minh: E, F, I, B, UP, S, PT, RUF, SIM, C4, TC (engine); backend thêm ASYNC. Thêm NPY khi code dùng NumPy. `TC` coi Pydantic/SQLAlchemy base là runtime; `backend/src/**/router.py` và `dependencies.py` tắt TC vì FastAPI đọc annotation lúc chạy.
 - **mypy 2.4 strict**: engine `src tests benchmarks`; backend `src tests migrations/env.py scripts` (thêm plugin Pydantic). Thư viện thiếu type (PuLP, asyncmy, asgi_lifespan) khai báo `ignore_missing_imports` trong cấu hình mypy, không bằng `# type: ignore`.
 - **Biome 2.5** cho frontend (lint + format + organize imports); `tsc --noEmit` riêng vì Vite không type-check. Tham số chưa dùng được phép (`noUnusedParameters: false`, `noUnusedFunctionParameters: off`) vì stub chưa dùng tham số.
-- **pytest**: `asyncio_mode = "auto"`, `--strict-markers`. Test cần MySQL đặt trong `tests/integration/` và tự skip khi thiếu `SHIFTOPT_TEST_DATABASE_URL`. **Coverage `engine/` ≥ 80%** khi đã triển khai (hiện chỉ báo cáo, chưa chặn).
+- **pytest**: `asyncio_mode = "auto"`, `--strict-markers`. Test cần MySQL đặt trong `tests/integration/` và tự skip khi thiếu `SHIFTOPT_TEST_DATABASE_URL`. **Coverage `engine/` ≥ 80%**, CI và Makefile chặn dưới ngưỡng này (`--cov-fail-under=80`).
 
 **Kỹ thuật:**
 - Python 3.11, type hints đầy đủ. Pydantic v2 cho mọi schema I/O ở `backend/`. Trong `engine/` dùng `dataclass(frozen=True)` cho `Instance`, `Solution`, `LaborRules`, `SolveResult` (không kéo Pydantic vào lõi).

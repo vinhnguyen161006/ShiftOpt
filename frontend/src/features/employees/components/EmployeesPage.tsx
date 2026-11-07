@@ -4,6 +4,7 @@ import { EmptyState, Loading, Notice } from "../../../components/ui/Feedback";
 import { PageHeader } from "../../../components/ui/Layout";
 import { Modal } from "../../../components/ui/Modal";
 import { errorMessage } from "../../../lib/api-client";
+import { vi } from "../../../locales/vi";
 import type { EmployeeRead } from "../../../types/models";
 import { useDeleteEmployee, useEmployees } from "../api/employees";
 import { EmployeeForm } from "./EmployeeForm";
@@ -19,21 +20,21 @@ export function EmployeesPage() {
 
   const addButton = (
     <Button variant="primary" onClick={() => setEditing({})}>
-      Add employee
+      {vi.employees.add}
     </Button>
   );
 
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Workforce"
-        title="Employees"
-        lead="Each employee has an hourly wage, days they cannot work and days they would like off. Solved schedules keep a copy of the employees they used, so later edits here do not change past runs."
+        eyebrow={vi.employees.eyebrow}
+        title={vi.employees.title}
+        lead={vi.employees.lead}
         actions={addButton}
       />
-      {employees.isPending && <Loading label="Loading employees" />}
+      {employees.isPending && <Loading label={vi.employees.loading} />}
       {employees.isError && (
-        <Notice kind="error" title="Could not load employees">
+        <Notice kind="error" title={vi.employees.loadError}>
           {errorMessage(employees.error)}
         </Notice>
       )}
@@ -45,30 +46,26 @@ export function EmployeesPage() {
         />
       )}
       {employees.data?.length === 0 && (
-        <EmptyState title="Add the people you schedule" action={addButton}>
-          The optimizer assigns shifts to these employees. Add at least as many people as your
-          busiest hours need, plus enough to cover rest days.
+        <EmptyState title={vi.employees.emptyTitle} action={addButton}>
+          {vi.employees.emptyBody}
         </EmptyState>
       )}
       <Modal
-        title={editing?.employee ? `Edit ${editing.employee.code}` : "Add employee"}
+        title={editing?.employee ? vi.employees.editTitle(editing.employee.code) : vi.employees.add}
         open={editing !== undefined}
         onClose={() => setEditing(undefined)}
       >
         <EmployeeForm employee={editing?.employee} onDone={() => setEditing(undefined)} />
       </Modal>
       <Modal
-        title="Delete employee?"
+        title={vi.employees.deleteTitle}
         open={deleting !== undefined}
         onClose={() => setDeleting(undefined)}
       >
-        <p>
-          {deleting?.name} ({deleting?.code}) will be removed. Schedules already solved keep their
-          own copy of this employee.
-        </p>
+        <p>{vi.employees.deleteBody(deleting?.name ?? "", deleting?.code ?? "")}</p>
         {remove.isError && <Notice kind="error" title={errorMessage(remove.error)} />}
         <div className="form-actions">
-          <Button onClick={() => setDeleting(undefined)}>Cancel</Button>
+          <Button onClick={() => setDeleting(undefined)}>{vi.common.cancel}</Button>
           <Button
             variant="primary"
             disabled={remove.isPending}
@@ -76,7 +73,7 @@ export function EmployeesPage() {
               deleting && remove.mutate(deleting.id, { onSuccess: () => setDeleting(undefined) })
             }
           >
-            Delete
+            {vi.common.delete}
           </Button>
         </div>
       </Modal>

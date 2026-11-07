@@ -49,6 +49,18 @@ def test_too_few_staff_stays_feasible_and_reports_shortfall(
     assert validate(instance, outcome.solution) == []
 
 
+def test_employee_weekly_cap_binds_in_roster() -> None:
+    demand = {(day, hour): 1 for day in range(7) for hour in range(24)}
+    capped = Employee("capped", 100, max_weekly_hours=16)
+    instance = instance_with(demand, (capped, Employee("free1", 100), Employee("free2", 100)))
+    outcome = solve_roster(instance, PARAMS)
+    hours = sum(
+        8 for assignment in outcome.solution.assignments if assignment.employee_id == "capped"
+    )
+    assert hours <= 16
+    assert validate(instance, outcome.solution) == []
+
+
 def test_same_seed_gives_same_objective() -> None:
     instance = instance_with({(0, 9): 1}, crew(2))
     first = solve_roster(instance, PARAMS)

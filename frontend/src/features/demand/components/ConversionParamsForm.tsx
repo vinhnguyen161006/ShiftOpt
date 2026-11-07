@@ -1,4 +1,5 @@
 import { Field } from "../../../components/ui/Field";
+import { vi } from "../../../locales/vi";
 import type { ConversionParams } from "../../../types/models";
 
 type ConversionParamsFormProps = {
@@ -13,30 +14,10 @@ const FIELDS: {
   hint: string;
   step: string;
 }[] = [
-  {
-    key: "alpha",
-    label: "alpha (de-normalization)",
-    hint: "Scales the normalized sales index back to units.",
-    step: "any",
-  },
-  {
-    key: "productivity",
-    label: "p (units per employee-hour)",
-    hint: "How much load one person handles in an hour.",
-    step: "any",
-  },
-  {
-    key: "min_staff",
-    label: "Day floor (min staff)",
-    hint: "Head count never goes below this outside the night window.",
-    step: "1",
-  },
-  {
-    key: "night_min_staff",
-    label: "Night floor (22:00-06:00)",
-    hint: "Night hours are not derived from sales; this fixed floor applies.",
-    step: "1",
-  },
+  { key: "alpha", ...vi.demand.conversion.alpha, step: "any" },
+  { key: "productivity", ...vi.demand.conversion.productivity, step: "any" },
+  { key: "min_staff", ...vi.demand.conversion.min_staff, step: "1" },
+  { key: "night_min_staff", ...vi.demand.conversion.night_min_staff, step: "1" },
 ];
 
 export function conversionFieldId(key: string): string {
@@ -46,7 +27,7 @@ export function conversionFieldId(key: string): string {
 export function ConversionParamsForm({ value, onChange, errors }: ConversionParamsFormProps) {
   return (
     <fieldset className="field conversion-form">
-      <legend>Team assumptions (not dataset facts)</legend>
+      <legend>{vi.demand.conversion.legend}</legend>
       <div className="form-grid">
         {FIELDS.map((field) => (
           <Field

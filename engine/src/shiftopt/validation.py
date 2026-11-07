@@ -106,7 +106,7 @@ def _check_employee(
         (_span(assignment, shifts[assignment.shift_name]) for assignment in assignments),
         key=lambda span: span.start,
     )
-    violations.extend(_hour_violations(employee_id, spans, rules))
+    violations.extend(_hour_violations(employee_id, spans, rules, employee.weekly_cap(rules)))
     if not spans:
         return violations
     gaps = _rest_gaps(spans)
@@ -182,7 +182,9 @@ def _multiple_shifts_per_day(employee_id: str, assignments: list[Assignment]) ->
     ]
 
 
-def _hour_violations(employee_id: str, spans: list[_Span], rules: LaborRules) -> list[Violation]:
+def _hour_violations(
+    employee_id: str, spans: list[_Span], rules: LaborRules, weekly_cap: int
+) -> list[Violation]:
     violations = [
         Violation(
             ViolationKind.DAILY_HOURS,
@@ -194,12 +196,12 @@ def _hour_violations(employee_id: str, spans: list[_Span], rules: LaborRules) ->
         if span.shift.length > rules.max_daily_hours
     ]
     weekly = sum(span.shift.length for span in spans)
-    if weekly > rules.max_weekly_hours:
+    if weekly > weekly_cap:
         violations.append(
             Violation(
                 ViolationKind.WEEKLY_HOURS,
                 employee_id,
-                f"{weekly} hours in the week, maximum {rules.max_weekly_hours}",
+                f"{weekly} hours in the week, maximum {weekly_cap}",
             )
         )
     return violations

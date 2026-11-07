@@ -20,6 +20,10 @@ Không chép mã từ nguồn nào dưới đây. Mọi thứ được viết l�
 | R10 | Carbon Design System, Loading usage | https://carbondesignsystem.com/components/loading/usage/ | 2026-10-28 | Apache-2.0 | Chờ cục bộ cạnh hành động, nhãn trạng thái ngắn, không đặt nhiều chỉ báo cùng lúc |
 | R11 | Cal-Heatmap | https://github.com/wa0x6e/cal-heatmap (README và ảnh ví dụ) | 2026-10-28, commit `279e4ee` | MIT | Heatmap dạng lưới lịch: mỗi ô một khoảng thời gian, chú giải thang ngưỡng bên dưới, tooltip theo ô |
 
+## Bố cục lấy từ chính trang chủ
+
+Màn hình Schedule (kết quả một run) và What-if (đường cong z(lambda)) dựng lại hai panel minh họa của trang chủ, dùng chung token và hằng số khoảng cách: `WorkspacePreview` (header có chấm accent, dải KPI bốn ô, khối "Weekly roster" với ô ca một chữ cái, khối "Staffing coverage" với tab ngày, cột nhân sự và dòng meta solver) và `ScenarioPanel` ("Demand vs. staffing": cột theo giờ, thanh lambda, đường cong chi phí kèm hai số và ghi chú). Nguồn là mã của dự án (`frontend/src/features/home/components/WorkspacePreview.tsx`, `ScenarioPanel.tsx`, `home.css`), không phải bên thứ ba. Khác trang chủ: lịch hiển thị mọi nhân viên (cuộn dọc), dòng phụ dưới tên là số ca thay vì loại hợp đồng, vì dữ liệu hợp đồng chưa có; mỗi điểm sweep không tối ưu vẫn được đánh dấu theo nguyên tắc 5.
+
 ## Màn hình → nguồn
 
 | Màn hình ShiftOpt | Nguồn |

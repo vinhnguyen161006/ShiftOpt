@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Corners } from "../../../components/ui/Corners";
+import { vi } from "../../../locales/vi";
 import { DEFAULT_LAMBDA_INDEX, LAMBDAS, SCENARIO_CAPTION, scenarioView } from "../sample-data";
 import { StaffingBars } from "./StaffingBars";
 
@@ -11,14 +12,14 @@ export function ScenarioPanel() {
       <div className="blueprint home-scenario">
         <Corners />
         <div className="home-scenario-head">
-          <h3 className="home-scenario-title">Demand vs. staffing</h3>
-          <span className="tag tag-outline home-tag-illustrative">Illustrative</span>
+          <h3 className="home-scenario-title">{vi.home.scenario.title}</h3>
+          <span className="tag tag-outline home-tag-illustrative">{vi.home.scenario.tag}</span>
         </div>
         <p className="home-scenario-caption">{SCENARIO_CAPTION}</p>
         <StaffingBars bars={view.bars} size="scenario" />
         <div className="home-lambda">
           <label htmlFor="lambda" className="home-lambda-label">
-            Demand multiplier lambda
+            {vi.home.scenario.lambda}
             <span className="home-lambda-value">{view.lambdaLabel}</span>
           </label>
           <input
@@ -30,23 +31,25 @@ export function ScenarioPanel() {
             step={1}
             value={lambdaIndex}
             onChange={(event) => setLambdaIndex(Number(event.target.value))}
-            aria-label="Demand multiplier lambda"
+            aria-label={vi.home.scenario.lambda}
           />
           <div className="home-lambda-scale">
             {LAMBDAS.map((lambda) => (
-              <span key={lambda}>{lambda.toFixed(1)}</span>
+              <span key={lambda}>
+                {lambda.toLocaleString("vi-VN", { minimumFractionDigits: 1 })}
+              </span>
             ))}
           </div>
         </div>
         <div className="home-scenario-results">
           <div className="home-curve">
-            <div className="home-kpi-label">Cost curve z(lambda)</div>
+            <div className="home-kpi-label">{vi.home.scenario.curve}</div>
             <svg
               className="home-curve-svg"
               viewBox="0 0 200 72"
               preserveAspectRatio="none"
               role="img"
-              aria-label="Illustrative weekly cost plotted against the demand multiplier"
+              aria-label={vi.home.scenario.curveAria}
             >
               <line x1="0" y1="71" x2="200" y2="71" stroke="var(--color-divider)" strokeWidth="1" />
               <line
@@ -75,17 +78,14 @@ export function ScenarioPanel() {
           </div>
           <div className="home-figures">
             <div>
-              <div className="home-kpi-label">Weekly cost</div>
+              <div className="home-kpi-label">{vi.home.scenario.weeklyCost}</div>
               <div className="home-figure-value">{view.cost}</div>
             </div>
             <div>
-              <div className="home-kpi-label">Short hours</div>
+              <div className="home-kpi-label">{vi.home.scenario.shortHours}</div>
               <div className="home-figure-value">{view.shortHours}</div>
             </div>
-            <div className="home-figure-note">
-              Each point is a separate re-solve at a fixed time limit and seed. Points that did not
-              reach OPTIMAL are flagged in the run table.
-            </div>
+            <div className="home-figure-note">{vi.home.scenario.note}</div>
           </div>
         </div>
       </div>

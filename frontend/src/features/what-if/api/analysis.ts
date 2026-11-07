@@ -5,6 +5,7 @@ import type {
   AnalysisRunRead,
   DemandSweepRequest,
   MarginalCostRequest,
+  StaffingSweepRequest,
 } from "../../../types/models";
 
 const POLL_MS = 1500;
@@ -13,6 +14,13 @@ export function useDemandSweep() {
   return useMutation({
     mutationFn: (body: DemandSweepRequest) =>
       apiFetch<AnalysisAccepted>("/analysis/demand-sweep", jsonInit("POST", body)),
+  });
+}
+
+export function useStaffingSweep() {
+  return useMutation({
+    mutationFn: (body: StaffingSweepRequest) =>
+      apiFetch<AnalysisAccepted>("/analysis/staffing-sweep", jsonInit("POST", body)),
   });
 }
 

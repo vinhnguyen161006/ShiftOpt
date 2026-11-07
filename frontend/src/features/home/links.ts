@@ -1,3 +1,5 @@
+import { vi } from "../../locales/vi";
+
 export const WORKSPACE_LINKS = {
   demand: "/demand",
   employees: "/employees",
@@ -6,8 +8,8 @@ export const WORKSPACE_LINKS = {
 };
 
 export const SECTION_LINKS = [
-  { href: "#product", label: "Product" },
-  { href: "#how", label: "How It Works" },
-  { href: "#features", label: "Features" },
-  { href: "#analytics", label: "Analytics" },
+  { href: "#product", label: vi.home.nav.product },
+  { href: "#how", label: vi.home.nav.how },
+  { href: "#features", label: vi.home.nav.features },
+  { href: "#analytics", label: vi.home.nav.analytics },
 ];

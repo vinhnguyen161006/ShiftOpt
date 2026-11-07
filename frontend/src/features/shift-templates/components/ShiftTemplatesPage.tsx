@@ -8,6 +8,7 @@ import { useLaborRules } from "../../../lib/labor-rules";
 import type { ShiftTemplateRead } from "../../../types/models";
 import { useDeleteShiftTemplate, useShiftTemplates } from "../api/shift-templates";
 import "../shift-templates.css";
+import { vi } from "../../../locales/vi";
 import { ShiftTemplateForm } from "./ShiftTemplateForm";
 import { ShiftTemplateList } from "./ShiftTemplateList";
 
@@ -22,21 +23,21 @@ export function ShiftTemplatesPage() {
 
   const addButton = (
     <Button variant="primary" onClick={() => setEditing({})}>
-      Add shift template
+      {vi.shifts.add}
     </Button>
   );
 
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Workforce"
-        title="Shift templates"
-        lead="The shift types the optimizer may assign. A shift that crosses midnight counts its hours on the next day. Night hours fall between 22:00 and 06:00 and carry the night allowance."
+        eyebrow={vi.shifts.eyebrow}
+        title={vi.shifts.title}
+        lead={vi.shifts.lead}
         actions={addButton}
       />
-      {(templates.isPending || rules.isPending) && <Loading label="Loading shift templates" />}
+      {(templates.isPending || rules.isPending) && <Loading label={vi.shifts.loading} />}
       {templates.isError && (
-        <Notice kind="error" title="Could not load shift templates">
+        <Notice kind="error" title={vi.shifts.loadError}>
           {errorMessage(templates.error)}
         </Notice>
       )}
@@ -51,27 +52,26 @@ export function ShiftTemplatesPage() {
           <div className="legend">
             <span className="legend-item">
               <span className="swatch shift-strip-hour is-worked" />
-              Working hour
+              {vi.shifts.legendWorked}
             </span>
             <span className="legend-item">
               <span className="swatch shift-strip-hour is-worked is-night" />
-              Night hour (allowance applies)
+              {vi.shifts.legendNightWorked}
             </span>
             <span className="legend-item">
               <span className="swatch shift-strip-hour is-night" />
-              Night window, not worked
+              {vi.shifts.legendNightIdle}
             </span>
           </div>
         </>
       )}
       {templates.data?.length === 0 && (
-        <EmptyState title="Define the shifts you can staff" action={addButton}>
-          Add each shift type once, for example 06:00-14:00, 14:00-22:00 and 22:00-06:00. The
-          optimizer picks how many people work each shift on each day.
+        <EmptyState title={vi.shifts.emptyTitle} action={addButton}>
+          {vi.shifts.emptyBody}
         </EmptyState>
       )}
       <Modal
-        title={editing?.template ? `Edit ${editing.template.name}` : "Add shift template"}
+        title={editing?.template ? vi.shifts.editTitle(editing.template.name) : vi.shifts.add}
         open={editing !== undefined}
         onClose={() => setEditing(undefined)}
       >
@@ -82,17 +82,14 @@ export function ShiftTemplatesPage() {
         />
       </Modal>
       <Modal
-        title="Delete shift template?"
+        title={vi.shifts.deleteTitle}
         open={deleting !== undefined}
         onClose={() => setDeleting(undefined)}
       >
-        <p>
-          {deleting?.name} will be removed. Schedules already solved keep their own copy of this
-          shift type.
-        </p>
+        <p>{vi.shifts.deleteBody(deleting?.name ?? "")}</p>
         {remove.isError && <Notice kind="error" title={errorMessage(remove.error)} />}
         <div className="form-actions">
-          <Button onClick={() => setDeleting(undefined)}>Cancel</Button>
+          <Button onClick={() => setDeleting(undefined)}>{vi.common.cancel}</Button>
           <Button
             variant="primary"
             disabled={remove.isPending}
@@ -100,7 +97,7 @@ export function ShiftTemplatesPage() {
               deleting && remove.mutate(deleting.id, { onSuccess: () => setDeleting(undefined) })
             }
           >
-            Delete
+            {vi.common.delete}
           </Button>
         </div>
       </Modal>

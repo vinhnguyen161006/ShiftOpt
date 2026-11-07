@@ -53,10 +53,13 @@ class Employee:
     hourly_wage: int
     unavailable_days: frozenset[int] = frozenset()
     preferred_days_off: frozenset[int] = frozenset()
+    max_weekly_hours: int | None = None
 
     def __post_init__(self) -> None:
         if self.hourly_wage <= 0:
             raise ValueError(f"employee {self.id}: hourly_wage must be positive")
+        if self.max_weekly_hours is not None and self.max_weekly_hours <= 0:
+            raise ValueError(f"employee {self.id}: max_weekly_hours must be positive")
         for days in (self.unavailable_days, self.preferred_days_off):
             if any(not 0 <= day < DAYS_PER_WEEK for day in days):
                 raise ValueError(f"employee {self.id}: request days must be in [0, 7)")
@@ -64,6 +67,11 @@ class Employee:
     @property
     def has_requests(self) -> bool:
         return bool(self.unavailable_days or self.preferred_days_off)
+
+    def weekly_cap(self, rules: LaborRules) -> int:
+        if self.max_weekly_hours is None:
+            return rules.max_weekly_hours
+        return min(self.max_weekly_hours, rules.max_weekly_hours)
 
 
 @dataclass(frozen=True)

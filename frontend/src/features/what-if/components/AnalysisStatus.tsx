@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Loading, Notice } from "../../../components/ui/Feedback";
+import { vi } from "../../../locales/vi";
 import type { AnalysisRunRead } from "../../../types/models";
 
 type AnalysisStatusProps = {
@@ -14,8 +15,8 @@ export function AnalysisStatus({ run, activeLabel, children }: AnalysisStatusPro
   }
   if (run.status === "failed") {
     return (
-      <Notice kind="error" title={`Analysis ${run.id} failed`}>
-        {run.error ?? "The analysis did not finish."}
+      <Notice kind="error" title={vi.whatIf.status.failedTitle(run.id)}>
+        {run.error ?? vi.whatIf.status.failedBody}
       </Notice>
     );
   }

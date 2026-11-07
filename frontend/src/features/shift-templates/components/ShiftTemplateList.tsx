@@ -1,6 +1,7 @@
 import { Button } from "../../../components/ui/Button";
 import { Table } from "../../../components/ui/Table";
 import { shiftSpan } from "../../../lib/time";
+import { vi } from "../../../locales/vi";
 import type { LaborRulesRead, ShiftTemplateRead } from "../../../types/models";
 import { ShiftStrip } from "./ShiftStrip";
 
@@ -14,19 +15,19 @@ type ShiftTemplateListProps = {
 export function ShiftTemplateList({ templates, rules, onEdit, onDelete }: ShiftTemplateListProps) {
   return (
     <Table
-      caption="Shift templates"
+      caption={vi.shifts.table.caption}
       rows={templates}
       rowKey={(template) => template.id}
       columns={[
-        { key: "name", label: "Name", render: (template) => template.name },
+        { key: "name", label: vi.shifts.table.name, render: (template) => template.name },
         {
           key: "hours",
-          label: "Hours",
+          label: vi.shifts.table.hours,
           render: (template) => shiftSpan(template.start_hour, template.length_hours),
         },
         {
           key: "day",
-          label: "Over the day",
+          label: vi.shifts.table.overDay,
           render: (template) =>
             rules && (
               <ShiftStrip
@@ -39,31 +40,34 @@ export function ShiftTemplateList({ templates, rules, onEdit, onDelete }: ShiftT
         },
         {
           key: "length",
-          label: "Length",
+          label: vi.shifts.table.length,
           align: "end",
-          render: (template) => `${template.length_hours} h`,
+          render: (template) => vi.home.sample.hours(template.length_hours),
         },
         {
           key: "night",
-          label: "Night hours",
+          label: vi.shifts.table.night,
           align: "end",
-          render: (template) => `${template.night_hours} h`,
+          render: (template) => vi.home.sample.hours(template.night_hours),
         },
         {
           key: "break",
-          label: "Rest break",
-          render: (template) => (template.break_required ? "Required" : "Not required"),
+          label: vi.shifts.table.break,
+          render: (template) =>
+            template.break_required ? vi.shifts.table.required : vi.shifts.table.notRequired,
         },
         {
           key: "actions",
-          label: "Actions",
+          label: vi.common.actions,
           render: (template) => (
             <span className="tag-row">
               <Button size="sm" onClick={() => onEdit(template)}>
-                Edit<span className="visually-hidden"> {template.name}</span>
+                {vi.common.edit}
+                <span className="visually-hidden"> {template.name}</span>
               </Button>
               <Button size="sm" onClick={() => onDelete(template)}>
-                Delete<span className="visually-hidden"> {template.name}</span>
+                {vi.common.delete}
+                <span className="visually-hidden"> {template.name}</span>
               </Button>
             </span>
           ),

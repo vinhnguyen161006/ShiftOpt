@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Corners } from "../../../components/ui/Corners";
+import { vi } from "../../../locales/vi";
 import {
   DAYS,
   DEFAULT_DAY,
@@ -11,10 +12,12 @@ import {
 } from "../sample-data";
 import { StaffingBars } from "./StaffingBars";
 
+const TEXT = vi.home.preview;
+
 const KPIS = [
-  { label: "Coverage ratio", value: SUMMARY.coverage, sub: "target 98.0%" },
-  { label: "Labor cost", value: SUMMARY.cost, sub: "incl. night allowance" },
-  { label: "Understaffed hours", value: SUMMARY.shortHours, sub: "of 168 week hours" },
+  { label: TEXT.coverage, value: SUMMARY.coverage, sub: TEXT.coverageSub },
+  { label: TEXT.laborCost, value: SUMMARY.cost, sub: TEXT.laborCostSub },
+  { label: TEXT.shortHours, value: SUMMARY.shortHours, sub: TEXT.shortHoursSub },
 ];
 
 function shiftStyle(look: ShiftLook) {
@@ -32,9 +35,9 @@ function KpiStrip() {
         </div>
       ))}
       <div className="home-kpi">
-        <div className="home-kpi-label">Solver status</div>
+        <div className="home-kpi-label">{TEXT.solverStatus}</div>
         <div className="home-kpi-value home-kpi-value-status">FEASIBLE</div>
-        <div className="home-kpi-sub">gap 0.8% &middot; not proven optimal</div>
+        <div className="home-kpi-sub">{TEXT.solverStatusSub}</div>
       </div>
     </div>
   );
@@ -44,7 +47,7 @@ function WeeklyRoster() {
   return (
     <div className="home-panel-block">
       <div className="home-block-head">
-        <h3 className="home-block-title">Weekly roster</h3>
+        <h3 className="home-block-title">{TEXT.roster}</h3>
         <span className="home-block-caption">{SUMMARY.rosterCaption}</span>
       </div>
       <div className="home-roster-scroll">
@@ -100,7 +103,7 @@ function StaffingCoverage() {
   return (
     <div className="home-panel-block">
       <div className="home-block-head home-block-head-center">
-        <h3 className="home-block-title">Staffing coverage</h3>
+        <h3 className="home-block-title">{TEXT.coverageChart}</h3>
         <div className="home-day-tabs">
           {DAYS.map((label, index) => (
             <button
@@ -119,19 +122,17 @@ function StaffingCoverage() {
       <div className="home-chart-legend">
         <span className="home-legend-item">
           <span className="home-swatch home-swatch-assigned" />
-          Assigned staff
+          {TEXT.assigned}
         </span>
         <span className="home-legend-item">
           <span className="home-swatch home-swatch-required" />
-          Required staff
+          {TEXT.required}
         </span>
         <span className="home-legend-item">
           <span className="home-swatch home-swatch-under" />
-          Understaffed
+          {TEXT.under}
         </span>
-        <span className="home-run-meta">
-          CP-SAT &middot; 42.6 s &middot; seed 20240304 &middot; 1 worker
-        </span>
+        <span className="home-run-meta">{TEXT.runMeta}</span>
       </div>
     </div>
   );
@@ -145,19 +146,16 @@ export function WorkspacePreview() {
         <div className="home-panel-head">
           <span className="home-panel-name">
             <span className="home-panel-dot" />
-            ShiftOpt Workspace
+            {TEXT.panelName}
           </span>
-          <span className="home-panel-week">Week 10 &middot; Mar 04&ndash;10, 2024</span>
-          <span className="tag tag-outline home-tag-illustrative">Illustrative demo data</span>
+          <span className="home-panel-week">{TEXT.week}</span>
+          <span className="tag tag-outline home-tag-illustrative">{TEXT.illustrative}</span>
         </div>
         <KpiStrip />
         <WeeklyRoster />
         <StaffingCoverage />
       </div>
-      <p className="home-preview-note">
-        Preview rendered from local sample data. Figures are illustrative, not verified solver
-        output or a benchmark result.
-      </p>
+      <p className="home-preview-note">{TEXT.note}</p>
     </div>
   );
 }

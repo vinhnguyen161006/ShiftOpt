@@ -47,15 +47,16 @@ export type KpiItem = {
   label: string;
   value: string;
   sub?: string;
+  accent?: boolean;
 };
 
-export function KpiStrip({ items }: { items: KpiItem[] }) {
+export function KpiStrip({ items, flush = false }: { items: KpiItem[]; flush?: boolean }) {
   return (
-    <dl className="kpi-strip">
+    <dl className={flush ? "kpi-strip kpi-strip-flush" : "kpi-strip"}>
       {items.map((item) => (
         <div key={item.label} className="kpi">
           <dt className="label-caps">{item.label}</dt>
-          <dd className="kpi-value">{item.value}</dd>
+          <dd className={item.accent ? "kpi-value kpi-value-accent" : "kpi-value"}>{item.value}</dd>
           {item.sub && <dd className="kpi-sub">{item.sub}</dd>}
         </div>
       ))}

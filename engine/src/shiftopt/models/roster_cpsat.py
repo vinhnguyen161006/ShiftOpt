@@ -165,7 +165,7 @@ class _RosterModel:
                 for (e, _, s_index), work in self.work.items()
                 if e == e_index
             ]
-            self.model.add(self._sum(terms) <= self.rules.max_weekly_hours)
+            self.model.add(self._sum(terms) <= self.employees[e_index].weekly_cap(self.rules))
 
     def _add_rest_between_shifts(self) -> None:
         pairs_by_offset: dict[int, list[tuple[int, int]]] = {}
