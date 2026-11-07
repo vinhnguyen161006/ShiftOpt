@@ -47,7 +47,7 @@ Sau đó hệ thống cho biết chi phí thay đổi ra sao khi nhu cầu hoặ
 
 Quy tắc giữa các tầng:
 
-- Mỗi tầng chỉ gọi tầng nằm dưới nó.
+- Các tầng chỉ gọi xuống, không gọi ngược lên. Việc nhẹ (ingest file doanh số, tính KPI, kiểm tra luật khi sửa tay) API gọi thẳng engine; việc nặng đi qua tầng xử lý nền.
 - Engine không biết gì về web hay cơ sở dữ liệu. Nó chỉ nhận dữ liệu và trả kết quả, nên dễ kiểm thử và chạy lại được.
 - Tầng kiểm tra luật (5c) không dùng chung mã với tầng tối ưu (5b). Nhờ vậy, nếu mô hình tối ưu có lỗi thì bộ kiểm tra vẫn bắt được.
 
@@ -69,9 +69,9 @@ Quy tắc giữa các tầng:
 
 **Cách xử lý:**
 
-- **Hỏi lại trạng thái (poll).** Khi bấm **Tối ưu**, giao diện nhận ngay một mã job. Sau đó cứ vài giây giao diện hỏi lại cho tới khi job xong. Trang không bị treo trong lúc solver chạy.
+- **Hỏi lại trạng thái (poll).** Khi bấm **Tối ưu**, giao diện nhận ngay một mã job. Sau đó cứ mỗi giây giao diện hỏi lại cho tới khi job xong. Trang không bị treo trong lúc solver chạy.
 - **Kiểu dữ liệu sinh tự động.** Kiểu dữ liệu TypeScript sinh từ mô tả API (OpenAPI) của backend, không viết tay. Vì vậy giao diện và API luôn khớp nhau.
-- **Kiểm tra sớm.** Giao diện lấy bộ luật mặc định từ `GET /api/labor-rules` để cảnh báo ngay khi người dùng nhập giá trị vượt luật. Backend vẫn kiểm tra lại lần nữa.
+- **Kiểm tra sớm.** Giao diện lấy bộ luật mặc định từ `GET /api/labor-rules` để hiện giới hạn luật và cảnh báo khi người dùng nhập giá trị vượt luật, ví dụ độ dài ca. Backend vẫn kiểm tra lại lần nữa.
 - **Không chỉ dùng màu.** Thông tin thiếu người, thừa người, vi phạm luật luôn có thêm sọc, nét đứt, biểu tượng hoặc chữ đi kèm, không chỉ phân biệt bằng màu.
 
 ---
@@ -90,14 +90,13 @@ Quy tắc giữa các tầng:
 1. **Kiểm tra ở cửa vào.** Mọi dữ liệu gửi lên đều được kiểm tra trước khi xử lý. Ví dụ:
    - lưới nhu cầu phải đủ 168 ô, mỗi ô là số nguyên từ 0 đến 1000;
    - giờ tối đa của một nhân viên không vượt 48;
-   - số nhân viên và thời gian giải có giới hạn trên, để một yêu cầu không chiếm hết máy.
-
-   - mẫu ca dài hơn 8 giờ bị từ chối ngay khi tạo hoặc sửa (giới hạn `max_daily_hours` của Đ.105). Vì một người làm tối đa 1 ca/ngày, điều này bảo đảm không ai làm quá 8 giờ/ngày; solver không cần ràng buộc riêng cho giới hạn ngày, còn validator vẫn kiểm lại.
+   - số nhân viên và thời gian giải có giới hạn trên, để một yêu cầu không chiếm hết máy;
+   - mẫu ca dài hơn 8 giờ bị từ chối ngay khi tạo hoặc sửa (giới hạn `max_daily_hours` của Đ.105). Vì một người làm tối đa 1 ca/ngày, điều này bảo đảm không ai làm quá 8 giờ/ngày. Solver không cần ràng buộc riêng cho giới hạn ngày, còn validator vẫn kiểm lại.
 
    Sai thì trả lỗi kèm thông điệp rõ ràng, ví dụ `demand grid must have 168 cells`, không lộ chi tiết lỗi nội bộ (stack trace).
 2. **Việc nhẹ làm ngay.** Thêm hoặc sửa nhân viên, đọc CSV, ingest file doanh số, xuất CSV đều xong trong vài giây và trả kết quả trực tiếp.
 3. **Việc nặng giao cho tầng 3.** Giải lịch và phân tích độ nhạy có thể mất hàng chục giây. API tạo một dòng job trong cơ sở dữ liệu, trả mã job ngay (`202 Accepted`), rồi giao việc cho tầng xử lý nền.
-4. **Chụp ảnh đầu vào (snapshot).** Trước khi giải, API chép toàn bộ đầu vào vào lượt giải: nhu cầu, nhân viên, mẫu ca, luật, tham số solver. Sau này có sửa nhân viên thì lượt giải cũ vẫn giữ nguyên dữ liệu lúc giải. Mỗi lượt giải không bao giờ bị sửa.
+4. **Chụp ảnh đầu vào (snapshot).** Trước khi giải, API chép toàn bộ đầu vào vào lượt giải: nhu cầu, nhân viên, mẫu ca, bộ luật (`LaborRules`), tham số solver. Sau này có sửa nhân viên thì lượt giải cũ vẫn giữ nguyên dữ liệu lúc giải. Mỗi lượt giải không bao giờ bị sửa.
 
 **Ingest file doanh số** (`POST /api/demand-profiles/ingest`):
 
@@ -114,9 +113,9 @@ Quy tắc giữa các tầng:
 **Cách xử lý:**
 
 1. **Một pool tiến trình dùng chung.** Backend tạo một `ProcessPoolExecutor` duy nhất với `max_concurrent_jobs` tiến trình (mặc định 2). Job giải lịch và job phân tích dùng chung pool này. Job không có tiến trình riêng: pool đang bận thì job mới chờ trong hàng đợi của pool.
-2. **Giới hạn thời gian.** Mỗi job có hạn chót. Job giải lịch được time limit của solver cộng 30 giây; job phân tích được `max_analysis_seconds` cộng 30 giây. Quá hạn thì job bị đánh dấu `failed`, kèm lý do "solver exceeded its time limit". Hạn chót chỉ dừng việc **chờ** kết quả. `ProcessPoolExecutor` không hủy được tác vụ đang chạy, nên tiến trình vẫn chạy tới khi tự xong và vẫn chiếm một chỗ trong pool. Thực tế việc này hiếm, vì CP-SAT và HiGHS tự dừng theo time limit của chúng, trước hạn chót 30 giây.
+2. **Giới hạn thời gian.** Mỗi job có hạn chót. Job giải lịch được time limit của solver cộng 30 giây; job phân tích được `max_analysis_seconds` cộng 30 giây. Quá hạn thì job bị đánh dấu `failed`, kèm lý do "solver exceeded its time limit". Hạn chót chỉ dừng việc **chờ** kết quả. `ProcessPoolExecutor` không hủy được tác vụ đang chạy, nên tiến trình vẫn chạy tới khi tự xong và vẫn chiếm một chỗ trong pool. Với lượt giải lịch, việc này hiếm: CP-SAT tự dừng theo time limit, trước hạn chót 30 giây. Job phân tích khác ở chỗ `max_analysis_seconds` (mặc định 900 giây) là hạn chót cho **cả job**, còn time limit chỉ áp cho **từng lần giải**. Chi phí biên giải 169 lần, quét λ giải nhiều điểm, nên tổng thời gian vẫn có thể vượt hạn chót nếu mỗi lần giải chạy dài.
 3. **Giới hạn số job.** API đếm các job ở trạng thái `queued` hoặc `running` trong cơ sở dữ liệu. Đủ `max_pending_jobs` (mặc định 4) thì job mới bị từ chối với lỗi `429`. Bộ đếm này dựa trên trạng thái trong DB, không dựa trên tiến trình thật. Một job đã bị đánh dấu `failed` vì quá hạn mà tiến trình vẫn chạy thì không còn được đếm.
-4. **Phục hồi sau khi khởi động lại.** Nếu backend tắt giữa chừng, lúc khởi động lại các job đang `running` được đánh dấu `failed` và ghi rõ lý do. Không có job nào treo mãi ở trạng thái chạy.
+4. **Phục hồi sau khi khởi động lại.** Nếu backend tắt giữa chừng, lúc khởi động lại mọi job đang `queued` hoặc `running` được đánh dấu `failed` với lý do "server restarted". Không có job nào treo mãi.
 5. **Kiểm tra lại sau khi giải.** Khi tiến trình con trả lịch về, tầng này gọi bộ kiểm tra luật (5c):
    - Nếu có vi phạm, lượt giải bị đánh dấu `failed`, kèm số vi phạm.
    - Nếu không có vi phạm, lượt giải là `succeeded`.
@@ -144,7 +143,7 @@ Lưu đủ các thông tin trên để có thể chạy lại một lượt gi�
 
 ## 7. Tầng 5: Engine
 
-Engine là thư viện Python thuần, tên `shiftopt`. Mọi hàm đều tất định: cùng đầu vào và cùng seed thì ra cùng đầu ra. Engine không đọc file, không đọc biến môi trường. Engine gồm năm khối.
+Engine là thư viện Python thuần, tên `shiftopt`. Hàm của engine là hàm thuần: không đọc file, không đọc biến môi trường, không ghi log. Phần tính nhu cầu, validator và KPI luôn cho cùng kết quả với cùng đầu vào. Phần solver cho cùng kết quả với cùng đầu vào, 1 worker, cùng seed, khi giải xong trước time limit (xem mục 7.2). Engine gồm năm khối.
 
 ### 7.1 Khối 5a: Từ doanh số tới số người cần
 
@@ -235,7 +234,7 @@ Mỗi tầng không được làm xấu kết quả tầng trước. Thời gian
 
 **Tái lập.** Với 1 worker và cùng seed, cùng đầu vào cho cùng lịch **khi mọi tầng giải xong trước time limit** (trạng thái `OPTIMAL`). Nếu hết giờ ở trạng thái `FEASIBLE`, lịch trả về là lịch tốt nhất tìm được tới lúc dừng, nên phụ thuộc tốc độ và tải của máy lúc chạy.
 
-**Phá đối xứng (tùy chọn).** Hai nhân viên cùng lương và không có yêu cầu riêng thì hoán đổi được cho nhau. Solver có thể sắp xếp họ theo số ca để không phải xét các lịch chỉ khác nhau ở việc đổi tên người. Không áp cho người có yêu cầu riêng, vì có thể làm mất lời giải tốt nhất.
+**Phá đối xứng (tùy chọn, chưa bật trong API).** Hai nhân viên cùng lương và không có yêu cầu riêng thì hoán đổi được cho nhau. Engine có thể sắp xếp họ theo số ca để không phải xét các lịch chỉ khác nhau ở việc đổi tên người. Không áp cho người có yêu cầu riêng, vì có thể làm mất lời giải tốt nhất. Backend hiện gọi solver không bật tùy chọn này, và cũng không bật chế độ phân rã hai pha.
 
 #### Mô hình tổng hợp (phủ tập Dantzig), giải bằng PuLP + HiGHS
 
@@ -267,7 +266,7 @@ Mô hình này nhỏ và giải rất nhanh, nên được dùng để:
    - số ngày làm liên tiếp dài nhất (tính vòng) ≤ 6;
    - mỗi ca cần nghỉ có giờ nghỉ nằm trong khoảng cho phép (Đ.109);
    - không có ca nào vào ngày nhân viên đã báo không làm được.
-3. Trả về danh sách vi phạm. Mỗi vi phạm gồm loại, nhân viên, chi tiết và điều luật tương ứng.
+3. Trả về danh sách vi phạm. Mỗi vi phạm gồm loại, nhân viên và chi tiết. Giao diện gắn loại vi phạm với điều luật tương ứng (Đ.105, Đ.109, Đ.110, Đ.111) khi hiển thị.
 
 **Khi nào chạy:** sau mỗi lượt giải, và sau mỗi lần người dùng sửa lịch bằng tay.
 
@@ -308,19 +307,12 @@ Tính trực tiếp từ lịch, không lấy từ solver:
 - Quét `alpha` và quét `p` là thừa nhau, vì chỉ tỷ số `alpha / p` ảnh hưởng tới kết quả: tăng `alpha` 20% tương đương chia `p` cho 1,2. Chọn một trong hai, cộng thêm một lần quét sàn nếu cần.
 - Ví dụ store 18: `alpha` = 0,8 / 1,0 / 1,2 cho chi phí tuần 71.660 / 88.920 / 104.880.
 
-**Lưu ý chung cho (3) và (4).** Hai phân tích này chạy trên **mô hình tổng hợp**, không trên đội 30 người thật. Mô hình tổng hợp:
-
-- không giới hạn số người, nên luôn thuê thêm được;
-- định giá mọi ca bằng một mức lương do người dùng nhập;
-- bỏ các luật theo từng người: 48 giờ/tuần, nghỉ 12 giờ giữa ca, 6 ngày liên tiếp, nghỉ 24 giờ mỗi tuần, ngày bận, giờ tối đa riêng.
-
-Vì vậy kết quả **không phải** chi phí thêm một người cho đội hiện tại. Nó là chi phí biên của một cửa hàng lý tưởng, thuê bao nhiêu ca cũng được. Với đội thật, thêm nhu cầu có thể tốn hơn, hoặc không đáp ứng được vì hết người hay vướng luật nghỉ. Muốn biết tác động lên đội thật, dùng quét λ ở (1), vì (1) giải lại bằng mô hình theo nhân viên.
-
 **(3) Chi phí biên theo giờ.**
 
 - Giải mô hình tổng hợp một lần với nhu cầu gốc, được chi phí z.
 - Với mỗi giờ t trong 168 giờ: thêm 1 người vào nhu cầu giờ t, giải lại, được z'. Chi phí biên của giờ t là z' − z.
-- Tổng cộng 169 lần giải. Kết quả hiện thành bản đồ nhiệt 7 × 24: giờ nào đắt nhất nếu cần thêm một người.
+- Tổng cộng 169 lần giải số nguyên (1 lần gốc và 168 lần cho từng giờ). Kết quả hiện thành bản đồ nhiệt 7 × 24: giờ nào đắt nhất nếu cần thêm một người.
+- Cùng job này giải thêm 1 lần bài toán nới lỏng để lấy dual (mục (4)), rồi đặt dual cạnh chi phí biên của từng giờ.
 - Chi phí biên thường là một bậc: thêm 1 người có thể buộc mở thêm cả một ca 8 tiếng, hoặc tốn 0 nếu giờ đó đang thừa người.
 
 **(4) Dual của bài toán nới lỏng (LP).**
@@ -328,6 +320,14 @@ Vì vậy kết quả **không phải** chi phí thêm một người cho đội
 - Bỏ điều kiện "số người phải nguyên" trong mô hình tổng hợp, giải bằng HiGHS, rồi lấy dual của ràng buộc phủ từng giờ.
 - Dual là ước lượng chi phí của một đơn vị nhu cầu thêm, nhưng chỉ đúng cho bài toán nới lỏng. Vì vậy luôn gắn nhãn **"xấp xỉ"**.
 - Bảng so sánh dual với chi phí biên thật ở (3) cho thấy chênh lệch do tính nguyên ở từng giờ.
+
+**Lưu ý chung cho (3) và (4).** Hai phân tích này chạy trên **mô hình tổng hợp**, không trên đội 30 người thật. Mô hình tổng hợp:
+
+- không giới hạn số người, nên luôn thuê thêm được;
+- định giá mọi ca bằng một mức lương do người dùng nhập;
+- bỏ các luật theo từng người: 48 giờ/tuần, nghỉ 12 giờ giữa ca, 6 ngày liên tiếp, nghỉ 24 giờ mỗi tuần, ngày bận, giờ tối đa riêng.
+
+Vì vậy kết quả **không phải** chi phí thêm một người cho đội hiện tại. Nó là chi phí biên của một cửa hàng lý tưởng, thuê bao nhiêu ca cũng được. Với đội thật, thêm nhu cầu có thể tốn hơn, hoặc không đáp ứng được vì hết người hay vướng luật nghỉ. Muốn biết tác động lên đội thật, dùng quét λ ở (1), vì (1) giải lại bằng mô hình theo nhân viên.
 
 **(5) So sánh hai kịch bản.** Chọn hai lượt giải bất kỳ, đặt cạnh nhau tỷ lệ phủ, giờ thiếu, chi phí và các chỉ số khác.
 
@@ -342,7 +342,7 @@ Vì vậy kết quả **không phải** chi phí thêm một người cho đội
    - tạo dòng `solve_runs` ở trạng thái `queued`;
    - trả mã job.
 3. **Giao diện:** chuyển sang trang lượt giải và bắt đầu hỏi lại trạng thái.
-4. **Xử lý nền:** đổi trạng thái sang `running`, mở tiến trình con có hạn chót.
+4. **Xử lý nền:** đổi trạng thái sang `running`, giao việc cho một tiến trình trong pool, kèm hạn chót.
 5. **Engine, khối 5b:** dựng mô hình CP-SAT rồi giải bốn tầng: thiếu người, chi phí, công bằng ca đêm, mong muốn nghỉ.
 6. **Xử lý nền:**
    - nhận lịch;
@@ -374,6 +374,7 @@ Lệnh: `docker compose up -d --build`, rồi mở `http://localhost:3000`.
 - Nhu cầu từ FreshRetailNet là tuần trung bình của quá khứ, chưa phải dự báo tuần tới. Chưa đo sai số dự báo.
 - Giờ nghỉ giữa ca được làm tròn thành cả giờ.
 - Tái lập chỉ chắc chắn khi lượt giải kết thúc `OPTIMAL` trước time limit.
+- Giới hạn số job đếm trạng thái trong DB rồi mới thêm job, không khóa. Khi nhiều yêu cầu đến cùng lúc, số job thật có thể vượt nhẹ `max_pending_jobs`.
 - Chi phí biên và dual LP tính trên mô hình tổng hợp, không trên đội thật (mục 7.5).
 - Xử lý nền (mục 5), chưa sửa trong code (đặc tả D15):
   - Hạn chót của job tính từ lúc job được gửi vào pool, nên **thời gian chờ trong hàng đợi cũng bị tính**. Một job xếp sau hai phân tích dài có thể bị đánh dấu `failed` vì quá hạn trước khi kịp chạy.
