@@ -1,17 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config import get_settings
 from src.database import get_session
 from src.demand import service
 from src.demand.schemas import (
-    CallCenterDemandRequest,
     CsvDemandRequest,
     DatasetDemandRequest,
     DemandProfileCreate,
     DemandProfileRead,
     DemandProfileUpdate,
+    SalesIngestQuery,
 )
 
 router = APIRouter(prefix="/demand-profiles", tags=["demand"])
@@ -38,22 +39,32 @@ async def create_profile_from_dataset(
     )
 
 
+BINARY_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}},
+    }
+}
+
+
+@router.post(
+    "/ingest",
+    response_model=DemandProfileRead,
+    status_code=status.HTTP_201_CREATED,
+    openapi_extra=BINARY_BODY,
+)
+async def ingest_sales(
+    query: Annotated[SalesIngestQuery, Query()], request: Request, session: SessionDep
+) -> DemandProfileRead:
+    data = await service.read_upload(request.stream(), get_settings().max_upload_bytes)
+    return DemandProfileRead.model_validate(await service.ingest_sales(session, query, data))
+
+
 @router.post("/from-csv", response_model=DemandProfileRead, status_code=status.HTTP_201_CREATED)
 async def create_profile_from_csv(
     payload: CsvDemandRequest, session: SessionDep
 ) -> DemandProfileRead:
     return DemandProfileRead.model_validate(await service.create_profile_from_csv(session, payload))
-
-
-@router.post(
-    "/from-call-center", response_model=DemandProfileRead, status_code=status.HTTP_201_CREATED
-)
-async def create_profile_from_call_center(
-    payload: CallCenterDemandRequest, session: SessionDep
-) -> DemandProfileRead:
-    return DemandProfileRead.model_validate(
-        await service.create_profile_from_call_center(session, payload)
-    )
 
 
 @router.get("/{profile_id}", response_model=DemandProfileRead)
