@@ -67,6 +67,7 @@ runtime-evaluated-base-classes = [
 "src/database.py" = ["TC002", "TC003"]
 "migrations/versions/**" = ["E501"]
 "scripts/download_freshretailnet.py" = ["S310"]
+"scripts/seed_demo.py" = ["S310"]
 
 [tool.mypy]
 python_version = "3.11"

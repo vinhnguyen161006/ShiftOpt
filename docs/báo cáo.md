@@ -33,7 +33,7 @@ Hai ca pháp lý của nghiệm thu được kiểm bằng test: ca 14h–22h r�
 - **Split.** Đã xác nhận bằng `dt.min()/max()` trong task 6.1: train 2024-03-28 đến 2024-06-25 (90 ngày), eval 2024-06-26 đến 2024-07-02 (7 ngày). Nhu cầu lấy từ train; eval giữ lại làm tập đánh giá. Chưa tính WAPE/MAPE vì chưa có mô hình dự báo.
 - **Nhu cầu ẩn.** Ô hết hàng (`hours_stock_status = 1`) được thay bằng trung bình doanh số cùng sản phẩm, cùng thứ, cùng giờ trên các ngày không hết hàng. Store 18: 90159 ô được thay; 1008 ô không có ngày không hết hàng để học nên giữ giá trị quan sát ([task 6.1](../WORKLOG.md)).
 - **Quy đổi.** `r = max(sàn, ceil(alpha·D/p))`. Giả định của nhóm: `alpha = 1,0`, `p = 4,0` (giờ đỉnh cần 8 người với store 18), sàn 1 và 1. Giờ đêm được đặt bằng sàn đêm trước khi quy đổi ([đặc tả.md](đặc%20tả.md) mục 3).
-- **Tổng đài.** Lưu lượng giả lập có seed, Erlang A/C. Dataset công khai chưa dùng vì chưa kiểm giấy phép (D14).
+- **Phạm vi.** Chỉ hỗ trợ bán lẻ / kho; chế độ tổng đài (Erlang A/C) đã bỏ (D18).
 
 ## 5. Kết quả benchmark
 
@@ -77,7 +77,7 @@ Backend chạy 102 test trên MySQL 8.4.10 thật, không skip. Migration `3a7c9
 - Nghỉ giữa giờ xấp xỉ bằng một giờ phủ, bảo thủ.
 - Ngưỡng 6 giờ (Đ.109) và nội dung điều luật chưa đối chiếu nguyên văn.
 - Nhu cầu là doanh số kho tiền phương, không phải nhu cầu nhân sự; mọi quy đổi là giả định của nhóm.
-- Chưa có chấm công, nên không đo adherence. Chưa có dataset tổng đài công khai.
+- Chưa có chấm công, nên không đo adherence. Không hỗ trợ tổng đài.
 - Không có dự báo; không tính WAPE/MAPE.
 - Giết tiến trình con khi quá hạn chưa làm; CP-SAT tự dừng theo time limit.
 

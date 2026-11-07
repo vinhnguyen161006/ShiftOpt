@@ -22,7 +22,7 @@ Lập ngày 2026-10-26 từ `CLAUDE.md` và trạng thái repo thực tế (khun
 | 3 | Engine: lớp solver chung + mô hình tổng hợp (Dantzig) | 1 | xong (3.1–3.3) |
 | 4 | Engine: mô hình theo nhân viên (CP-SAT) | 2, 3 | xong (4.1–4.4; phá đối xứng tắt mặc định, phân rã chưa bật tự động) |
 | 5 | Engine: phân tích độ nhạy | 3, 4 | xong (5.1–5.3) |
-| 6 | Pipeline dữ liệu nhu cầu (FreshRetailNet, tổng đài) | 0, 1 | xong (6.1–6.3; tổng đài công khai còn mở) |
+| 6 | Pipeline dữ liệu nhu cầu (FreshRetailNet; tổng đài đã bỏ, đặc tả D18) | 0, 1 | xong |
 | 7 | Backend: service, job giải, API, test tích hợp | 2–6 | xong (7.1–7.5); 102 test pass trên MySQL 8.4.10, không skip |
 | 8 | Frontend: các màn hình MVP | 7 (OpenAPI) | code xong (8.1–8.7); chạy với backend thật qua Compose (smoke flow đạt); chưa có người duyệt trên trình duyệt |
 | 9 | Kiểm chứng: benchmark, so sánh solver, tái lập, nghiệm thu | 4, 5, 7, 8 | xong trừ 9.5 (chờ người duyệt UI); kịch bản căng 8 nhân viên không đạt, ghi nhận |
@@ -193,7 +193,7 @@ Mục tiêu: dữ liệu vào đúng, giả định minh bạch (nguyên tắc 6
   - Đã xác minh bằng `dt.min()/max()`: `train` 2024-03-28 .. 2024-06-25 (90 ngày), `eval` 2024-06-26 .. 2024-07-02 (7 ngày). Hash file local khớp LFS oid trên Hugging Face.
   - Chạy thật store 18: 164 sản phẩm; ô hết hàng được thay bằng trung bình 90159 ô; 1008 ô không có ngày không hết hàng để học nên giữ doanh số quan sát; 56 giờ đêm đặt 0. `build_demand_store` mất khoảng 2,7 giây (gồm cả khởi động uv).
   - Test: `test_latent_demand.py` (11), `test_dataset_loader.py` (4).
-- [x] **6.2 Dữ liệu tổng đài** (kèm Erlang A, dời từ 1.3: thêm hàm Erlang A với chuỗi sinh-tử, kiểm tra Erlang A cho số người ≤ Erlang C trên cùng lưu lượng)
+- [x] **6.2 Dữ liệu tổng đài** (**đã gỡ 2026-11-07, đặc tả D18**: xóa `erlang.py`, `call_arrivals.py`, endpoint `from-call-center` và form Tổng đài) (kèm Erlang A, dời từ 1.3: thêm hàm Erlang A với chuỗi sinh-tử, kiểm tra Erlang A cho số người ≤ Erlang C trên cùng lưu lượng)
   - Bộ giả lập lưu lượng cuộc gọi theo giờ có seed cố định (mô hình ngày/tuần, đỉnh buổi); tùy chọn nạp dataset công khai (ngân hàng Đông Bắc Mỹ, SEELab Technion) nếu giấy phép cho phép.
   - Xong khi: cùng seed cho cùng lưu lượng; đi qua Erlang A ra `r[d,h]` hợp lý.
   - Đã làm: `erlang_a_queue_probabilities` (chuỗi sinh-tử M/M/n+M, tính trong miền log), `erlang_a_service_level` (xác suất thời gian chờ ảo không quá `answer_seconds`, theo Garnett, Mandelbaum và Reiman 2002), `required_staff_erlang_a` (tìm n nhỏ nhất: nhân đôi rồi chia đôi). Thời gian chờ ảo bỏ qua việc chính khách tự bỏ, nên khớp Erlang C khi patience → ∞. `patience_seconds` không có mặc định: là giả định của nhóm.
