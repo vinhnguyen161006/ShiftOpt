@@ -12,6 +12,7 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-dev
 COPY backend/alembic.ini ./
 COPY backend/migrations ./migrations
 COPY backend/src ./src
+COPY backend/scripts ./scripts
 
 FROM python:3.11.16-slim-bookworm@sha256:a36c24f9cbdf4fd0f52d67f0823eeac19c2028c637cecc392d97f980d4fec56b AS runtime
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app

@@ -10,7 +10,7 @@ from shiftopt.staffing.linear import required_staff
 from shiftopt.time_grid import HOURS_PER_DAY, HOURS_PER_WEEK
 
 from src.demand.schemas import ConversionParams
-from src.exceptions import NotFoundError
+from src.exceptions import InvalidInputError, NotFoundError
 
 HF_REVISION = "c374e85975c82816c495acfa904cc55ab14a47d3"
 TRAIN_FILE = "train.parquet"
@@ -35,20 +35,38 @@ class StoreDemand:
 
 
 def build_processed_store(raw_dir: Path, processed_dir: Path, store_id: int) -> Path:
-    """Aggregate the training split of one store into a 168-row weekly load file. Reads only
-    the rows of store_id, builds the latent-demand week (stockout cells replaced) and writes
-    demand_store_<id>.parquet with the method and the coverage of the input as schema metadata.
-    Night hours are not changed here: the night rule belongs to the caller's LaborRules and is
-    applied in dataset_required_staff. Raise NotFoundError when the store is absent."""
-    table = pq.read_table(
+    """Build demand_store_<id>.parquet from the pinned training split in raw_dir."""
+    return ingest_store_sales(
         raw_dir / TRAIN_FILE,
-        columns=TRAIN_COLUMNS,
-        filters=[("store_id", "=", store_id)],
+        processed_dir,
+        store_id,
+        f"FreshRetailNet-50K train split, revision {HF_REVISION}",
     )
+
+
+def ingest_store_sales(
+    source: Path | pa.NativeFile, processed_dir: Path, store_id: int, source_label: str
+) -> Path:
+    """Aggregate the sales of one store into a 168-row weekly load file. source is a path or an
+    in-memory buffer holding a FreshRetailNet-50K style parquet file with TRAIN_COLUMNS. Reads
+    only the rows of store_id, builds the latent-demand week (stockout cells replaced) and writes
+    demand_store_<id>.parquet with the method, source_label and the coverage of the input as
+    schema metadata. Night hours are not changed here: the night rule belongs to the caller's
+    LaborRules and is applied in dataset_required_staff. Raise InvalidInputError when the file
+    is not such a parquet file and NotFoundError when the store is absent."""
+    try:
+        table = pq.read_table(source, columns=TRAIN_COLUMNS, filters=[("store_id", "=", store_id)])
+    except (pa.ArrowException, KeyError) as error:
+        raise InvalidInputError(
+            f"file must be a parquet file with columns {', '.join(TRAIN_COLUMNS)}"
+        ) from error
     if table.num_rows == 0:
-        raise NotFoundError(f"store {store_id} not found in the training split")
-    rows = _product_days(table)
-    result = weekly_load(rows)
+        raise NotFoundError(f"store {store_id} not found in the sales file")
+    try:
+        rows = _product_days(table)
+        result = weekly_load(rows)
+    except ValueError as error:
+        raise InvalidInputError(f"store {store_id}: {error}") from error
     days = sorted({row.day for row in rows})
     grid = pa.table(
         {
@@ -60,7 +78,7 @@ def build_processed_store(raw_dir: Path, processed_dir: Path, store_id: int) -> 
     metadata = {
         "label": DATASET_LABEL,
         "method": result.method,
-        "source": f"FreshRetailNet-50K train split, revision {HF_REVISION}",
+        "source": source_label,
         "store_id": str(store_id),
         "products": str(len({row.product_id for row in rows})),
         "first_day": days[0].isoformat(),

@@ -32,7 +32,7 @@ export function jsonInit(method: string, body?: unknown): RequestInit {
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  if (init.body !== undefined) {
+  if (init.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   let response: Response;
@@ -70,7 +70,9 @@ function toApiError(status: number, body: unknown): ApiError {
   }
   if (Array.isArray(detail)) {
     const fieldErrors = detail.map((item: ValidationItem) => ({
-      path: (item.loc ?? []).filter((part, index) => !(index === 0 && part === "body")),
+      path: (item.loc ?? []).filter(
+        (part, index) => !(index === 0 && (part === "body" || part === "query")),
+      ),
       message: item.msg ?? vi.common.invalidValue,
     }));
     return new ApiError(status, FIELD_ERRORS, fieldErrors);

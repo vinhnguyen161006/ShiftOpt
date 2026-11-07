@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     max_pending_jobs: int = 4
     max_analysis_seconds: float = 900.0
     dataset_dir: str = "../data/processed"
+    max_upload_bytes: int = 200 * 1024 * 1024
 
 
 @lru_cache
