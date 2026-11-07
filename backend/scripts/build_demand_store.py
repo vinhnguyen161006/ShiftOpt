@@ -10,14 +10,13 @@ from src.demand.dataset_loader import build_processed_store, dataset_required_st
 from src.demand.schemas import ConversionParams
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW_DIR = ROOT / "data" / "raw" / "freshretailnet50k" / "data"
+TRAIN_DIR = ROOT / "data" / "demo"
+EVAL_FILE = ROOT / "data" / "raw" / "freshretailnet50k" / "data" / "eval.parquet"
 PROCESSED_DIR = ROOT / "data" / "processed"
 
 
 def eval_date_range(store_id: int) -> tuple[str, str]:
-    table = pq.read_table(
-        RAW_DIR / "eval.parquet", columns=["dt"], filters=[("store_id", "=", store_id)]
-    )
+    table = pq.read_table(EVAL_FILE, columns=["dt"], filters=[("store_id", "=", store_id)])
     if table.num_rows == 0:
         return ("none", "none")
     return (
@@ -31,7 +30,7 @@ def main() -> None:
     parser.add_argument("--store-id", type=int, required=True)
     arguments = parser.parse_args()
     store_id: int = arguments.store_id
-    path = build_processed_store(RAW_DIR, PROCESSED_DIR, store_id)
+    path = build_processed_store(TRAIN_DIR, PROCESSED_DIR, store_id)
     demand = dataset_required_staff(PROCESSED_DIR, store_id, ConversionParams(), LaborRules())
     eval_first, eval_last = eval_date_range(store_id)
     print(f"file    {path}")

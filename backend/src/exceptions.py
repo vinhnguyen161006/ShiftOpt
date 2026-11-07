@@ -26,6 +26,10 @@ class InvalidInputError(AppError):
     status_code = 422
 
 
+class UploadTooLargeError(AppError):
+    status_code = 413
+
+
 class TooManyJobsError(AppError):
     status_code = 429
 

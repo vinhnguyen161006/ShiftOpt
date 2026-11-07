@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -11,10 +12,12 @@ from src.demand.dataset_loader import (
     DATASET_LABEL,
     build_processed_store,
     dataset_required_staff,
+    ingest_store_sales,
     load_hourly_load,
 )
 from src.demand.schemas import ConversionParams
-from src.exceptions import NotFoundError
+from src.demand.service import read_upload
+from src.exceptions import InvalidInputError, NotFoundError, UploadTooLargeError
 
 START = date(2024, 6, 3)
 MONDAY_TEN = 10
@@ -111,3 +114,62 @@ def test_night_window_comes_from_the_rules_given_not_the_build(
     assert demand.required_staff[22] == 6
     assert demand.required_staff[6] == 2
     assert demand.metadata["night_start"] == "23"
+
+
+def test_ingest_from_memory_matches_build_from_disk(
+    directories: tuple[Path, Path], tmp_path: Path
+) -> None:
+    raw, processed = directories
+    build_processed_store(raw, processed, 1)
+    uploaded = tmp_path / "uploaded"
+    buffer = pa.BufferReader(pa.py_buffer((raw / "train.parquet").read_bytes()))
+    ingest_store_sales(buffer, uploaded, 1, "uploaded sales file")
+    expected = load_hourly_load(processed, 1)
+    actual = load_hourly_load(uploaded, 1)
+    assert actual.load == expected.load
+    assert actual.metadata["source"] == "uploaded sales file"
+
+
+def test_ingest_rejects_a_file_that_is_not_parquet(tmp_path: Path) -> None:
+    with pytest.raises(InvalidInputError, match="parquet"):
+        ingest_store_sales(pa.BufferReader(b"date,hour,sales"), tmp_path, 1, "upload")
+
+
+def test_ingest_rejects_parquet_without_the_sales_columns(tmp_path: Path) -> None:
+    source = tmp_path / "other.parquet"
+    pq.write_table(pa.table({"store_id": [1], "sales": [2.0]}), source)
+    with pytest.raises(InvalidInputError, match="hours_sale"):
+        ingest_store_sales(source, tmp_path, 1, "upload")
+
+
+def test_ingest_rejects_a_store_missing_weekdays(tmp_path: Path) -> None:
+    source = tmp_path / "short.parquet"
+    row = {
+        "store_id": 1,
+        "product_id": 10,
+        "dt": START.isoformat(),
+        "hours_sale": [1.0] * 24,
+        "hours_stock_status": [0] * 24,
+    }
+    pq.write_table(pa.Table.from_pylist([row], schema=SCHEMA), source)
+    with pytest.raises(InvalidInputError, match="weekday"):
+        ingest_store_sales(source, tmp_path, 1, "upload")
+
+
+async def _chunks(*parts: bytes) -> AsyncIterator[bytes]:
+    for part in parts:
+        yield part
+
+
+async def test_read_upload_joins_chunks() -> None:
+    assert await read_upload(_chunks(b"ab", b"cd"), limit=4) == bytearray(b"abcd")
+
+
+async def test_read_upload_refuses_bodies_over_the_limit() -> None:
+    with pytest.raises(UploadTooLargeError):
+        await read_upload(_chunks(b"ab", b"cde"), limit=4)
+
+
+async def test_read_upload_refuses_an_empty_body() -> None:
+    with pytest.raises(InvalidInputError, match="empty"):
+        await read_upload(_chunks(), limit=4)

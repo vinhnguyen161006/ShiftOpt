@@ -1,3 +1,8 @@
+from datetime import date, timedelta
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 from httpx import AsyncClient
 
@@ -93,29 +98,62 @@ async def test_demand_from_csv_accepts_grid_and_rejects_short_grid(client: Async
     assert short.status_code == 422
 
 
-async def test_demand_from_call_center_uses_erlang_a(client: AsyncClient) -> None:
-    response = await client.post(
-        "/api/demand-profiles/from-call-center",
-        json={
-            "name": "calls",
-            "base_rate": 40,
-            "handle_seconds": 180,
-            "patience_seconds": 60,
-            "seed": 0,
-        },
-    )
-    assert response.status_code == 201
-    body = response.json()
-    assert body["mode"] == "erlang"
-    assert len(body["required_staff"]) == 168
-    assert "simulated" in body["source_metadata"]["label"]
-
-
 async def test_demand_from_dataset_missing_store_is_404(client: AsyncClient) -> None:
     response = await client.post(
         "/api/demand-profiles/from-dataset", json={"name": "store", "store_id": 999999}
     )
     assert response.status_code == 404
+
+
+def _sales_file(path: Path) -> bytes:
+    rows = [
+        {
+            "store_id": 7,
+            "product_id": 1,
+            "dt": (date(2024, 6, 3) + timedelta(days=day)).isoformat(),
+            "hours_sale": [8.0] * 24,
+            "hours_stock_status": [0] * 24,
+        }
+        for day in range(7)
+    ]
+    pq.write_table(pa.Table.from_pylist(rows), path)
+    return path.read_bytes()
+
+
+async def test_demand_from_uploaded_sales(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("SHIFTOPT_DATASET_DIR", str(tmp_path / "processed"))
+    get_settings.cache_clear()
+    params: dict[str, str | int] = {
+        "name": "uploaded",
+        "store_id": 7,
+        "productivity": 4,
+        "night_min_staff": 2,
+    }
+    response = await client.post(
+        "/api/demand-profiles/ingest",
+        params=params,
+        content=_sales_file(tmp_path / "train.parquet"),
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["required_staff"][12] == 2
+    assert body["required_staff"][0] == 2
+    assert body["source_metadata"]["store_id"] == "7"
+    assert body["source_metadata"]["source"].startswith("uploaded sales file, sha256 ")
+    assert body["conversion_params"]["productivity"] == 4
+
+
+async def test_demand_upload_rejects_non_parquet(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/demand-profiles/ingest",
+        params={"name": "bad", "store_id": 7},
+        content=b"date,hour,sales",
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    assert response.status_code == 422
 
 
 async def test_demand_profile_update_and_delete(client: AsyncClient) -> None:

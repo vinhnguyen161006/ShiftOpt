@@ -29,7 +29,7 @@ Màn hình Schedule (kết quả một run) và What-if (đường cong z(lambda
 | Màn hình ShiftOpt | Nguồn |
 |---|---|
 | Khung app (header, nav) | Trang chủ; R1 (thanh điều hướng trên, vùng làm việc bên dưới) |
-| Demand (lưới 7 × 24, CSV, FreshRetailNet, tổng đài) | R3, R2, R5, R8 |
+| Demand (lưới 7 × 24, CSV, FreshRetailNet) | R3, R2, R5, R8 |
 | Employees, Shift templates | R7, R5, R2, R8, R1 (ngày không làm được / không muốn làm) |
 | Schedule (Optimize, trạng thái, lịch, coverage, chi phí) | R1, R10, R9, R6 |
 | Compliance (danh sách vi phạm, sửa tay) | R1 (score analysis), R2, R9 |
