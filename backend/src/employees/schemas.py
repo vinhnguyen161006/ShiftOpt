@@ -2,9 +2,11 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.time_grid import DAYS_PER_WEEK
 
 WeekDay = Annotated[int, Field(ge=0, lt=DAYS_PER_WEEK)]
+WeeklyHours = Annotated[int, Field(ge=1, le=LaborRules().max_weekly_hours)]
 
 
 def _unique_days(days: list[int]) -> list[int]:
@@ -17,6 +19,7 @@ class EmployeeCreate(BaseModel):
     code: str = Field(min_length=1, max_length=32)
     name: str = Field(min_length=1, max_length=120)
     hourly_wage: int = Field(gt=0)
+    max_weekly_hours: WeeklyHours | None = None
     unavailable_days: list[WeekDay] = Field(default_factory=list, max_length=DAYS_PER_WEEK)
     preferred_days_off: list[WeekDay] = Field(default_factory=list, max_length=DAYS_PER_WEEK)
 
@@ -37,6 +40,7 @@ class EmployeeRead(BaseModel):
     code: str
     name: str
     hourly_wage: int
+    max_weekly_hours: int | None
     unavailable_days: list[int]
     preferred_days_off: list[int]
     created_at: datetime

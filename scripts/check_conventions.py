@@ -27,6 +27,7 @@ SKIPPED_DIRS = frozenset(
 )
 SKIPPED_FILES = frozenset({"uv.lock", "package-lock.json"})
 GENERATED_PATHS = frozenset({"frontend/src/types/api.ts", "backend/openapi.json"})
+UI_TEXT_PATHS = frozenset({"frontend/src/locales/vi.ts"})
 
 HASH_COMMENT_SUFFIXES = frozenset(
     {".yml", ".yaml", ".toml", ".sh", ".ini", ".cfg", ".txt", ".in", ".mako"}
@@ -105,6 +106,9 @@ def comment_violations(path: Path, source: str) -> Iterator[Violation]:
 
 
 def ascii_violations(path: Path, source: str) -> Iterator[Violation]:
+    """Vietnamese UI text lives in UI_TEXT_PATHS only, so those files may hold non-ASCII text."""
+    if path.relative_to(REPO_ROOT).as_posix() in UI_TEXT_PATHS:
+        return
     for line_number, line in enumerate(source.splitlines(), start=1):
         if not line.isascii():
             yield Violation(path, line_number, "non-ASCII character in code file")

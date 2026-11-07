@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Corners } from "../../../components/ui/Corners";
+import { vi } from "../../../locales/vi";
 
 const ICON_STROKE = "var(--color-accent-700)";
 
@@ -23,13 +24,7 @@ function Icon({ children }: { children: ReactNode }) {
 
 const FEATURES = [
   {
-    title: "Demand Planning",
-    body: (
-      <>
-        Edit hourly staffing requirements in a 7 &times; 24 grid, import a CSV, or derive an
-        illustrative demand profile from FreshRetailNet-50K.
-      </>
-    ),
+    ...vi.home.features.items.demand,
     icon: (
       <>
         <rect x="3" y="3" width="18" height="18" />
@@ -38,8 +33,7 @@ const FEATURES = [
     ),
   },
   {
-    title: "Employee Management",
-    body: "Define availability, contractual hour limits, shift preferences and day-off requests, and keep them attached to the instance that was solved.",
+    ...vi.home.features.items.employees,
     icon: (
       <>
         <circle cx="9" cy="8" r="3.2" />
@@ -49,8 +43,7 @@ const FEATURES = [
     ),
   },
   {
-    title: "Automated Scheduling",
-    body: "Submit an instance and let the optimization engine assign employees to shifts under the documented scheduling constraints.",
+    ...vi.home.features.items.scheduling,
     icon: (
       <>
         <rect x="7" y="7" width="10" height="10" />
@@ -59,8 +52,7 @@ const FEATURES = [
     ),
   },
   {
-    title: "Coverage Analytics",
-    body: "Compare required staffing against assigned employees hour by hour, and read understaffed and overstaffed hours straight off the chart.",
+    ...vi.home.features.items.coverage,
     icon: (
       <>
         <path d="M3 20h18" />
@@ -72,8 +64,7 @@ const FEATURES = [
     ),
   },
   {
-    title: "Labor Cost Analysis",
-    body: "See estimated labor cost under your configured wage assumptions, including the night-shift allowance applied to hours between 22:00 and 06:00.",
+    ...vi.home.features.items.cost,
     icon: (
       <>
         <circle cx="12" cy="12" r="8.5" />
@@ -82,13 +73,7 @@ const FEATURES = [
     ),
   },
   {
-    title: "Sensitivity Analysis",
-    body: (
-      <>
-        Sweep a demand multiplier, compare scenarios, and read the per-hour marginal cost of one
-        more unit of demand &mdash; each point a real re-solve.
-      </>
-    ),
+    ...vi.home.features.items.sensitivity,
     icon: (
       <>
         <path d="M4 7h16M4 12h16M4 17h16" />
@@ -102,24 +87,24 @@ const FEATURES = [
 
 const PRODUCT_POINTS = [
   {
-    label: <>Demand &rarr; staffing</>,
+    label: vi.home.product.demandLabel,
     key: "demand",
     text: (
       <>
-        Hourly load becomes a required-staff curve through a conversion you control:{" "}
-        <span className="home-formula">r = max(r_min, ceil(alpha &middot; D / p))</span>.
+        {vi.home.product.demandText} <span className="home-formula">{vi.home.product.formula}</span>
+        .
       </>
     ),
   },
   {
-    label: "Integer programming",
+    label: vi.home.product.integerLabel,
     key: "integer",
-    text: "Set-covering and per-employee rostering models solved with CP-SAT and HiGHS, benchmarked on the same instance.",
+    text: vi.home.product.integerText,
   },
   {
-    label: "Re-solved sensitivity",
+    label: vi.home.product.sensitivityLabel,
     key: "sensitivity",
-    text: "Marginal cost per hour comes from solving again, not from a shadow price an integer model cannot supply.",
+    text: vi.home.product.sensitivityText,
   },
 ];
 
@@ -143,12 +128,9 @@ export function Features() {
     <section id="features" className="home-features">
       <div className="container">
         <div className="home-section-intro">
-          <div className="home-eyebrow">Capabilities</div>
-          <h2 className="home-section-title">Everything You Need to Build Better Schedules</h2>
-          <p className="home-section-lead">
-            Six working areas, one instance. Demand, workforce and rules go in; a schedule, its KPIs
-            and its scenario analysis come out.
-          </p>
+          <div className="home-eyebrow">{vi.home.features.eyebrow}</div>
+          <h2 className="home-section-title">{vi.home.features.title}</h2>
+          <p className="home-section-lead">{vi.home.features.lead}</p>
         </div>
         <div className="home-feature-grid">
           {FEATURES.map((feature) => (

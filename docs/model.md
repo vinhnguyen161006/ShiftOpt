@@ -26,7 +26,7 @@ Variables:
 Hard constraints:
 
 - at most one shift per day per employee;
-- weekly hours per employee `<= max_weekly_hours` (Article 105);
+- weekly hours per employee `<= min(max_weekly_hours, employee.max_weekly_hours)` (Article 105; the employee cap is optional and can only lower the law limit);
 - for each pair of shifts whose rest is below `min_rest_between_shifts` (general formula, cyclic offsets 1 to 6), `x + x' <= 1`;
 - every cyclic window of `max_consecutive_days + 1` days holds at most `max_consecutive_days` shifts;
 - rest window: `v[e, t]` implies no work in hours `t .. t+23` (cyclic); at least one `v[e, t]` true (Article 111). Equivalent to the validator's longest-gap rule because a gap is an uncovered hour run;
@@ -59,7 +59,8 @@ Breaks are whole hours. A 30 or 45 minute break takes a full hour of coverage, w
 | Article | Constraint | Formula |
 |---------|-----------|---------|
 | 105 | Daily hours | `length_s <= max_daily_hours` for each shift worked |
-| 105 | Weekly hours | `sum_{d,s} length_s * x[e,d,s] <= max_weekly_hours` |
+| 105 | Weekly hours | `sum_{d,s} length_s * x[e,d,s] <= min(max_weekly_hours, employee cap)` |
+| 109 | Break in shift | Shift of at least `break_required_from_hours` (6) needs one break of `min_break_minutes` (30), or `min_night_break_minutes` (45) at night, modelled as one lost hour. The 6-hour threshold is not yet checked against the text of the article (`docs/đặc tả.md` mục 4) |
 | 106 | Night window | 22:00–06:00 |
 | 110 | Rest between shifts | `24 + sigma' - (sigma + L) >= 12` (general, not L=8 shortcut) |
 | 111 | Weekly continuous rest | Longest gap in hour axis >= 24 |

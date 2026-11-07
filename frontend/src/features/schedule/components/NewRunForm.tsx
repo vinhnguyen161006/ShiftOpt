@@ -8,6 +8,7 @@ import {
 import { Button } from "../../../components/ui/Button";
 import { ErrorSummary, Notice } from "../../../components/ui/Feedback";
 import { errorsByPath, generalError, summaryErrors } from "../../../lib/form";
+import { vi } from "../../../locales/vi";
 import type { DemandProfileRead, LaborRulesRead, ShiftTemplateRead } from "../../../types/models";
 import { useCreateSchedule } from "../api/schedules";
 
@@ -55,7 +56,7 @@ export function NewRunForm({
       {general && <Notice kind="error" title={general} />}
       <div className="form-actions">
         <Button type="submit" variant="primary" disabled={create.isPending}>
-          {create.isPending ? "Submitting..." : "Optimize"}
+          {create.isPending ? vi.schedule.submitting : vi.schedule.optimize}
         </Button>
       </div>
     </form>

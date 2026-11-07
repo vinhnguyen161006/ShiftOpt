@@ -1,4 +1,6 @@
 import { Slider } from "../../../components/ui/Slider";
+import { formatDecimal } from "../../../lib/number";
+import { vi } from "../../../locales/vi";
 
 type LambdaSliderProps = {
   multipliers: number[];
@@ -11,13 +13,13 @@ export function LambdaSlider({ multipliers, index, onChange }: LambdaSliderProps
   return (
     <Slider
       id="lambda"
-      label="Demand multiplier lambda"
+      label={vi.whatIf.sweep.sliderLabel}
       min={0}
       max={Math.max(0, multipliers.length - 1)}
       step={1}
       value={index}
-      valueText={`${value.toFixed(1)}x demand`}
-      ticks={multipliers.map((multiplier) => multiplier.toFixed(1))}
+      valueText={vi.whatIf.sweep.sliderValue(formatDecimal(value, 1))}
+      ticks={multipliers.map((multiplier) => formatDecimal(multiplier, 1))}
       onChange={onChange}
     />
   );

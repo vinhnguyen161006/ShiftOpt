@@ -4,6 +4,7 @@ import { DayPicker } from "../../../components/ui/DayPicker";
 import { ErrorSummary, Notice } from "../../../components/ui/Feedback";
 import { Field } from "../../../components/ui/Field";
 import { errorsByPath, generalError, summaryErrors, toNumber } from "../../../lib/form";
+import { vi } from "../../../locales/vi";
 import type { EmployeeRead } from "../../../types/models";
 import { useSaveEmployee } from "../api/employees";
 
@@ -16,6 +17,7 @@ const FIELD_IDS: Record<string, string> = {
   code: "employee-code",
   name: "employee-name",
   hourly_wage: "employee-wage",
+  max_weekly_hours: "employee-max-hours",
   unavailable_days: "employee-unavailable",
   preferred_days_off: "employee-preferred",
 };
@@ -25,6 +27,9 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
   const [code, setCode] = useState(employee?.code ?? "");
   const [name, setName] = useState(employee?.name ?? "");
   const [wage, setWage] = useState(employee ? String(employee.hourly_wage) : "");
+  const [maxHours, setMaxHours] = useState(
+    employee?.max_weekly_hours == null ? "" : String(employee.max_weekly_hours),
+  );
   const [unavailable, setUnavailable] = useState(employee?.unavailable_days ?? []);
   const [preferred, setPreferred] = useState(employee?.preferred_days_off ?? []);
   const errors = errorsByPath(save.error);
@@ -39,6 +44,7 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
           code,
           name,
           hourly_wage: toNumber(wage),
+          max_weekly_hours: maxHours.trim() === "" ? null : toNumber(maxHours),
           unavailable_days: unavailable,
           preferred_days_off: preferred,
         },
@@ -55,8 +61,8 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
       <div className="form-grid">
         <Field
           id={FIELD_IDS.code}
-          label="Code"
-          hint="Unique, shown on the roster."
+          label={vi.employees.form.code}
+          hint={vi.employees.form.codeHint}
           error={errors.get("code")}
         >
           {(control) => (
@@ -70,7 +76,7 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
             />
           )}
         </Field>
-        <Field id={FIELD_IDS.name} label="Name" error={errors.get("name")}>
+        <Field id={FIELD_IDS.name} label={vi.employees.form.name} error={errors.get("name")}>
           {(control) => (
             <input
               {...control}
@@ -83,8 +89,8 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
         </Field>
         <Field
           id={FIELD_IDS.hourly_wage}
-          label="Hourly wage"
-          hint="Whole units of your wage currency."
+          label={vi.employees.form.wage}
+          hint={vi.employees.form.wageHint}
           error={errors.get("hourly_wage")}
         >
           {(control) => (
@@ -99,28 +105,51 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
             />
           )}
         </Field>
+        <Field
+          id={FIELD_IDS.max_weekly_hours}
+          label={vi.employees.form.maxHours}
+          hint={vi.employees.form.maxHoursHint}
+          error={errors.get("max_weekly_hours")}
+        >
+          {(control) => (
+            <input
+              {...control}
+              className="input"
+              type="number"
+              min={1}
+              max={48}
+              step={1}
+              value={maxHours}
+              onChange={(event) => setMaxHours(event.target.value)}
+            />
+          )}
+        </Field>
       </div>
       <DayPicker
         id={FIELD_IDS.unavailable_days}
-        legend="Cannot work on"
-        hint="Hard rule: the solver never assigns a shift on these days."
+        legend={vi.employees.form.cannotWork}
+        hint={vi.employees.form.cannotWorkHint}
         error={errors.get("unavailable_days")}
         value={unavailable}
         onChange={setUnavailable}
       />
       <DayPicker
         id={FIELD_IDS.preferred_days_off}
-        legend="Would like off"
-        hint="Soft request: honored when it does not cost coverage, labor cost or fairness."
+        legend={vi.employees.form.wouldLikeOff}
+        hint={vi.employees.form.wouldLikeOffHint}
         error={errors.get("preferred_days_off")}
         value={preferred}
         onChange={setPreferred}
       />
       {general && <Notice kind="error" title={general} />}
       <div className="form-actions">
-        <Button onClick={onDone}>Cancel</Button>
+        <Button onClick={onDone}>{vi.common.cancel}</Button>
         <Button type="submit" variant="primary" disabled={save.isPending}>
-          {save.isPending ? "Saving..." : employee ? "Save employee" : "Add employee"}
+          {save.isPending
+            ? vi.common.saving
+            : employee
+              ? vi.employees.form.save
+              : vi.employees.form.add}
         </Button>
       </div>
     </form>

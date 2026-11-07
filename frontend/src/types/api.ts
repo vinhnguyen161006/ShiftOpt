@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analysis/staffing-sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Staffing Sweep */
+        post: operations["staffing_sweep_api_analysis_staffing_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analysis/{run_id}": {
         parameters: {
             query?: never;
@@ -419,7 +436,7 @@ export interface components {
          * AnalysisKind
          * @enum {string}
          */
-        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals";
+        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals" | "staffing_sweep";
         /** AnalysisRunRead */
         AnalysisRunRead: {
             /**
@@ -435,7 +452,7 @@ export interface components {
             id: number;
             kind: components["schemas"]["AnalysisKind"];
             /** Result */
-            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | null;
+            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | components["schemas"]["StaffingSweepResult"] | null;
             status: components["schemas"]["RunStatus"];
         };
         /** AssignmentRead */
@@ -611,6 +628,8 @@ export interface components {
             code: string;
             /** Hourly Wage */
             hourly_wage: number;
+            /** Max Weekly Hours */
+            max_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -631,6 +650,8 @@ export interface components {
             hourly_wage: number;
             /** Id */
             id: number;
+            /** Max Weekly Hours */
+            max_weekly_hours: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -644,6 +665,8 @@ export interface components {
             code: string;
             /** Hourly Wage */
             hourly_wage: number;
+            /** Max Weekly Hours */
+            max_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -926,6 +949,47 @@ export interface components {
          * @enum {string}
          */
         StaffingMode: "linear" | "erlang";
+        /** StaffingSweepPoint */
+        StaffingSweepPoint: {
+            /** Labor Cost */
+            labor_cost: number | null;
+            /** Proven */
+            proven: boolean;
+            /** Solve Status */
+            solve_status: string;
+            /** Staffed Hours */
+            staffed_hours: number | null;
+            /** Understaffed Hours */
+            understaffed_hours: number | null;
+            /** Value */
+            value: number;
+        };
+        /** StaffingSweepRequest */
+        StaffingSweepRequest: {
+            /**
+             * Assumption
+             * @enum {string}
+             */
+            assumption: "alpha" | "productivity" | "min_staff" | "night_min_staff";
+            solve: components["schemas"]["SolveRequest"];
+            /** Values */
+            values: number[];
+        };
+        /** StaffingSweepResult */
+        StaffingSweepResult: {
+            /**
+             * Assumption
+             * @enum {string}
+             */
+            assumption: "alpha" | "productivity" | "min_staff" | "night_min_staff";
+            /**
+             * Label
+             * @default Team conversion assumption, not staffing data from the source
+             */
+            label: string;
+            /** Points */
+            points: components["schemas"]["StaffingSweepPoint"][];
+        };
         /** SweepPoint */
         SweepPoint: {
             /** Labor Cost */
@@ -934,8 +998,12 @@ export interface components {
             multiplier: number;
             /** Proven */
             proven: boolean;
+            /** Required By Hour */
+            required_by_hour?: number[] | null;
             /** Solve Status */
             solve_status: string;
+            /** Staff By Hour */
+            staff_by_hour?: number[] | null;
             /** Staffed Hours */
             staffed_hours: number | null;
             /** Understaffed Hours */
@@ -1052,6 +1120,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["MarginalCostRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staffing_sweep_api_analysis_staffing_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffingSweepRequest"];
             };
         };
         responses: {

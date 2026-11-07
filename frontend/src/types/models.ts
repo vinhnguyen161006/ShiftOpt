@@ -34,3 +34,6 @@ export type AnalysisRunRead = Schemas["AnalysisRunRead"];
 export type DemandSweepResult = Schemas["DemandSweepResult"];
 export type MarginalCostResult = Schemas["MarginalCostResult"];
 export type SweepPoint = Schemas["SweepPoint"];
+export type StaffingSweepRequest = Schemas["StaffingSweepRequest"];
+export type StaffingSweepResult = Schemas["StaffingSweepResult"];
+export type StaffingSweepPoint = Schemas["StaffingSweepPoint"];

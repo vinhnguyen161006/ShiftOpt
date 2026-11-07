@@ -11,6 +11,7 @@ from src.analysis.schemas import (
     DemandSweepRequest,
     LpDualsRequest,
     MarginalCostRequest,
+    StaffingSweepRequest,
 )
 from src.analysis.service import AnalysisRequest
 from src.database import get_session
@@ -63,6 +64,18 @@ async def lp_duals(
     background: BackgroundTasks,
 ) -> AnalysisAccepted:
     return await _accept(session, jobs, background, AnalysisKind.LP_DUALS, payload)
+
+
+@router.post(
+    "/staffing-sweep", response_model=AnalysisAccepted, status_code=status.HTTP_202_ACCEPTED
+)
+async def staffing_sweep(
+    payload: StaffingSweepRequest,
+    session: SessionDep,
+    jobs: JobsDep,
+    background: BackgroundTasks,
+) -> AnalysisAccepted:
+    return await _accept(session, jobs, background, AnalysisKind.STAFFING_SWEEP, payload)
 
 
 @router.get("/{run_id}", response_model=AnalysisRunRead)

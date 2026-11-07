@@ -52,6 +52,17 @@ def test_instance_round_trips_rules_and_requests() -> None:
     assert asdict(instance.rules) == asdict(LaborRules())
 
 
+def test_employee_weekly_cap_round_trips_and_defaults_for_old_snapshots() -> None:
+    snapshot = _snapshot()
+    snapshot["employees"][0]["max_weekly_hours"] = 24
+    del snapshot["employees"][1]["max_weekly_hours"]
+
+    instance = instance_from_snapshot(snapshot)
+
+    assert instance.employees[0].max_weekly_hours == 24
+    assert instance.employees[1].max_weekly_hours is None
+
+
 def test_solution_rows_keep_break_offset() -> None:
     solution = solution_from_rows(
         [{"employee_code": "E1", "day": 0, "shift_name": "day", "break_offset": 3}]

@@ -1,6 +1,7 @@
 import { DAY_NAMES, DAYS, formatHour, shiftSpan } from "../../../lib/time";
 import type { AssignmentRead, ShiftTypeRead, SolveRunRead } from "../../../types/models";
 import "../schedule.css";
+import { vi } from "../../../locales/vi";
 
 type ScheduleGridProps = {
   run: SolveRunRead;
@@ -34,11 +35,27 @@ export function shiftLook(shiftTypes: ShiftTypeRead[], name: string): ShiftLook 
   return SHIFT_LOOKS[index] ?? EXTRA_LOOK;
 }
 
+export function shiftLabels(shiftTypes: ShiftTypeRead[]): Map<string, string> {
+  const labels = new Map<string, string>();
+  const used = new Set<string>();
+  for (const shift of shiftTypes) {
+    const upper = shift.name.toUpperCase();
+    let length = 1;
+    while (length < upper.length && used.has(upper.slice(0, length))) {
+      length += 1;
+    }
+    const label = upper.slice(0, length);
+    used.add(label);
+    labels.set(shift.name, label);
+  }
+  return labels;
+}
+
 function cellTitle(day: number, shift: ShiftTypeRead | undefined, assignment: AssignmentRead) {
   const span = shift ? ` ${shiftSpan(shift.start_hour, shift.length)}` : "";
   const rest =
     shift && assignment.break_offset !== null && assignment.break_offset !== undefined
-      ? `, break at ${formatHour(shift.start_hour + assignment.break_offset)}`
+      ? vi.schedule.grid.breakAt(formatHour(shift.start_hour + assignment.break_offset))
       : "";
   return `${DAY_NAMES[day]}: ${assignment.shift_name}${span}${rest}`;
 }
@@ -51,32 +68,31 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
     ]),
   );
   const shiftsByName = new Map(run.shift_types.map((shift) => [shift.name, shift]));
+  const labels = shiftLabels(run.shift_types);
   const shiftCount = (code: string) => DAYS.filter((_, day) => byCell.has(`${code}|${day}`)).length;
 
   return (
     <div className="roster">
       <div className="roster-scroll">
         <table className="roster-grid">
-          <caption className="visually-hidden">
-            Weekly roster: one row per employee, one column per day
-          </caption>
+          <caption className="visually-hidden">{vi.schedule.grid.caption}</caption>
           <thead>
             <tr>
-              <th scope="col">Employee</th>
+              <th scope="col">{vi.schedule.grid.employee}</th>
               {DAYS.map((day, index) => (
                 <th key={day} scope="col" title={DAY_NAMES[index]}>
                   {day}
                 </th>
               ))}
-              <th scope="col" className="num">
-                Shifts
-              </th>
             </tr>
           </thead>
           <tbody>
             {run.employee_codes.map((code) => (
               <tr key={code}>
-                <th scope="row">{code}</th>
+                <th scope="row">
+                  <span className="roster-name">{code}</span>
+                  <span className="roster-sub">{vi.schedule.grid.shifts(shiftCount(code))}</span>
+                </th>
                 {DAYS.map((day, dayIndex) => {
                   const assignment = byCell.get(`${code}|${dayIndex}`);
                   if (!assignment) {
@@ -84,9 +100,9 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
                       <td key={day}>
                         <span
                           className="roster-cell roster-off"
-                          title={`${DAY_NAMES[dayIndex]}: off`}
+                          title={vi.schedule.grid.offTitle(DAY_NAMES[dayIndex])}
                         >
-                          <span className="visually-hidden">Off</span>
+                          <span className="visually-hidden">{vi.schedule.grid.off}</span>
                         </span>
                       </td>
                     );
@@ -102,12 +118,11 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
                           assignment,
                         )}
                       >
-                        {assignment.shift_name}
+                        {labels.get(assignment.shift_name) ?? assignment.shift_name}
                       </span>
                     </td>
                   );
                 })}
-                <td className="num">{shiftCount(code)}</td>
               </tr>
             ))}
           </tbody>
@@ -128,7 +143,7 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
         })}
         <span className="legend-item">
           <span className="swatch roster-off" />
-          Off
+          {vi.schedule.grid.off}
         </span>
       </div>
     </div>
