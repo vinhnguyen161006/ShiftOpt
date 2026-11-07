@@ -1,25 +1,27 @@
 import asyncio
+import hashlib
+from collections.abc import AsyncIterator
 from pathlib import Path
 
+import pyarrow as pa
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.staffing.call_arrivals import simulate_arrival_rates
-from shiftopt.staffing.erlang import required_staff_erlang_a
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import get_settings
 from src.database import commit_unique
 from src.demand.csv_import import parse_demand_csv
-from src.demand.dataset_loader import dataset_required_staff
+from src.demand.dataset_loader import dataset_required_staff, ingest_store_sales
 from src.demand.models import DemandProfile, DemandSource, StaffingMode
 from src.demand.schemas import (
-    CallCenterDemandRequest,
+    ConversionParams,
     CsvDemandRequest,
     DatasetDemandRequest,
     DemandProfileCreate,
     DemandProfileUpdate,
+    SalesIngestQuery,
 )
-from src.exceptions import InvalidInputError, NotFoundError
+from src.exceptions import InvalidInputError, NotFoundError, UploadTooLargeError
 
 DUPLICATE_NAME = "demand profile name already exists"
 
@@ -91,6 +93,39 @@ async def create_profile_from_dataset(
     return await _persist(session, profile)
 
 
+async def read_upload(chunks: AsyncIterator[bytes], limit: int) -> bytearray:
+    """Collect an uploaded body, refusing it as soon as it grows past limit bytes."""
+    data = bytearray()
+    async for chunk in chunks:
+        data.extend(chunk)
+        if len(data) > limit:
+            raise UploadTooLargeError(f"file must be at most {limit} bytes")
+    if not data:
+        raise InvalidInputError("file is empty")
+    return data
+
+
+async def ingest_sales(
+    session: AsyncSession, query: SalesIngestQuery, data: bytearray
+) -> DemandProfile:
+    """Process an uploaded sales file into the weekly load of query.store_id, then derive the
+    profile with the same conversion as create_profile_from_dataset. The processed file of that
+    store is replaced; its metadata records the upload's SHA-256 so the input stays traceable."""
+    label = f"uploaded sales file, sha256 {hashlib.sha256(data).hexdigest()}"
+    await asyncio.to_thread(
+        ingest_store_sales,
+        pa.BufferReader(pa.py_buffer(data)),
+        Path(get_settings().dataset_dir),
+        query.store_id,
+        label,
+    )
+    conversion = ConversionParams.model_validate(query.model_dump(exclude={"name", "store_id"}))
+    request = DatasetDemandRequest(
+        name=query.name, store_id=query.store_id, conversion_params=conversion
+    )
+    return await create_profile_from_dataset(session, request)
+
+
 async def create_profile_from_csv(
     session: AsyncSession, payload: CsvDemandRequest
 ) -> DemandProfile:
@@ -107,37 +142,3 @@ async def create_profile_from_csv(
         source_metadata={"method": "head counts typed in a CSV file"},
     )
     return await _persist(session, profile)
-
-
-async def create_profile_from_call_center(
-    session: AsyncSession, payload: CallCenterDemandRequest
-) -> DemandProfile:
-    required = await asyncio.to_thread(_call_center_staff, payload)
-    profile = DemandProfile(
-        name=payload.name,
-        source=DemandSource.CALL_CENTER,
-        mode=StaffingMode.ERLANG,
-        required_staff=list(required),
-        conversion_params=payload.model_dump(exclude={"name"}),
-        source_metadata={
-            "method": "Erlang A on simulated hourly arrival rates",
-            "label": "simulated call arrivals with a fixed seed; not observed call data",
-            "seed": str(payload.seed),
-        },
-    )
-    return await _persist(session, profile)
-
-
-def _call_center_staff(payload: CallCenterDemandRequest) -> tuple[int, ...]:
-    try:
-        rates = simulate_arrival_rates(payload.base_rate, noise=payload.noise, seed=payload.seed)
-        return required_staff_erlang_a(
-            rates,
-            handle_seconds=payload.handle_seconds,
-            patience_seconds=payload.patience_seconds,
-            target_service_level=payload.service_level,
-            answer_seconds=payload.answer_seconds,
-            min_staff=payload.min_staff,
-        )
-    except ValueError as error:
-        raise InvalidInputError(str(error)) from error

@@ -28,12 +28,7 @@ Web app nhận **nhu cầu theo giờ + danh sách nhân viên + mẫu ca + tham
 - **Độ nhạy của bài toán nguyên được tính bằng giải lại, không bằng shadow price giả.**
 - **Mọi giả định chuyển đổi dữ liệu (doanh số → số người) là tham số hiển thị trên UI**, không giấu trong code.
 
-Hai chế độ nhu cầu dùng chung một engine:
-
-| Chế độ | Nguồn nhu cầu | Quy đổi ra số người |
-|---|---|---|
-| Bán lẻ / kho vận hành mở rộng | FreshRetailNet-50K (doanh số theo giờ) | Tuyến tính: `r = max(r_min, ceil(alpha * D / p))` |
-| Tổng đài | Lưu lượng cuộc gọi (dữ liệu công khai hoặc giả lập) | Erlang C / Erlang A, mục tiêu service level |
+Chế độ nhu cầu duy nhất: bán lẻ / kho vận hành mở rộng, nguồn FreshRetailNet-50K (doanh số theo giờ), quy đổi tuyến tính `r = max(r_min, ceil(alpha * D / p))`. **Chế độ tổng đài (Erlang A/C, lưu lượng cuộc gọi) đã bỏ theo quyết định của người dùng ngày 2026-11-07 (đặc tả D18); không thêm lại khi chưa được yêu cầu.**
 
 ---
 
@@ -64,7 +59,7 @@ Khi một thay đổi đụng tới một trong các điều này, dừng lại 
 
 ```
 Nhu cầu (nhập tay / CSV / FreshRetailNet / lưu lượng cuộc gọi)
-  → staffing/        (xác định)  D[d,h] → r[d,h]  (tuyến tính hoặc Erlang)
+  → staffing/        (xác định)  D[d,h] → r[d,h]  (tuyến tính)
   → Instance         (xác định)  nhu cầu + nhân viên + mẫu ca + LaborRules
   → models/          (solver)    set covering hoặc roster CP-SAT
   → Solution
@@ -103,7 +98,7 @@ Hugging Face `Dingdong-Inc/FreshRetailNet-50K`, CC BY 4.0, arXiv:2505.16319. 50.
 
 Cột dùng: `store_id`, `city_id`, `dt`, `hours_sale` (list 24 giá trị, đã chuẩn hóa toàn cục), `hours_stock_status` (cờ hết hàng từng giờ), `holiday_flag`, `activity_flag`, `discount`, `precpt` (mưa). Các cột danh mục sản phẩm có thể bỏ. Split eval 7 ngày chỉ là **suy luận** (350.000 / 50.000); xác nhận bằng `dt.min()/max()` trước khi dựa vào.
 
-Dữ liệu thô tải vào `data/raw/` (gitignore). Kết quả xử lý vào `data/processed/demand_store_<id>.parquet`.
+File doanh số `train.parquet` tải vào `data/demo/` (file người dùng ingest khi demo, gitignore); `eval.parquet` vào `data/raw/` (gitignore). `data/demo/` cũng chứa file CSV mẫu `nhu_cau_cua_hang_24h.csv` (commit). Kết quả xử lý vào `data/processed/demand_store_<id>.parquet`.
 
 ### 4.2 Quy trình chuyển đổi doanh số → số nhân viên cần
 
@@ -112,11 +107,11 @@ Dữ liệu thô tải vào `data/raw/` (gitignore). Kết quả xử lý vào `
 3. `r[d,h] = max(r_min, ceil(alpha * D[d,h] / p))`. `alpha`, `p`, `r_min` là tham số nhập từ UI hoặc API, có giá trị mặc định ghi trong `staffing/linear.py`.
 4. Giờ đêm (22h–06h, `LaborRules` của người gọi) của FreshRetailNet đặt `D = 0` lúc quy đổi (`zero_night_load`), nên `r` ở giờ đêm bằng `night_min_staff`. File processed giữ tải chưa đặt sàn. Metadata ghi khung đêm, phương pháp và các giả định.
 
-Chế độ tổng đài: `lambda_h → Erlang A/C → r_h`. Erlang A (có khách bỏ cuộc) ưu tiên hơn Erlang C vì Erlang C dẫn tới thừa người. Mục tiêu mặc định "80/20" (80% cuộc gọi trả lời trong 20 giây) là tham số. Square-root staffing `N = R + beta * sqrt(R)` là phương án nhanh. Dataset tổng đài công khai (ngân hàng Đông Bắc Mỹ, SEELab Technion) hoặc giả lập có seed cố định.
+Không có chế độ tổng đài (đặc tả D18).
 
 ### 4.3 Nhập nhu cầu từ người dùng
 
-Lưới 7×24 chỉnh sửa trực tiếp, import CSV, hoặc "tạo từ FreshRetailNet store X". Validate ở biên: số nguyên không âm, đủ 168 ô, giới hạn trên hợp lý.
+Lưới 7×24 chỉnh sửa trực tiếp, import CSV, hoặc "tạo từ FreshRetailNet store X". Ingest: `POST /demand-profiles/ingest` nhận file parquet doanh số (thân `application/octet-stream`, tối đa `Settings.max_upload_bytes`, mặc định 200 MB; tham số ở query), chạy `ingest_store_sales` (lọc store, nhu cầu ẩn, tuần 168 giờ), ghi đè `demand_store_<id>.parquet` với SHA-256 của file trong metadata, rồi quy đổi như nguồn FreshRetailNet. Validate ở biên: số nguyên không âm, đủ 168 ô, giới hạn trên hợp lý.
 
 ---
 
@@ -282,7 +277,7 @@ Schedule adherence (so lịch với chấm công) **ngoài phạm vi** vì khôn
 | Database | MySQL 8 · SQLAlchemy 2 · Alembic |
 | Dữ liệu | `pyarrow` (đọc/ghi Parquet ở backend) · Parquet · tải FreshRetailNet bằng `urllib` theo commit ghim, không dùng `datasets` |
 | Frontend | React 19 · react-router 8 · Vite 8 · TypeScript 5.9 · CSS thuần theo phong cách trang chủ (mục 8.3) · TanStack Query 5 · Biome · openapi-typescript · biểu đồ tự vẽ bằng HTML/CSS và SVG, không thư viện (`docs/adr/adr-002-charting-library.md`) |
-| Deploy | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn, đọc `data/processed` qua volume chỉ đọc), `seed` (nạp dữ liệu demo khi bảng trống), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
+| Deploy | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn, đọc và ghi `data/processed` qua volume), `seed` (nạp dữ liệu demo khi bảng trống), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
 | Test | pytest · pytest-asyncio · httpx + asgi-lifespan · pytest-cov |
 
 **Phiên bản đã ghim:** `ortools==9.15.6755`, `pulp[highs]==3.3.2` (kèm `highspy==1.13.0`). PuLP 3.3.2 là bản mới nhất khi dựng khung (2026-10-21); nó dùng được `pulp.HiGHS` và trả `constraint.pi`, nhưng phát `DeprecationWarning` báo trước API PuLP 4 (`prob.add_variable`, `prob.constraints()` trả list). Khi nâng lên PuLP 4: sửa `models/set_covering_pulp.py` và `solvers/pulp_backend.py` rồi chạy lại toàn bộ test engine. Không nâng `ortools` hoặc `pulp` đơn lẻ mà không chạy lại toàn bộ test engine và benchmark. Frontend dùng TypeScript 5.9.3 vì `openapi-typescript` 7 chỉ hỗ trợ TypeScript `^5`.
@@ -325,7 +320,7 @@ engine/
   src/shiftopt/
     domain.py               dataclass bất biến: ShiftType, Employee, Instance, Assignment, Solution
     time_grid.py            hằng số giờ/ngày/tuần, quấn vòng mod 168, giờ đêm
-    staffing/               linear.py, erlang.py (C, A, square-root), latent_demand.py, call_arrivals.py
+    staffing/               linear.py, latent_demand.py
     models/                 set_covering_pulp.py, implicit_breaks.py, roster_cpsat.py
     constraints/            labor_law_vn.py (LaborRules), sequences.py, fairness.py
     solvers/                base.py (SolveStatus, SolveParams, SolveResult), cpsat.py, pulp_backend.py
@@ -355,13 +350,13 @@ frontend/
     types/models.ts         alias tên schema từ api.ts
     features/
       home/                 trang chủ port từ "ShiftOpt Homepage.html", chữ tiếng Việt lấy từ locales/vi.ts: components/, sample-data.ts (số liệu minh họa), home.css, links.ts
-      demand/               api, DemandPage, DemandProfileList, DemandProfileView, DemandGridEditor (lưới 7x24), NewProfileForm (tay, CSV, FreshRetailNet, tổng đài), ConversionParamsForm
+      demand/               api, DemandPage, DemandProfileList, DemandProfileView, DemandGridEditor (lưới 7x24), NewProfileForm (tay, CSV, FreshRetailNet có ingest file), ConversionParamsForm
       employees/            api, EmployeesPage, EmployeeTable, EmployeeForm
       shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip
       schedule/             api (poll), NewRunForm, RunsTable, RunWorkspace (panel kết quả như trang chủ), SolveStatusPanel (SolveNotice, SolveDetails), ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
       compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới)
       what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
-data/                       raw/ (gitignore), processed/ (parquet gitignore), benchmarks/curtois_qu/ (script tải)
+data/                       demo/ (file demo: train.parquet gitignore, CSV mẫu), raw/ (gitignore), processed/ (parquet gitignore), benchmarks/curtois_qu/ (script tải)
 docs/
   đặc tả.md                 nguồn sự thật yêu cầu (bản nháp, chờ duyệt)
   model.md                  công thức mô hình
@@ -447,7 +442,7 @@ Backend (trong `backend/`, copy `.env.example` thành `.env`):
 
 Frontend (trong `frontend/`): `npm ci` · `npm run dev` (proxy `/api` sang `localhost:8000`) · `npm run lint` · `npm run format` · `npm run typecheck` · `npm run gen:api` · `npm run ci` (Biome + tsc + build).
 
-Ở root: `python scripts/check_conventions.py`; `make install|conventions|lint|typecheck|test|openapi|up|down`. Toàn bộ stack: `cp .env.example .env` rồi `docker compose up -d --build`; service `migrate` chạy `alembic upgrade head` một lần, `backend` chỉ khởi động sau khi nó xong; `seed` chạy `scripts/seed_demo.py` (30 nhân viên, 3 mẫu ca, hồ sơ store 18), chỉ nạp bảng đang trống; UI ở `http://localhost:3000`. Không chạy `smoke_flow` trên stack demo vì nó thêm dữ liệu kiểm thử. Pre-commit: `pre-commit install` (hook: ruff engine + backend, uv-lock, check_conventions).
+Ở root: `python scripts/check_conventions.py`; `make install|conventions|lint|typecheck|test|openapi|up|down`. Toàn bộ stack: `cp .env.example .env` rồi `docker compose up -d --build`; service `migrate` chạy `alembic upgrade head` một lần, `backend` chỉ khởi động sau khi nó xong; `seed` chạy `scripts/seed_demo.py` (30 nhân viên, 3 mẫu ca; nhu cầu tạo bằng ingest trên web), chỉ nạp bảng đang trống; UI ở `http://localhost:3000`. Không chạy `smoke_flow` trên stack demo vì nó thêm dữ liệu kiểm thử. Pre-commit: `pre-commit install` (hook: ruff engine + backend, uv-lock, check_conventions).
 
 Autogenerate migration cần một database rỗng. Khi chưa có MySQL, có thể sinh bằng SQLite tạm (`SHIFTOPT_DATABASE_URL="sqlite+aiosqlite:///./boot.db" uv run --with aiosqlite alembic revision --autogenerate -m "<msg>"`), sau đó **review tay** cho MySQL: thay `sa.text('(CURRENT_TIMESTAMP)')` bằng `sa.func.now()`, kiểm tra mọi `String` có độ dài, bỏ dòng `# ###`, rồi chạy `alembic upgrade head` và `alembic check` trên MySQL thật (CI làm bước này).
 

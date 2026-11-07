@@ -49,13 +49,6 @@ function SourceNotice({ profile }: { profile: DemandProfileRead }) {
       </Notice>
     );
   }
-  if (profile.source === "call_center") {
-    return (
-      <Notice kind="info" title={vi.demand.callTitle}>
-        {vi.demand.callBody}
-      </Notice>
-    );
-  }
   return null;
 }
 
@@ -128,9 +121,7 @@ export function DemandProfileView({ profile, onSelect }: DemandProfileViewProps)
       aside={
         <span className="tag-row">
           <span className="tag tag-outline">{SOURCE_LABELS[profile.source] ?? profile.source}</span>
-          <span className="tag tag-neutral">
-            {profile.mode === "erlang" ? vi.demand.modeErlang : vi.demand.modeLinear}
-          </span>
+          <span className="tag tag-neutral">{vi.demand.modeLinear}</span>
         </span>
       }
     >
