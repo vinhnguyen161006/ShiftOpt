@@ -353,19 +353,18 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 
 | Sự cố | Cách xử lý |
 |---|---|
-| Trang không mở được | Chạy `docker compose ps -a`. Nếu container dừng, chạy `docker compose up -d` và đợi `healthy` |
-| Báo cổng 3000 hoặc 8000 đang bận | Stack cũ `shiftopt-demo` còn chạy. Chạy `docker compose -p shiftopt-demo stop` rồi `docker compose up -d` |
-| Tạo hồ sơ FreshRetailNet báo lỗi không có dữ liệu | Thiếu file `data/processed/demand_store_18.parquet` (mục B0) |
-| Dòng Nhân viên không ghi "Tất cả 30 nhân viên" | DB đã có thêm nhân viên (ví dụ do chạy `smoke_flow`). Xóa các nhân viên thừa trên trang **Nhân viên**, hoặc dùng ảnh dự phòng |
-| Tối ưu chạy quá lâu | Kiểm tra **Số worker của solver** và số nhân viên. Đợi hết time limit; kết quả sẽ là FEASIBLE kèm gap. Dùng nó để giải thích nguyên tắc "không tự nhận tối ưu" |
-| Phân tích Độ nhạy chậm | Nói trong lúc chờ (bước 8); nếu quá lâu, chuyển sang bước 11 rồi quay lại |
-| Mọi thứ hỏng | Mở ảnh trong `docs/acceptance/`: `schedule_run.png` (kết quả lịch) và các ảnh trang Nhu cầu, Nhân viên, Mẫu ca, Độ nhạy (chụp trước khi Việt hóa giao diện) |
+| Trang không mở được | Kiểm `docker compose ps`; nếu container dừng, chạy `docker compose up -d` và đợi `healthy` |
+| Dòng Nhân viên không ghi "Tất cả 30 nhân viên" | DB chưa sạch (mục B1). Không demo Optimize trên DB này; dùng ảnh dự phòng |
+| Optimize chạy quá lâu | Đợi hết time limit; kết quả sẽ là FEASIBLE kèm gap. Dùng đó để giải thích nguyên tắc "không tự nhận tối ưu" |
+| Sweep What-if chậm | Nói trong lúc chờ (bước 8); nếu quá lâu, chuyển sang bước 11 và quay lại sau |
+| Mọi thứ hỏng | Mở ảnh trong `docs/acceptance/`: `schedule_run.png` (kết quả lịch), `schedule_violation.png` (cảnh báo Đ.110 sau khi sửa tay), các ảnh trang Nhu cầu, Nhân viên, Mẫu ca, Độ nhạy (giao diện tiếng Việt, chụp 2026-11-07) |
 
 ---
 
 ## F. Phần chưa kiểm
 
-- Phần C đã chạy hết bằng trình duyệt tự động (Playwright) ngày 2026-11-06, trên DB sạch: mọi bước đạt, không có lỗi JavaScript. Chưa có người bấm tay theo đúng thứ tự này.
-- Thời gian ở phần C đo trên một máy; máy chiếu hoặc laptop khác có thể chậm hơn.
-- Ảnh trong `docs/acceptance/` chụp trước khi Việt hóa giao diện.
+- Toàn bộ phần C chưa được bấm thử trên trình duyệt theo đúng thứ tự này. Nhãn nút lấy từ mã nguồn. Phải chạy thử trước buổi.
+- Kết quả bước 4–5 (OPTIMAL, 12–20 giây) dựa trên lần đo bằng script với cùng dữ liệu, chưa đo qua giao diện.
+- Thời gian bước 8, 9, 10 qua giao diện chưa đo.
+- Ảnh trong `docs/acceptance/` chụp tự động ngày 2026-11-07, chưa qua duyệt tay. Ảnh `what_if.png` có kết quả quét nhu cầu, quét p và chi phí biên.
 - Nội dung điều luật chưa đối chiếu nguyên văn (`docs/đặc tả.md` mục 4).

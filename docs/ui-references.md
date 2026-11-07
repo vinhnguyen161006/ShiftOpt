@@ -19,6 +19,8 @@ Không chép mã từ nguồn nào dưới đây. Mọi thứ được viết l�
 | R9 | Carbon Design System, Notification usage | https://carbondesignsystem.com/components/notification/usage/ | 2026-10-28 | Apache-2.0 | Thông báo inline ở đầu vùng nội dung hoặc ngay trên nút gửi của form; mỗi trạng thái có biểu tượng riêng, không chỉ dựa vào màu |
 | R10 | Carbon Design System, Loading usage | https://carbondesignsystem.com/components/loading/usage/ | 2026-10-28 | Apache-2.0 | Chờ cục bộ cạnh hành động, nhãn trạng thái ngắn, không đặt nhiều chỉ báo cùng lúc |
 | R11 | Cal-Heatmap | https://github.com/wa0x6e/cal-heatmap (README và ảnh ví dụ) | 2026-10-28, commit `279e4ee` | MIT | Heatmap dạng lưới lịch: mỗi ô một khoảng thời gian, chú giải thang ngưỡng bên dưới, tooltip theo ô |
+| R12 | web.dev, bài về `prefers-color-scheme` (tác giả ghi trên trang: Thomas Steiner; trang không hiện tiêu đề và ngày trong phần đọc được) | https://web.dev/articles/prefers-color-scheme | 2026-11-07 | Trang không ghi giấy phép trong phần đọc được; không lấy mã | Mẫu "theo tín hiệu của trình duyệt trước, cho người dùng ghi đè sau"; khai báo `color-scheme` để ô nhập và thanh cuộn của trình duyệt cũng tối |
+| R13 | MDN, thuộc tính CSS `color-scheme` | https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme | 2026-11-07, trang ghi sửa lần cuối 2026-07-21 | Creative Commons (chân trang không nêu rõ loại nào); không lấy mã | `color-scheme: dark` đổi màu nền canvas, thanh cuộn và mặc định của ô nhập; kiểm tra tín hiệu hệ thống bằng `prefers-color-scheme` |
 
 ## Bố cục lấy từ chính trang chủ
 
@@ -29,7 +31,8 @@ Màn hình Schedule (kết quả một run) và What-if (đường cong z(lambda
 | Màn hình ShiftOpt | Nguồn |
 |---|---|
 | Khung app (header, nav) | Trang chủ; R1 (thanh điều hướng trên, vùng làm việc bên dưới) |
-| Demand (lưới 7 × 24, CSV, FreshRetailNet) | R3, R2, R5, R8 |
+| Nút chuyển giao diện sáng/tối (header của trang chủ và khung app) | R12, R13 (hành vi: theo hệ thống, người dùng ghi đè, lưu lại). Nhãn `aria-label` và biểu tượng mặt trời/trăng do nhóm tự đặt, các nguồn trên không bàn về nhãn của nút |
+| Demand (lưới 7 × 24, CSV, FreshRetailNet, tổng đài) | R3, R2, R5, R8 |
 | Employees, Shift templates | R7, R5, R2, R8, R1 (ngày không làm được / không muốn làm) |
 | Schedule (Optimize, trạng thái, lịch, coverage, chi phí) | R1, R10, R9, R6 |
 | Compliance (danh sách vi phạm, sửa tay) | R1 (score analysis), R2, R9 |

@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { BrandMark, Wordmark } from "../../../components/ui/BrandMark";
 import { Corners } from "../../../components/ui/Corners";
+import { ThemeToggle } from "../../../components/ui/ThemeToggle";
 import { vi } from "../../../locales/vi";
 import { SECTION_LINKS, WORKSPACE_LINKS } from "../links";
 
@@ -23,6 +24,7 @@ export function SiteHeader() {
           {vi.home.headerCta}
           <Corners />
         </Link>
+        <ThemeToggle />
       </div>
     </header>
   );

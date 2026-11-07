@@ -112,6 +112,26 @@ a.brand {
   flex-wrap: wrap;
 }
 
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-left: auto;
+  padding: 0;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  color: var(--color-accent-700);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
 a.site-nav-link {
   font-family: var(--font-heading);
   font-size: 15px;
@@ -137,7 +157,7 @@ a.site-nav-link[aria-current="page"] {
   position: absolute;
   width: 11px;
   height: 11px;
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  color: var(--text-55);
 }
 
 .blueprint > .corner::before,
@@ -342,7 +362,7 @@ a.site-nav-link[aria-current="page"] {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  color: var(--text-60);
   padding: var(--space-2);
   border-bottom: 1px solid var(--color-divider);
   white-space: nowrap;
@@ -378,7 +398,7 @@ a.site-nav-link[aria-current="page"] {
 .field > label,
 .field > legend {
   font-size: 12px;
-  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  color: var(--text-70);
   padding: 0;
 }
 
@@ -524,7 +544,7 @@ textarea.input {
 }
 
 .dialog::backdrop {
-  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+  background: var(--color-scrim);
 }
 
 .dialog-inner {
@@ -584,7 +604,7 @@ textarea.input {
 
 .notice-body {
   grid-column: 2;
-  color: color-mix(in srgb, var(--color-text) 75%, transparent);
+  color: var(--text-75);
 }
 
 .notice-body p:last-child {
@@ -755,7 +775,7 @@ textarea.input {
 
 .kpi-sub {
   font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  color: var(--text-50);
 }
 
 .legend {
@@ -770,7 +790,7 @@ textarea.input {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  color: var(--text-62);
 }
 
 .swatch {
@@ -795,7 +815,7 @@ textarea.input {
   cursor: pointer;
   border: 1px solid var(--color-divider);
   background: transparent;
-  color: color-mix(in srgb, var(--color-text) 65%, transparent);
+  color: var(--text-65);
 }
 
 .toggle[aria-pressed="true"] {
@@ -856,7 +876,7 @@ textarea.input {
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  color: var(--text-60);
   margin-bottom: 9px;
 }
 
@@ -941,7 +961,7 @@ textarea.input {
 
 .field-label-static {
   font-size: 12px;
-  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  color: var(--text-70);
 }
 
 .solve-employees {

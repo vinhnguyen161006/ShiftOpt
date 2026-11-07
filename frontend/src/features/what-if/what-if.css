@@ -101,7 +101,7 @@
   grid-column: 1 / -1;
   font-size: 11px;
   line-height: 1.45;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  color: var(--text-50);
 }
 
 .curve-dot {
