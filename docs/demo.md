@@ -309,7 +309,7 @@ Mỗi bước gồm: **Làm** (thao tác), **Nói** (gợi ý lời trình bày)
 | Dòng Nhân viên không ghi "Tất cả 30 nhân viên" | DB chưa sạch (mục B1). Không demo Optimize trên DB này; dùng ảnh dự phòng |
 | Optimize chạy quá lâu | Đợi hết time limit; kết quả sẽ là FEASIBLE kèm gap. Dùng đó để giải thích nguyên tắc "không tự nhận tối ưu" |
 | Sweep What-if chậm | Nói trong lúc chờ (bước 8); nếu quá lâu, chuyển sang bước 11 và quay lại sau |
-| Mọi thứ hỏng | Mở ảnh trong `docs/acceptance/`: `schedule_run.png` (kết quả lịch), các ảnh trang Nhu cầu, Nhân viên, Mẫu ca, Độ nhạy (ảnh chụp trước khi Việt hóa giao diện) |
+| Mọi thứ hỏng | Mở ảnh trong `docs/acceptance/`: `schedule_run.png` (kết quả lịch), `schedule_violation.png` (cảnh báo Đ.110 sau khi sửa tay), các ảnh trang Nhu cầu, Nhân viên, Mẫu ca, Độ nhạy (giao diện tiếng Việt, chụp 2026-11-07) |
 
 ---
 
@@ -318,5 +318,5 @@ Mỗi bước gồm: **Làm** (thao tác), **Nói** (gợi ý lời trình bày)
 - Toàn bộ phần C chưa được bấm thử trên trình duyệt theo đúng thứ tự này. Nhãn nút lấy từ mã nguồn. Phải chạy thử trước buổi.
 - Kết quả bước 4–5 (OPTIMAL, 12–20 giây) dựa trên lần đo bằng script với cùng dữ liệu, chưa đo qua giao diện.
 - Thời gian bước 8, 9, 10 qua giao diện chưa đo.
-- Ảnh `what_if.png` chụp lúc chưa có kết quả phân tích.
+- Ảnh trong `docs/acceptance/` chụp tự động ngày 2026-11-07, chưa qua duyệt tay. Ảnh `what_if.png` có kết quả quét nhu cầu, quét p và chi phí biên.
 - Nội dung điều luật chưa đối chiếu nguyên văn (`docs/đặc tả.md` mục 4).
