@@ -93,3 +93,8 @@
   padding: 12px;
   border: 1px dashed var(--color-divider);
 }
+
+:root[data-theme="dark"] .demand-grid td.shade-5 .demand-cell,
+:root[data-theme="dark"] .demand-grid td.shade-5 > span {
+  color: var(--color-neutral-100);
+}

@@ -22,6 +22,10 @@ export const vi = {
       error: "Lỗi",
     },
   },
+  theme: {
+    switchToDark: "Chuyển sang giao diện tối",
+    switchToLight: "Chuyển sang giao diện sáng",
+  },
   nav: {
     demand: "Nhu cầu",
     employees: "Nhân viên",
