@@ -11,12 +11,10 @@ class DemandSource(StrEnum):
     MANUAL = "manual"
     CSV = "csv"
     FRESHRETAILNET = "freshretailnet"
-    CALL_CENTER = "call_center"
 
 
 class StaffingMode(StrEnum):
     LINEAR = "linear"
-    ERLANG = "erlang"
 
 
 class DemandProfile(Base):

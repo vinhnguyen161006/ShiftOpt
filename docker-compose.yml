@@ -34,7 +34,7 @@ services:
       SHIFTOPT_MAX_SOLVE_SECONDS: ${SHIFTOPT_MAX_SOLVE_SECONDS:-300}
       SHIFTOPT_SOLVE_WORKERS: ${SHIFTOPT_SOLVE_WORKERS:-8}
     volumes:
-      - ./data/processed:/app/data/processed:ro
+      - ./data/processed:/app/data/processed
     depends_on:
       migrate:
         condition: service_completed_successfully

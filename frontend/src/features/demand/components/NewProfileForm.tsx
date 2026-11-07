@@ -5,23 +5,19 @@ import { Field } from "../../../components/ui/Field";
 import { errorsByPath, generalError, summaryErrors, toNumber } from "../../../lib/form";
 import { HOURS_PER_WEEK } from "../../../lib/time";
 import { vi } from "../../../locales/vi";
-import type {
-  CallCenterDemandRequest,
-  ConversionParams,
-  DemandProfileRead,
-} from "../../../types/models";
+import type { ConversionParams, DemandProfileRead } from "../../../types/models";
 import {
   useCreateDemandProfile,
-  useCreateDemandProfileFromCallCenter,
   useCreateDemandProfileFromCsv,
   useCreateDemandProfileFromDataset,
+  useIngestSales,
 } from "../api/demand";
 import { ConversionParamsForm, conversionFieldId } from "./ConversionParamsForm";
 
-type SourceChoice = "manual" | "csv" | "freshretailnet" | "call_center";
+type SourceChoice = "manual" | "csv" | "freshretailnet";
 
 const SOURCES: { value: SourceChoice; label: string }[] = (
-  ["manual", "csv", "freshretailnet", "call_center"] as const
+  ["manual", "csv", "freshretailnet"] as const
 ).map((value) => ({ value, label: vi.demand.form.sources[value] }));
 
 const DEFAULT_CONVERSION: Required<ConversionParams> = {
@@ -184,27 +180,51 @@ function CsvForm({ onCreated }: { onCreated: CreatedHandler }) {
 }
 
 function DatasetForm({ onCreated }: { onCreated: CreatedHandler }) {
-  const create = useCreateDemandProfileFromDataset();
+  const fromProcessed = useCreateDemandProfileFromDataset();
+  const ingest = useIngestSales();
   const [name, setName] = useState("");
   const [storeId, setStoreId] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [conversion, setConversion] = useState(DEFAULT_CONVERSION);
+  const create = file ? ingest : fromProcessed;
   const errors = errorsByPath(create.error);
+  function submit() {
+    const store_id = toNumber(storeId);
+    if (file) {
+      ingest.mutate({ file, query: { name, store_id, ...conversion } }, { onSuccess: onCreated });
+    } else {
+      fromProcessed.mutate(
+        { name, store_id, conversion_params: conversion },
+        { onSuccess: onCreated },
+      );
+    }
+  }
   return (
     <FormShell
       error={create.error}
       pending={create.isPending}
       submitLabel={vi.demand.form.derive}
-      onSubmit={() =>
-        create.mutate(
-          { name, store_id: toNumber(storeId), conversion_params: conversion },
-          { onSuccess: onCreated },
-        )
-      }
+      onSubmit={submit}
     >
       <Notice kind="warning" title={vi.demand.salesTitle}>
         {vi.demand.form.datasetBody}
       </Notice>
       <NameField value={name} onChange={setName} errors={errors} />
+      <Field
+        id="new-sales-file"
+        label={vi.demand.form.salesFile}
+        hint={vi.demand.form.salesFileHint}
+      >
+        {(control) => (
+          <input
+            {...control}
+            className="input"
+            type="file"
+            accept=".parquet"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          />
+        )}
+      </Field>
       <Field
         id="new-store-id"
         label={vi.demand.form.storeId}
@@ -224,84 +244,7 @@ function DatasetForm({ onCreated }: { onCreated: CreatedHandler }) {
         )}
       </Field>
       <ConversionParamsForm value={conversion} onChange={setConversion} errors={errors} />
-    </FormShell>
-  );
-}
-
-const CALL_TEXT = vi.demand.form.callFields;
-
-const CALL_FIELDS = [
-  { key: "base_rate", ...CALL_TEXT.base_rate, step: "any" },
-  { key: "handle_seconds", ...CALL_TEXT.handle_seconds, step: "any" },
-  { key: "patience_seconds", ...CALL_TEXT.patience_seconds, step: "any" },
-  { key: "service_level", ...CALL_TEXT.service_level, step: "any" },
-  { key: "answer_seconds", ...CALL_TEXT.answer_seconds, step: "any" },
-  { key: "min_staff", ...CALL_TEXT.min_staff, step: "1" },
-  { key: "noise", ...CALL_TEXT.noise, step: "any" },
-  { key: "seed", ...CALL_TEXT.seed, step: "1" },
-] as const;
-
-type CallFieldKey = (typeof CALL_FIELDS)[number]["key"];
-
-const CALL_DEFAULTS: Record<CallFieldKey, string> = {
-  base_rate: "",
-  handle_seconds: "",
-  patience_seconds: "",
-  service_level: "0.8",
-  answer_seconds: "20",
-  min_staff: "1",
-  noise: "0",
-  seed: "0",
-};
-
-function CallCenterForm({ onCreated }: { onCreated: CreatedHandler }) {
-  const create = useCreateDemandProfileFromCallCenter();
-  const [name, setName] = useState("");
-  const [values, setValues] = useState(CALL_DEFAULTS);
-  const errors = errorsByPath(create.error);
-  function submit() {
-    const numbers = Object.fromEntries(
-      CALL_FIELDS.flatMap((field) => {
-        const parsed = toNumber(values[field.key]);
-        return Number.isNaN(parsed) ? [] : [[field.key, parsed]];
-      }),
-    );
-    create.mutate({ name, ...numbers } as CallCenterDemandRequest, { onSuccess: onCreated });
-  }
-  return (
-    <FormShell
-      error={create.error}
-      pending={create.isPending}
-      submitLabel={vi.demand.form.simulate}
-      onSubmit={submit}
-    >
-      <Notice kind="info" title={vi.demand.callTitle}>
-        {vi.demand.form.callBody}
-      </Notice>
-      <NameField value={name} onChange={setName} errors={errors} />
-      <div className="form-grid">
-        {CALL_FIELDS.map((field) => (
-          <Field
-            key={field.key}
-            id={`new-${field.key.replaceAll("_", "-")}`}
-            label={field.label}
-            hint={field.hint || undefined}
-            error={errors.get(field.key)}
-          >
-            {(control) => (
-              <input
-                {...control}
-                className="input"
-                type="number"
-                min={0}
-                step={field.step}
-                value={values[field.key]}
-                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
-              />
-            )}
-          </Field>
-        ))}
-      </div>
+      {ingest.isPending && <Notice kind="info" title={vi.demand.form.ingesting} />}
     </FormShell>
   );
 }
@@ -330,7 +273,6 @@ export function NewProfileForm({ onCreated }: { onCreated: CreatedHandler }) {
       {source === "manual" && <ManualForm onCreated={onCreated} />}
       {source === "csv" && <CsvForm onCreated={onCreated} />}
       {source === "freshretailnet" && <DatasetForm onCreated={onCreated} />}
-      {source === "call_center" && <CallCenterForm onCreated={onCreated} />}
     </div>
   );
 }

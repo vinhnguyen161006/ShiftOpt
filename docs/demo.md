@@ -17,7 +17,7 @@ Tài liệu gồm sáu phần:
 
 ### A1. Bài toán trong một câu
 
-Một cửa hàng hoặc tổng đài mở 24/7 cần biết **mỗi giờ trong tuần cần bao nhiêu người**. Từ đó phải **xếp ca cho từng nhân viên** sao cho đủ người, chi phí thấp nhất, và **không vi phạm Bộ luật Lao động**. ShiftOpt làm việc đó tự động, rồi cho biết lịch sẽ thay đổi thế nào khi nhu cầu thay đổi.
+Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần cần bao nhiêu người**. Từ đó phải **xếp ca cho từng nhân viên** sao cho đủ người, chi phí thấp nhất, và **không vi phạm Bộ luật Lao động**. ShiftOpt làm việc đó tự động, rồi cho biết lịch sẽ thay đổi thế nào khi nhu cầu thay đổi.
 
 ### A2. Đầu vào và đầu ra
 
@@ -98,21 +98,27 @@ Lưu ý khi trình bày: nội dung các điều luật chưa được đối ch
 
 Làm trước ít nhất một ngày, rồi **chạy thử toàn bộ phần C một lần**. Mọi lệnh chạy trong PowerShell.
 
-### B0. Dữ liệu FreshRetailNet (chỉ làm một lần trên mỗi máy)
+### B0. File doanh số FreshRetailNet (chỉ làm một lần trên mỗi máy)
 
-Backend đọc file `data/processed/demand_store_18.parquet` qua volume khai báo trong `docker-compose.yml`. File này không nằm trong git. Kiểm tra:
+Mọi file dữ liệu dùng để demo nằm trong thư mục `data/demo/`:
+
+| File | Dùng ở | Trong git |
+|---|---|---|
+| `train.parquet` (106 MB) | Bước 2: ingest doanh số FreshRetailNet | Không (tải bằng script) |
+| `nhu_cau_cua_hang_24h.csv` | Nhập CSV (tùy chọn): 168 số người cần, cao điểm 8 | Có |
+
+Kiểm tra file doanh số:
 
 ```powershell
 cd D:\projects\ShiftOpt
-Test-Path data\processed\demand_store_18.parquet
+Test-Path data\demo\train.parquet
 ```
 
-Nếu in `False`, tải và xử lý dữ liệu (tải khoảng vài trăm MB):
+Nếu in `False`, tải file theo phiên bản đã ghim (có kiểm SHA-256):
 
 ```powershell
 cd D:\projects\ShiftOpt\backend
 uv run --locked python -m scripts.download_freshretailnet
-uv run --locked python -m scripts.build_demand_store --store-id 18
 ```
 
 ### B1. Bật hệ thống
@@ -129,7 +135,7 @@ Service `seed` tự nạp dữ liệu demo qua API (`backend/scripts/seed_demo.p
 
 - 30 nhân viên `E01`–`E30`, lương 100/giờ. `E07` chỉ làm tối đa 24 giờ/tuần.
 - 3 mẫu ca 8 giờ: Đêm 00:00, Ngày 08:00, Tối 16:00.
-- Hồ sơ nhu cầu `Store 18 demo` (FreshRetailNet store 18, `alpha = 1`, `p = 4`, sàn ngày 1, sàn đêm 1). Hồ sơ này cần file ở B0. Nếu thiếu file, log của `seed` ghi `demand profiles: not created` và các dữ liệu khác vẫn được nạp.
+- Không nạp hồ sơ nhu cầu: nhu cầu được tạo trên web bằng ingest ở bước 2.
 
 Mỗi phần chỉ được nạp khi bảng tương ứng đang trống. Chạy `docker compose up` nhiều lần không tạo trùng và không ghi đè dữ liệu người dùng đã nhập. Kiểm tra lại log:
 
@@ -147,17 +153,9 @@ Chỉ dùng khi đã xóa dữ liệu demo trên web và muốn nạp lại ph�
 docker compose run --rm seed
 ```
 
-### B3. Tạo thêm dữ liệu trên web (tùy chọn)
+### B3. Hồ sơ nhu cầu cũ
 
-Có thể tạo mẫu ca hoặc hồ sơ nhu cầu trước lớp để minh họa cách nhập. Với hồ sơ FreshRetailNet:
-
-1. Mở `http://localhost:3000/demand`, bấm **Tạo hồ sơ nhu cầu**.
-2. Trong cửa sổ, bấm ô chọn nguồn **FreshRetailNet**.
-3. Điền **Tên hồ sơ**, **Mã store** = `18`.
-4. Khung **Giả định của nhóm (không phải dữ liệu)**: **alpha (giải chuẩn hóa)** = `1`, **p (đơn vị mỗi người-giờ)** = `4`, **Sàn ban ngày (số người tối thiểu)** = `1`, **Sàn ban đêm (22:00-06:00)** = `1`. Nếu để `p = 1`, giờ cao điểm cần 29 người và 30 nhân viên không đủ.
-5. Bấm **Tạo từ dữ liệu**. Hồ sơ mới ghi **cao điểm 8 người**.
-
-Hiện chỉ store 18 đã được xử lý sẵn. Nhập store khác sẽ nhận lỗi `no processed demand for store X; build it first`.
+DB tạo trước ngày 2026-11-07 đã có sẵn hồ sơ `Store 18 demo` do bản `seed` cũ nạp. Vào **Nhu cầu**, mở hồ sơ đó, bấm **Xóa hồ sơ** trước buổi demo, để bước 2 tạo lại được đúng tên này. Nếu không xóa, đặt tên khác ở bước 2.
 
 ### B4. Dữ liệu cũ
 
@@ -184,7 +182,7 @@ Thời gian trong phần này đo bằng trình duyệt tự động (Playwright
 | # | Trang | Thao tác | Thấy gì |
 |---|---|---|---|
 | 1 | Trang chủ | Mở `localhost:3000`, cuộn qua các mục | Menu Nhu cầu, Nhân viên, Mẫu ca, Xếp lịch, Độ nhạy |
-| 2 | Nhu cầu | Bấm **Nhu cầu** → chọn `Store 18 demo` | Lưới 7 × 24, cao điểm 8 người, nhãn giả định |
+| 2 | Nhu cầu | **Tạo hồ sơ nhu cầu** → **FreshRetailNet** → chọn file `train.parquet`, store `18`, `p` = 4 → **Tạo từ dữ liệu** | Khoảng 2 giây; lưới 7 × 24, cao điểm 8 người |
 | 3 | Nhân viên, Mẫu ca | Bấm **Nhân viên**, chỉ E07 → bấm **Mẫu ca** | E07 tối đa 24 giờ; 3 ca 8 giờ |
 | 4 | Xếp lịch | Chọn hồ sơ → mở **Thiết lập solver và luật lao động** → **Số worker của solver** = 1 → bấm **Tối ưu** | Tự chuyển sang trang lượt mới, khoảng 7 giây |
 | 5 | Kết quả | Cuộn: trạng thái, lịch, biểu đồ phủ, chi phí | `OPTIMAL`, tỷ lệ phủ 100,0% |
@@ -202,16 +200,24 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 ### Bước 1. Giới thiệu (2 phút): trang chủ
 
 - **Làm:** mở `http://localhost:3000`. Cuộn chậm qua các mục Sản phẩm, Tính năng, Cách hoạt động, Phân tích, Luật lao động.
-- **Nói:** "Bài toán của nhóm là xếp ca nhân viên cho dịch vụ có nhu cầu thay đổi theo giờ, như cửa hàng 24/7 hoặc tổng đài. Hệ thống nhận nhu cầu theo giờ, danh sách nhân viên, mẫu ca và luật lao động; trả về lịch xếp ca, các chỉ số và cảnh báo vi phạm luật, rồi phân tích chi phí khi nhu cầu thay đổi."
+- **Nói:** "Bài toán của nhóm là xếp ca nhân viên cho dịch vụ có nhu cầu thay đổi theo giờ, như cửa hàng hoặc kho mở 24/7. Hệ thống nhận nhu cầu theo giờ, danh sách nhân viên, mẫu ca và luật lao động; trả về lịch xếp ca, các chỉ số và cảnh báo vi phạm luật, rồi phân tích chi phí khi nhu cầu thay đổi."
 - **Ý nghĩa:** người nghe nắm được đầu vào, đầu ra trước khi xem chi tiết.
 - **Mong đợi:** thanh menu có Nhu cầu, Nhân viên, Mẫu ca, Xếp lịch, Độ nhạy. Số liệu trên trang chủ là số minh họa, không phải kết quả thật.
 
-### Bước 2. Nhu cầu (2 phút)
+### Bước 2. Ingest doanh số, suy ra nhu cầu (3 phút)
 
-- **Làm:** bấm **Nhu cầu** trên menu, chọn hồ sơ `Store 18 demo` trong danh sách.
-- **Nói:** "Nhu cầu lấy từ bộ dữ liệu công khai FreshRetailNet-50K. Đây là doanh số bán hàng theo giờ của một kho thương mại điện tử, **không phải** dữ liệu nhân sự. Để đổi doanh số thành số người, nhóm dùng công thức với hai giả định là alpha và p. Ở đây p = 4 nghĩa là giả định một người xử lý được 4 đơn vị doanh số mỗi giờ. Giờ đêm không suy từ doanh số mà dùng mức tối thiểu cố định là 1 người."
-- **Ý nghĩa:** cho thấy giả định không bị giấu. Nếu có người hỏi "số 4 ở đâu ra", trả lời rằng đó là giả định, và bước 9 cho thấy chi phí đổi thế nào khi giả định đổi.
-- **Mong đợi:** lưới 7 × 24 số người cần mỗi giờ, cao điểm 8 người, nhãn "Doanh số chuẩn hóa, không phải nhu cầu nhân sự". Lưới chỉ đọc vì suy ra từ dữ liệu.
+- **Làm:**
+  1. Bấm **Nhu cầu** trên menu, bấm **Tạo hồ sơ nhu cầu**.
+  2. Trong cửa sổ, bấm ô chọn nguồn **FreshRetailNet**.
+  3. **Tên hồ sơ**: `Store 18 demo`.
+  4. **File doanh số (train.parquet)**: chọn `D:\projects\ShiftOpt\data\demo\train.parquet`.
+  5. **Mã store**: `18`.
+  6. Khung **Giả định của nhóm (không phải dữ liệu)**: **alpha (giải chuẩn hóa)** = `1`, **p (đơn vị mỗi người-giờ)** = `4`, **Sàn ban ngày (số người tối thiểu)** = `1`, **Sàn ban đêm (22:00-06:00)** = `1`. Nếu để `p = 1`, giờ cao điểm cần 29 người và 30 nhân viên không đủ.
+  7. Bấm **Tạo từ dữ liệu**.
+- **Nói:** "Đầu vào là file doanh số thô theo giờ của bộ dữ liệu công khai FreshRetailNet-50K, gồm 898 kho. Hệ thống đọc file, lọc kho số 18, thay các giờ hết hàng bằng doanh số trung bình cùng giờ, cùng thứ, rồi gộp thành một tuần điển hình 168 giờ. Sau đó đổi doanh số ra số người bằng công thức với hai giả định của nhóm là alpha và p. Ở đây p = 4 nghĩa là một người xử lý được 4 đơn vị doanh số mỗi giờ. Giờ đêm không suy từ doanh số mà dùng mức tối thiểu cố định 1 người. Đây là doanh số của kho thương mại điện tử, **không phải** dữ liệu nhân sự."
+- **Ý nghĩa:** cho thấy đường đi từ dữ liệu thô tới nhu cầu nhân sự, và giả định không bị giấu. Nếu có người hỏi "số 4 ở đâu ra", trả lời rằng đó là giả định, và bước 9 cho thấy chi phí đổi thế nào khi giả định đổi.
+- **Mong đợi:** khoảng 2 giây (đo ngày 2026-11-07). Hồ sơ mới hiện lưới 7 × 24, cao điểm 8 người, nhãn "Doanh số chuẩn hóa, không phải nhu cầu nhân sự". Mở **Giả định và phương pháp**: `source` ghi `uploaded sales file, sha256 6706832d…`, trùng mã kiểm của file gốc đã ghim; 164 sản phẩm, 2024-03-28 đến 2024-06-25, 90.159 ô hết hàng đã thay.
+- **Lưu ý:** đây là tuần trung bình của quá khứ, không phải mô hình dự báo tuần tới.
 
 ### Bước 3. Nhân viên và mẫu ca (1 phút)
 

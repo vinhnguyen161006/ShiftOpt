@@ -258,13 +258,13 @@ export const vi = {
   demand: {
     eyebrow: "Nhu cầu",
     title: "Nhu cầu nhân sự theo giờ",
-    lead: "Hồ sơ nhu cầu là số người cần ở từng giờ trong 168 giờ của tuần. Nhập tay, nhập CSV, suy ra từ doanh số FreshRetailNet với giả định hiển thị rõ, hoặc tính từ cuộc gọi giả lập bằng Erlang A.",
+    lead: "Hồ sơ nhu cầu là số người cần ở từng giờ trong 168 giờ của tuần. Nhập tay, nhập CSV, hoặc suy ra từ doanh số FreshRetailNet với giả định hiển thị rõ.",
     newProfile: "Tạo hồ sơ nhu cầu",
     loading: "Đang tải hồ sơ nhu cầu",
     loadError: "Không tải được hồ sơ nhu cầu",
     emptyTitle: "Bắt đầu với một hồ sơ nhu cầu",
     emptyBody:
-      "Tối ưu cần số người yêu cầu cho mọi giờ trong tuần. Tạo từ lưới, file CSV, một store FreshRetailNet hoặc tổng đài giả lập.",
+      "Tối ưu cần số người yêu cầu cho mọi giờ trong tuần. Tạo từ lưới, file CSV hoặc một store FreshRetailNet.",
     listCaption: "Hồ sơ nhu cầu",
     profile: "Hồ sơ",
     peak: "Cao điểm",
@@ -272,15 +272,11 @@ export const vi = {
       manual: "Nhập tay",
       csv: "CSV",
       freshretailnet: "FreshRetailNet-50K",
-      call_center: "Tổng đài (giả lập)",
     } as Record<string, string>,
-    modeErlang: "Erlang",
     modeLinear: "Tuyến tính",
     salesTitle: "Doanh số chuẩn hóa, không phải nhu cầu nhân sự",
     salesBody:
       "Đây là doanh số chuẩn hóa của kho thương mại điện tử, không phải nhu cầu nhân sự. Số người bên dưới suy ra từ giả định của nhóm: alpha, p và hai mức sàn, liệt kê kèm hồ sơ.",
-    callTitle: "Cuộc gọi giả lập",
-    callBody: "Cuộc gọi giả lập, không phải dữ liệu cuộc gọi quan sát được.",
     assumptions: "Giả định và phương pháp",
     stats: (total: string, peak: number) => `${total} giờ-người mỗi tuần · cao điểm ${peak} người`,
     profileName: "Tên hồ sơ",
@@ -311,7 +307,6 @@ export const vi = {
         manual: "Lưới nhập tay",
         csv: "Nhập CSV",
         freshretailnet: "FreshRetailNet",
-        call_center: "Tổng đài",
       },
       creating: "Đang tạo...",
       createProfile: "Tạo hồ sơ",
@@ -327,26 +322,11 @@ export const vi = {
       datasetBody:
         "FreshRetailNet-50K là doanh số chuẩn hóa theo giờ của các kho thương mại điện tử, không phải dữ liệu nhân sự và không phải cửa hàng 24/7. Số người suy ra từ giả định của nhóm bên dưới: r = max(sàn, ceil(alpha · D / p)). Giờ hết hàng dùng nhu cầu ẩn ước lượng.",
       storeId: "Mã store",
-      storeIdHint: "Store phải được xử lý trước bằng build_demand_store.",
-      simulate: "Giả lập và tính số người",
-      callBody:
-        "Tốc độ cuộc gọi được giả lập với seed cố định, không phải dữ liệu thật. Số người mỗi giờ tính bằng Erlang A theo mục tiêu dịch vụ bên dưới.",
-      callFields: {
-        base_rate: { label: "Số cuộc gọi cơ sở mỗi giờ", hint: "Bắt buộc." },
-        handle_seconds: { label: "Thời gian xử lý trung bình (giây)", hint: "Bắt buộc." },
-        patience_seconds: {
-          label: "Thời gian chờ chịu được trung bình (giây)",
-          hint: "Giả định bắt buộc của nhóm, tối đa 3600. Erlang A dùng để tính khách bỏ cuộc.",
-        },
-        service_level: {
-          label: "Mục tiêu mức phục vụ",
-          hint: "Tỷ lệ cuộc gọi được trả lời trong thời gian quy định, 0.8 = 80%.",
-        },
-        answer_seconds: { label: "Trả lời trong (giây)", hint: "" },
-        min_staff: { label: "Số người tối thiểu mỗi giờ", hint: "" },
-        noise: { label: "Nhiễu (0 đến 1)", hint: "Dao động ngẫu nhiên của tốc độ giả lập." },
-        seed: { label: "Seed ngẫu nhiên", hint: "Cùng seed cho cùng một tuần giả lập." },
-      },
+      storeIdHint: "Mã store cần lấy trong file doanh số, ví dụ 18.",
+      salesFile: "File doanh số (train.parquet)",
+      salesFileHint:
+        "Ingest: hệ thống đọc file, lọc store, thay giờ hết hàng rồi suy ra số người theo giờ. Để trống thì dùng dữ liệu store đã xử lý trước đó.",
+      ingesting: "Đang xử lý file doanh số...",
     },
     conversion: {
       legend: "Giả định của nhóm (không phải dữ liệu)",
@@ -730,12 +710,12 @@ export const vi = {
     form: {
       wage: "Lương theo giờ cho mô hình chi phí biên (giả định của nhóm)",
       wageHint:
-        "Chi phí biên và dual LP dùng mô hình tổng hợp, định giá mọi ca bằng một mức lương.",
+        "Chi phí biên và dual LP dùng mô hình tổng hợp: không giới hạn số người, mọi ca cùng một mức lương, không có luật theo từng người. Đây không phải chi phí thêm một người cho đội hiện tại.",
       note: (multipliers: string, count: number) =>
         `Quét nhu cầu giải lại toàn bộ lịch ở lambda ${multipliers}, mỗi lần với giới hạn thời gian ở trên, nên mất tối đa ${count} lần giới hạn đó. Chi phí biên giải lại mô hình tổng hợp 169 lần.`,
       assumption: "Giả định quy đổi cần thay đổi",
       assumptionHint:
-        "Tính lại số người từ tải FreshRetailNet với từng giá trị. Cần hồ sơ FreshRetailNet.",
+        "Tính lại số người từ tải FreshRetailNet với từng giá trị. Cần hồ sơ FreshRetailNet. Công thức chỉ dùng tỷ số alpha / p, nên quét alpha hay quét p cho cùng thông tin.",
       options: {
         alpha: "alpha",
         productivity: "p (năng suất)",

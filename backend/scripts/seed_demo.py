@@ -1,6 +1,6 @@
-"""Load the demo data set through the public API: 30 employees, three 8-hour shift templates and
-the FreshRetailNet store 18 demand profile. Each collection is seeded only when it is empty, so
-running it again never duplicates rows and never touches data entered by users."""
+"""Load the demo data set through the public API: 30 employees and three 8-hour shift templates.
+Demand comes from the sales ingest on the demand page. Each collection is seeded only when it
+is empty, so running it again never duplicates rows and never touches data entered by users."""
 
 import argparse
 import json
@@ -16,9 +16,6 @@ PART_TIME_CODE = "E07"
 PART_TIME_WEEKLY_HOURS = 24
 SHIFT_TEMPLATES = (("\u0110\xeam", 0), ("Ng\xe0y", 8), ("T\u1ed1i", 16))
 SHIFT_LENGTH_HOURS = 8
-STORE_ID = 18
-PROFILE_NAME = "Store 18 demo"
-STORE_CONVERSION = {"alpha": 1.0, "productivity": 4.0, "min_staff": 1, "night_min_staff": 1}
 READY_ATTEMPTS = 60
 
 
@@ -68,19 +65,6 @@ def seed_shift_templates(base_url: str) -> None:
     print(f"shift templates: created {len(SHIFT_TEMPLATES)}")
 
 
-def seed_demand_profile(base_url: str) -> None:
-    if request(base_url, "GET", "/demand-profiles"):
-        print("demand profiles: already present, skipped")
-        return
-    body = {"name": PROFILE_NAME, "store_id": STORE_ID, "conversion_params": STORE_CONVERSION}
-    try:
-        request(base_url, "POST", "/demand-profiles/from-dataset", body)
-    except urllib.error.HTTPError as error:
-        print(f"demand profiles: not created ({error.code} {error.read().decode()})")
-        return
-    print(f"demand profiles: created '{PROFILE_NAME}'")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seed the ShiftOpt demo data when empty.")
     parser.add_argument("--base-url", default="http://localhost:8000/api")
@@ -88,7 +72,6 @@ def main() -> None:
     wait_until_ready(base_url)
     seed_employees(base_url)
     seed_shift_templates(base_url)
-    seed_demand_profile(base_url)
     sys.stdout.flush()
 
 
