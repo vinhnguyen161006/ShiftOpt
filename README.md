@@ -1,10 +1,9 @@
 <div align="center">
 
-# ShiftOpt
+<img src="./assets/logo.svg" alt="ShiftOpt" width="360" />
 
 **Xếp ca nhân viên tối ưu cho dịch vụ có nhu cầu biến động theo giờ**
 
-*Quy hoạch nguyên · Ràng buộc Bộ luật Lao động 2019 · Kiểm tra luật độc lập · Phân tích độ nhạy bằng giải lại*
 
 ---
 
