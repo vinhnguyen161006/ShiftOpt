@@ -282,7 +282,7 @@ Schedule adherence (so lịch với chấm công) **ngoài phạm vi** vì khôn
 | Database | MySQL 8 · SQLAlchemy 2 · Alembic |
 | Dữ liệu | `pyarrow` (đọc/ghi Parquet ở backend) · Parquet · tải FreshRetailNet bằng `urllib` theo commit ghim, không dùng `datasets` |
 | Frontend | React 19 · react-router 8 · Vite 8 · TypeScript 5.9 · CSS thuần theo phong cách trang chủ (mục 8.3) · TanStack Query 5 · Biome · openapi-typescript · biểu đồ tự vẽ bằng HTML/CSS và SVG, không thư viện (`docs/adr/adr-002-charting-library.md`) |
-| Deploy | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
+| Deploy | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn, đọc `data/processed` qua volume chỉ đọc), `seed` (nạp dữ liệu demo khi bảng trống), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
 | Test | pytest · pytest-asyncio · httpx + asgi-lifespan · pytest-cov |
 
 **Phiên bản đã ghim:** `ortools==9.15.6755`, `pulp[highs]==3.3.2` (kèm `highspy==1.13.0`). PuLP 3.3.2 là bản mới nhất khi dựng khung (2026-10-21); nó dùng được `pulp.HiGHS` và trả `constraint.pi`, nhưng phát `DeprecationWarning` báo trước API PuLP 4 (`prob.add_variable`, `prob.constraints()` trả list). Khi nâng lên PuLP 4: sửa `models/set_covering_pulp.py` và `solvers/pulp_backend.py` rồi chạy lại toàn bộ test engine. Không nâng `ortools` hoặc `pulp` đơn lẻ mà không chạy lại toàn bộ test engine và benchmark. Frontend dùng TypeScript 5.9.3 vì `openapi-typescript` 7 chỉ hỗ trợ TypeScript `^5`.
@@ -447,7 +447,7 @@ Backend (trong `backend/`, copy `.env.example` thành `.env`):
 
 Frontend (trong `frontend/`): `npm ci` · `npm run dev` (proxy `/api` sang `localhost:8000`) · `npm run lint` · `npm run format` · `npm run typecheck` · `npm run gen:api` · `npm run ci` (Biome + tsc + build).
 
-Ở root: `python scripts/check_conventions.py`; `make install|conventions|lint|typecheck|test|openapi|up|down`. Toàn bộ stack: `cp .env.example .env` rồi `docker compose up -d --build`; service `migrate` chạy `alembic upgrade head` một lần, `backend` chỉ khởi động sau khi nó xong; UI ở `http://localhost:3000`. Pre-commit: `pre-commit install` (hook: ruff engine + backend, uv-lock, check_conventions).
+Ở root: `python scripts/check_conventions.py`; `make install|conventions|lint|typecheck|test|openapi|up|down`. Toàn bộ stack: `cp .env.example .env` rồi `docker compose up -d --build`; service `migrate` chạy `alembic upgrade head` một lần, `backend` chỉ khởi động sau khi nó xong; `seed` chạy `scripts/seed_demo.py` (30 nhân viên, 3 mẫu ca, hồ sơ store 18), chỉ nạp bảng đang trống; UI ở `http://localhost:3000`. Không chạy `smoke_flow` trên stack demo vì nó thêm dữ liệu kiểm thử. Pre-commit: `pre-commit install` (hook: ruff engine + backend, uv-lock, check_conventions).
 
 Autogenerate migration cần một database rỗng. Khi chưa có MySQL, có thể sinh bằng SQLite tạm (`SHIFTOPT_DATABASE_URL="sqlite+aiosqlite:///./boot.db" uv run --with aiosqlite alembic revision --autogenerate -m "<msg>"`), sau đó **review tay** cho MySQL: thay `sa.text('(CURRENT_TIMESTAMP)')` bằng `sa.func.now()`, kiểm tra mọi `String` có độ dài, bỏ dòng `# ###`, rồi chạy `alembic upgrade head` và `alembic check` trên MySQL thật (CI làm bước này).
 
