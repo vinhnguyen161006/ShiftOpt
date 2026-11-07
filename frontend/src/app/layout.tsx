@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router";
 import { BrandMark, Wordmark } from "../components/ui/BrandMark";
+import { ThemeToggle } from "../components/ui/ThemeToggle";
 import { vi } from "../locales/vi";
 
 const NAV_ITEMS = [
@@ -29,6 +30,7 @@ export function AppLayout() {
               </NavLink>
             ))}
           </nav>
+          <ThemeToggle />
         </div>
       </header>
       <main id="main" className="container app-main" tabIndex={-1}>
