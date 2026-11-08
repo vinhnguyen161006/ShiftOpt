@@ -84,6 +84,10 @@ Gap giữa nghiệm nới lỏng và nghiệm nguyên ([benchmarks.md](benchmark
 
 Trọng số thiếu người đặt thấp hơn ngưỡng sẽ không xếp ai, vì một giờ-người phục vụ thêm không bù được chi phí một ca (khoảng 10 000 mỗi giờ). Với 12 nhân viên, trọng số 10⁵ đổi 9 giờ thiếu lấy tiết kiệm 4,5% chi phí ([benchmarks.md](benchmarks.md) mục 6). Lexicographic không cần chọn trọng số, nên không có nguy cơ mất độ phủ âm thầm, nhưng mỗi tầng phải giải riêng và chia thời gian.
 
+## 6b. Tối ưu so với baseline greedy
+
+Greedy (`engine/src/shiftopt/baseline.py`) là heuristic để so sánh: không báo `OPTIMAL`, và mọi lần gán đều được kiểm bằng validator. Trên ba store đã chọn (18, 84, 578), với 30 giây mỗi lượt CP-SAT, greedy thường thiếu người nhiều hơn. Chi phí thấp hơn của greedy vì vậy không phải lợi thế. Chỉ khi cùng số giờ thiếu (store 578 với nhu cầu tăng 10–30% hoặc khi bớt 5 người), CP-SAT rẻ hơn từ 0 đến 5,7%. Với báo nghỉ, `repair` đổi ít phân công hơn greedy chạy lại từ đầu (4–13 so với 16–52). Chi tiết và giới hạn: [benchmarks.md](benchmarks.md) mục 5.
+
 ## 7. Độ nhạy
 
 - **Chi phí biên rời rạc** `z(r + e_t) − z(r)` cho 168 giờ, bằng giải lại. Đây là chi phí biên của mô hình nguyên, không phải shadow price. Kiểm bằng ví dụ tay (3 ca, nhu cầu 1, giờ 3 = 100 × 980).

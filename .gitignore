@@ -11,3 +11,4 @@ dist/
 data/raw/
 data/demo/*.parquet
 data/benchmarks/curtois_qu/Instance*.txt
+*.parquet

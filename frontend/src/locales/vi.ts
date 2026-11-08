@@ -793,6 +793,23 @@ export const vi = {
     noMarginalTitle: "Chưa tính chi phí biên",
     noMarginalBody: "Chạy phân tích chi phí biên ở trên để tô bản đồ nhiệt 7 × 24.",
     marginalActive: (id: number) => `Đang giải lại 169 lần (phân tích ${id})`,
+    baselinePanel: "So với baseline greedy",
+    noBaselineTitle: "Chưa so với baseline",
+    noBaselineBody:
+      "Chạy so sánh baseline ở trên để xem CP-SAT và greedy trên cùng nhu cầu, cùng luật.",
+    baselineActive: (id: number) => `Đang giải bằng CP-SAT và greedy (phân tích ${id})`,
+    baselineView: {
+      caption: (id: number) => `So sánh CP-SAT và greedy, phân tích ${id}`,
+      method: "Phương pháp",
+      cpsat: "CP-SAT (lịch tối ưu theo tầng)",
+      greedy: "Greedy (heuristic)",
+      status: "Trạng thái",
+      cost: "Chi phí lao động (1/100 đơn vị lương)",
+      understaffed: "Giờ thiếu người",
+      staffed: "Giờ ca đã trả",
+      sameCoverage:
+        "Chi phí chỉ so sánh được khi hai phương án có cùng số giờ thiếu người. Greedy không chứng minh tối ưu.",
+    },
     comparePanel: "So sánh hai lượt",
     status: {
       failedTitle: (id: number) => `Phân tích ${id} thất bại`,
@@ -820,6 +837,7 @@ export const vi = {
       runMarginal: "Tính chi phí biên theo giờ",
       runSweep: "Chạy quét nhu cầu",
       runStaffing: "Chạy quét giả định",
+      runBaseline: "So với baseline greedy",
       submitting: "Đang gửi...",
     },
     sweep: {

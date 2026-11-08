@@ -13,6 +13,7 @@ HOURS_OF_WEEK = 168
 APPROXIMATE_LABEL = "LP relaxation dual: an approximation, the integrality gap can be large"
 STAFFING_LABEL = "Team conversion assumption, not staffing data from the source"
 STAFFING_FLOORS = ("min_staff", "night_min_staff")
+BASELINE_LABEL = "Greedy is a heuristic for comparison, not proven optimal"
 
 Multiplier = Annotated[float, Field(gt=0, le=3)]
 StaffingField = Literal["alpha", "productivity", "min_staff", "night_min_staff"]
@@ -50,6 +51,24 @@ class StaffingSweepRequest(BaseModel):
         ):
             raise ValueError(f"{self.assumption} values must be whole numbers")
         return self
+
+
+class BaselineCompareRequest(BaseModel):
+    solve: SolveRequest
+
+
+class BaselineRow(BaseModel):
+    method: Literal["cpsat", "greedy"]
+    solve_status: str
+    proven: bool
+    labor_cost: float | None
+    understaffed_hours: int | None
+    staffed_hours: int | None
+
+
+class BaselineCompareResult(BaseModel):
+    label: str = BASELINE_LABEL
+    points: list[BaselineRow]
 
 
 class SweepPoint(BaseModel):
@@ -113,7 +132,14 @@ class AnalysisRunRead(BaseModel):
     id: int
     kind: AnalysisKind
     status: RunStatus
-    result: DemandSweepResult | MarginalCostResult | LpDualsResult | StaffingSweepResult | None
+    result: (
+        DemandSweepResult
+        | MarginalCostResult
+        | LpDualsResult
+        | StaffingSweepResult
+        | BaselineCompareResult
+        | None
+    )
     error: str | None
     created_at: datetime
     finished_at: datetime | None

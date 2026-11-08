@@ -110,6 +110,8 @@ B2 chậm trên instance lớn thì chỉ báo cáo phạm vi đã đo và giả
 
 ### C. Baseline greedy và thực nghiệm nhiều store (P0)
 
+Trạng thái: C1–C5 đã làm (2026-11-08); C6 chưa làm theo yêu cầu. Chỉ 3 store đạt tiêu chí, xem mô tả dữ liệu mục 8.
+
 | # | Việc | Xong khi |
 |---|---|---|
 | C1 | `engine/src/shiftopt/baseline.py`: greedy ưu tiên giờ thiếu nhiều nhất, chọn người khả dụng có ít giờ nhất, kiểm ràng buộc cứng trước mỗi lần gán. Validator kiểm lại | Test: greedy luôn 0 vi phạm; trên ví dụ có đáp án tay, chi phí greedy ≥ tối ưu |
