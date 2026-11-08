@@ -8,6 +8,8 @@ from src.schedules.schemas import (
     JobAccepted,
     KpiRead,
     ManualEditRequest,
+    RerosterRequest,
+    ScheduleChangesRead,
     SolveRequest,
     SolveRunRead,
 )
@@ -78,3 +80,21 @@ async def create_manual_edit(
 ) -> SolveRunRead:
     edited = await service.create_manual_edit(session, run, payload)
     return SolveRunRead.model_validate(edited)
+
+
+@router.post("/{run_id}/reroster", response_model=JobAccepted, status_code=status.HTTP_202_ACCEPTED)
+async def create_reroster(
+    run: ValidRun,
+    payload: RerosterRequest,
+    session: SessionDep,
+    jobs: JobsDep,
+    background: BackgroundTasks,
+) -> JobAccepted:
+    queued = await service.create_reroster(session, run, payload)
+    background.add_task(service.execute_run, jobs, queued.id)
+    return JobAccepted(job_id=queued.id, status=queued.status)
+
+
+@router.get("/{run_id}/changes", response_model=ScheduleChangesRead)
+async def get_schedule_changes(run: ValidRun, session: SessionDep) -> ScheduleChangesRead:
+    return await service.changes_for(session, run)

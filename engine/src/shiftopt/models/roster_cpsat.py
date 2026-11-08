@@ -21,6 +21,17 @@ class RosterOutcome:
     night_spread: int | None
     preference_misses: int | None
     approximate: bool = False
+    changes: int | None = None
+
+
+@dataclass(frozen=True)
+class Reroster:
+    """A previous roster to stay close to. Days in locked_days keep exactly the previous
+    assignments of every employee; on the other days each assignment added or dropped counts as
+    one change."""
+
+    previous: Solution
+    locked_days: frozenset[int] = frozenset()
 
 
 def solve_roster(
@@ -29,6 +40,7 @@ def solve_roster(
     *,
     symmetry_breaking: bool = False,
     decompose: bool = False,
+    reroster: Reroster | None = None,
 ) -> RosterOutcome:
     """Per-employee roster with Boolean work[e, d, s] solved by CP-SAT on a cyclic week.
 
@@ -45,14 +57,19 @@ def solve_roster(
     decompose first solves the aggregate model with implicit breaks, then caps the number of starts
     per day and shift type to that head count. The result is then an approximation and is never
     reported as OPTIMAL.
+
+    reroster repairs a previous roster, for example after a sudden absence added to an
+    employee's unavailable days. Locked days are fixed to the previous assignments, the search
+    starts from the previous roster, and a tier minimising the number of changes is solved right
+    after shortfall, so coverage still comes first and labour cost only breaks ties.
     """
     if not decompose:
-        model = _RosterModel(instance)
+        model = _RosterModel(instance, reroster)
         if symmetry_breaking:
             model.add_symmetry_breaking()
         return model.solve(params)
     half = replace(params, time_limit_seconds=params.time_limit_seconds / 2)
-    model = _RosterModel(instance)
+    model = _RosterModel(instance, reroster)
     if symmetry_breaking:
         model.add_symmetry_breaking()
     model.add_start_caps(_aggregate_starts(instance, half))
@@ -91,8 +108,9 @@ def _downgrade(result: SolveResult) -> SolveResult:
 
 
 class _RosterModel:
-    def __init__(self, instance: Instance) -> None:
+    def __init__(self, instance: Instance, reroster: Reroster | None = None) -> None:
         self.instance = instance
+        self.reroster = reroster
         self.rules = instance.rules
         self.employees = instance.employees
         self.shifts = tuple(
@@ -112,6 +130,8 @@ class _RosterModel:
         self.night_counts: list[Any] = []
         self.night_max: Any = None
         self.night_min: Any = None
+        self.previous_keys: set[tuple[int, int, int]] = set()
+        self.unmatched_previous = 0
         self._build()
 
     def _bool(self, name: str) -> Any:
@@ -131,6 +151,44 @@ class _RosterModel:
         self._add_weekly_rest()
         self._add_breaks_and_coverage()
         self._add_night_spread()
+        if self.reroster is not None:
+            self._index_previous(self.reroster)
+            self._lock_days(self.reroster.locked_days)
+
+    def _index_previous(self, reroster: Reroster) -> None:
+        employee_index = {employee.id: index for index, employee in enumerate(self.employees)}
+        for assignment in reroster.previous.assignments:
+            key = (
+                employee_index.get(assignment.employee_id, -1),
+                assignment.day,
+                self.shift_index.get(assignment.shift_name, -1),
+            )
+            if key in self.work:
+                self.previous_keys.add(key)
+            elif assignment.day in reroster.locked_days:
+                raise ValueError(
+                    f"locked assignment {assignment.employee_id} day {assignment.day} "
+                    f"{assignment.shift_name} is not allowed in the new instance"
+                )
+            else:
+                self.unmatched_previous += 1
+
+    def _lock_days(self, locked_days: frozenset[int]) -> None:
+        for key, work in self.work.items():
+            if key[1] in locked_days:
+                self.model.add(work == int(key in self.previous_keys))
+
+    def _changes(self) -> Any:
+        locked_days = self.reroster.locked_days if self.reroster else frozenset()
+        flips = self._sum(
+            (1 - work) if key in self.previous_keys else work
+            for key, work in self.work.items()
+            if key[1] not in locked_days
+        )
+        return flips + self.unmatched_previous
+
+    def _previous_hints(self) -> dict[Any, int]:
+        return {work: int(key in self.previous_keys) for key, work in self.work.items()}
 
     def _create_shift_variables(self) -> None:
         for e_index, employee in enumerate(self.employees):
@@ -278,10 +336,10 @@ class _RosterModel:
         )
 
     def _stages(self) -> list[tuple[str, Any]]:
-        stages: list[tuple[str, Any]] = [
-            ("shortfall", self._sum(self.shortfall)),
-            ("cost", self._cost()),
-        ]
+        stages: list[tuple[str, Any]] = [("shortfall", self._sum(self.shortfall))]
+        if self.reroster is not None:
+            stages.append(("changes", self._changes()))
+        stages.append(("cost", self._cost()))
         if self.night_max is not None:
             stages.append(("night_spread", self.night_max - self.night_min))
         if any(employee.preferred_days_off for employee in self.employees):
@@ -293,7 +351,7 @@ class _RosterModel:
         stage_params = with_time_share(params, len(stages))
         results: list[SolveResult] = []
         best = None
-        hints: dict[Any, int] = {}
+        hints = self._previous_hints() if self.reroster is not None else {}
         for _, expression in stages:
             self.model.proto.clear_solution_hint()
             for variable, value in hints.items():
@@ -325,6 +383,7 @@ class _RosterModel:
                 else None
             ),
             preference_misses=round(best.value(self._preference_misses())),
+            changes=round(best.value(self._changes())) if self.reroster is not None else None,
         )
 
     def _solution(self, best: Any) -> Solution:

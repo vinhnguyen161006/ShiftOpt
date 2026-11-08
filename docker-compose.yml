@@ -33,8 +33,6 @@ services:
       SHIFTOPT_DATABASE_URL: mysql+asyncmy://${SHIFTOPT_DB_USER}:${SHIFTOPT_DB_PASSWORD}@db:3306/shiftopt?charset=utf8mb4
       SHIFTOPT_MAX_SOLVE_SECONDS: ${SHIFTOPT_MAX_SOLVE_SECONDS:-300}
       SHIFTOPT_SOLVE_WORKERS: ${SHIFTOPT_SOLVE_WORKERS:-8}
-    volumes:
-      - ./data/processed:/app/data/processed
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -43,6 +41,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    volumes:
+      - ./data:/app/data:ro
     ports:
       - "8000:8000"
 
