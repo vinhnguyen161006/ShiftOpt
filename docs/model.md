@@ -45,7 +45,7 @@ Status is `OPTIMAL` only when every tier is `OPTIMAL`; otherwise `FEASIBLE` with
 
 Options:
 
-- `symmetry_breaking` (default off): for employees with equal wage and no requests, `shifts_e >= shifts_{e+1}`. Measured on the 20/30/40 employee benchmark, it was slower on seed 0 (see WORKLOG 4.3).
+- `symmetry_breaking` (default off): for employees with equal wage and no requests, `shifts_e >= shifts_{e+1}`. No measurement is kept in the repo for this option; it stays off.
 - `decompose` (default off): solve the aggregate model with implicit breaks (section 1b), then cap starts per day and shift type to `ceil(count)`. The result is an approximation and is reported as `FEASIBLE`, never `OPTIMAL`.
 
 ## 1b. Implicit Breaks (Bechtold-Jacobs style)

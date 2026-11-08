@@ -1,6 +1,6 @@
 # Đặc tả ShiftOpt
 
-**Trạng thái:** bản nháp. Claude soạn theo ủy quyền của người dùng (WORKLOG 0.1, 0.2). Nhóm chưa duyệt. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
+**Trạng thái:** bản nháp. Claude soạn theo ủy quyền của người dùng. Nhóm chưa duyệt. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
 
 **Nguồn luật chưa đối chiếu nguyên văn.** Tải toàn văn 45/2019/QH14 và NĐ 145/2020 không được (trang trả HTTP 403; tìm kiếm chỉ cho tóm tắt thứ cấp). Mục 4 ghi rõ từng điều đã đối chiếu tới đâu. Trước khi nộp báo cáo, phải đối chiếu với văn bản chính thức.
 
