@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Table } from "../../../components/ui/Table";
 import { formatPercent } from "../../../lib/number";
+import { isRepairRun } from "../../../lib/run-kind";
 import { vi } from "../../../locales/vi";
 import type { SolveRunRead } from "../../../types/models";
 
@@ -72,9 +73,14 @@ export function RunsTable({ runs }: RunsTableProps) {
             run.parent_run_id === null ? (
               "-"
             ) : (
-              <Link to={`/schedule/${run.parent_run_id}`}>
-                {vi.schedule.runs.runLink(run.parent_run_id)}
-              </Link>
+              <>
+                <Link to={`/schedule/${run.parent_run_id}`}>
+                  {vi.schedule.runs.runLink(run.parent_run_id)}
+                </Link>{" "}
+                <span className="tag tag-outline">
+                  {isRepairRun(run) ? vi.schedule.runs.repairTag : vi.schedule.runs.manualEdit}
+                </span>
+              </>
             ),
         },
       ]}

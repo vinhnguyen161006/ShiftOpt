@@ -28,6 +28,7 @@ import { SolveDetails, SolveNotice } from "../../features/schedule/components/So
 import { useShiftTemplates } from "../../features/shift-templates/api/shift-templates";
 import { errorMessage } from "../../lib/api-client";
 import { useLaborRules } from "../../lib/labor-rules";
+import { isRepairRun } from "../../lib/run-kind";
 import { vi } from "../../locales/vi";
 
 function Prerequisites({ missing }: { missing: { label: string; to: string }[] }) {
@@ -132,7 +133,7 @@ function RunView({ runId }: { runId: number }) {
   return (
     <div className="page">
       <PageHeader
-        eyebrow={vi.schedule.runEyebrow(data.id, data.parent_run_id)}
+        eyebrow={vi.schedule.runEyebrow(data.id, data.parent_run_id, isRepairRun(data))}
         title={vi.schedule.resultTitle}
         lead={vi.schedule.resultLead(
           new Date(data.created_at).toLocaleString("vi-VN"),
