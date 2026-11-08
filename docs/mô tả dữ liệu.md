@@ -73,7 +73,7 @@ Kết quả với store 18, `alpha = 1`, `p = 4`: tổng 468 giờ-người mỗ
 ## 6. Hạn chế
 
 1. **Không phải nhu cầu nhân sự.** Mọi con số người đều phụ thuộc `alpha`, `p` và các sàn; UI và báo cáo phải ghi rõ.
-2. **Chỉ dùng một store** trong các kết quả đã đo (store 18). Kết quả không suy ra cho 897 store còn lại.
+2. **Chỉ dùng ba store** trong thực nghiệm: 18, 84, 578 (xem mục 8). Kết quả không suy ra cho các store còn lại.
 3. **Khuyến mãi không được điều chỉnh.** Bài báo gợi ý hệ số uplift trung bình 1,43; dự án chưa đưa hệ số này vào dữ liệu, chỉ dùng như một kịch bản để thảo luận.
 4. **Split `eval` 7 ngày** được xác nhận bằng `dt.min()/max()`, chưa dùng để đánh giá mô hình nào.
 5. **Giờ hết hàng** được thay bằng ước lượng, nên tải lượng store 18 là một giả định có phương pháp, không phải doanh số thực đã quan sát.
@@ -88,3 +88,14 @@ uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 
 ```
 
 Lệnh đầu tải hai file (bỏ qua nếu đã đúng SHA-256) và kiểm hash. Lệnh sau ingest store 18 bằng cùng hàm `derive_demand` rồi giải kịch bản cơ sở (số đo ở `benchmarks.md` mục 4). Trên web, tạo hồ sơ bằng ingest như `demo.md` bước 2. Store khác: đổi `--store`.
+
+## 8. Chọn store cho thực nghiệm
+
+Tiêu chí, theo `backend/scripts/rank_stores.py`:
+
+- Xếp hạng store theo tổng doanh số, rồi lấy các store ở phân vị 10, 25, 50, 75, 90, cộng store 18.
+- Với mỗi ứng viên, `derive_demand` với α = 1, p = 4, sàn 1 người ban ngày và đêm.
+- Chọn nếu đỉnh nhu cầu nằm trong [4, 15] người, và tỷ lệ ô không thay được dưới 5%.
+
+Kết quả (`docs/experiments/store_ranking.csv`): 18, 84 và 578 đạt tiêu chí. Store 27, 278 và 838 không đạt do đỉnh quá thấp (1–3 người) hoặc tỷ lệ ô không thay được cao. Kế hoạch ban đầu yêu cầu 4–6 store; tiêu chí hiện chỉ cho 3.
+

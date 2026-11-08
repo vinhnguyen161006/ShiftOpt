@@ -51,6 +51,10 @@ Mọi số ở đây chạy lại được; máy và phiên bản ở [benchmark
 
 Trên mô hình tổng hợp có nghỉ ngầm, 3 instance (đều, đỉnh, đỉnh có ca cách đều): HiGHS và CP-SAT cùng `OPTIMAL` và cùng objective ở 10 và 60 giây, đều dưới 0,1 giây ([benchmarks.md](benchmarks.md) mục 2). Instance quá nhỏ để phân biệt hiệu năng. Không suy ra cho mô hình theo nhân viên, vì mô hình đó chỉ có CP-SAT (D12). Không trích số Mittelmann.
 
+## 6b. Tối ưu so với baseline greedy
+
+Greedy (`engine/src/shiftopt/baseline.py`) là heuristic để so sánh: không báo `OPTIMAL`, và mọi lần gán đều được kiểm bằng validator. Trên ba store đã chọn (18, 84, 578), với 30 giây mỗi lượt CP-SAT, greedy thường thiếu người nhiều hơn. Chi phí thấp hơn của greedy vì vậy không phải lợi thế. Chỉ khi cùng số giờ thiếu (store 578 với nhu cầu tăng 10–30% hoặc khi bớt 5 người), CP-SAT rẻ hơn từ 0 đến 5,7%. Với báo nghỉ, `repair` đổi ít phân công hơn greedy chạy lại từ đầu (4–13 so với 16–52). Chi tiết và giới hạn: [benchmarks.md](benchmarks.md) mục 5.
+
 ## 7. Độ nhạy
 
 - **Chi phí biên rời rạc** `z(r + e_t) − z(r)` cho 168 giờ, bằng giải lại. Đây là chi phí biên của mô hình nguyên, không phải shadow price. Kiểm bằng ví dụ tay (3 ca, nhu cầu 1, giờ 3 = 100 × 980).
