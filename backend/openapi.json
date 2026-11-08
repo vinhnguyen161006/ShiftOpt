@@ -50,7 +50,8 @@
           "demand_sweep",
           "marginal_cost",
           "lp_duals",
-          "staffing_sweep"
+          "staffing_sweep",
+          "baseline_compare"
         ],
         "title": "AnalysisKind",
         "type": "string"
@@ -105,6 +106,9 @@
               },
               {
                 "$ref": "#/components/schemas/StaffingSweepResult"
+              },
+              {
+                "$ref": "#/components/schemas/BaselineCompareResult"
               },
               {
                 "type": "null"
@@ -204,6 +208,102 @@
           "shift_name"
         ],
         "title": "AssignmentWrite",
+        "type": "object"
+      },
+      "BaselineCompareRequest": {
+        "properties": {
+          "solve": {
+            "$ref": "#/components/schemas/SolveRequest"
+          }
+        },
+        "required": [
+          "solve"
+        ],
+        "title": "BaselineCompareRequest",
+        "type": "object"
+      },
+      "BaselineCompareResult": {
+        "properties": {
+          "label": {
+            "default": "Greedy is a heuristic for comparison, not proven optimal",
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineRow"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "title": "BaselineCompareResult",
+        "type": "object"
+      },
+      "BaselineRow": {
+        "properties": {
+          "labor_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labor Cost"
+          },
+          "method": {
+            "enum": [
+              "cpsat",
+              "greedy"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "proven": {
+            "title": "Proven",
+            "type": "boolean"
+          },
+          "solve_status": {
+            "title": "Solve Status",
+            "type": "string"
+          },
+          "staffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staffed Hours"
+          },
+          "understaffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understaffed Hours"
+          }
+        },
+        "required": [
+          "method",
+          "solve_status",
+          "proven",
+          "labor_cost",
+          "understaffed_hours",
+          "staffed_hours"
+        ],
+        "title": "BaselineRow",
         "type": "object"
       },
       "ComplianceRead": {
@@ -1988,6 +2088,47 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/analysis/baseline-compare": {
+      "post": {
+        "operationId": "baseline_compare_api_analysis_baseline_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaselineCompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Baseline Compare",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
     "/api/analysis/demand-sweep": {
       "post": {
         "operationId": "demand_sweep_api_analysis_demand_sweep_post",

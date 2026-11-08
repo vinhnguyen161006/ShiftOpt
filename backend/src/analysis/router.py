@@ -8,6 +8,7 @@ from src.analysis.models import AnalysisKind
 from src.analysis.schemas import (
     AnalysisAccepted,
     AnalysisRunRead,
+    BaselineCompareRequest,
     DemandSweepRequest,
     LpDualsRequest,
     MarginalCostRequest,
@@ -76,6 +77,18 @@ async def staffing_sweep(
     background: BackgroundTasks,
 ) -> AnalysisAccepted:
     return await _accept(session, jobs, background, AnalysisKind.STAFFING_SWEEP, payload)
+
+
+@router.post(
+    "/baseline-compare", response_model=AnalysisAccepted, status_code=status.HTTP_202_ACCEPTED
+)
+async def baseline_compare(
+    payload: BaselineCompareRequest,
+    session: SessionDep,
+    jobs: JobsDep,
+    background: BackgroundTasks,
+) -> AnalysisAccepted:
+    return await _accept(session, jobs, background, AnalysisKind.BASELINE_COMPARE, payload)
 
 
 @router.get("/{run_id}", response_model=AnalysisRunRead)

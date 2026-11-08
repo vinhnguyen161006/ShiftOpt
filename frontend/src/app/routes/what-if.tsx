@@ -8,6 +8,7 @@ import { useScheduleKpi, useScheduleRuns } from "../../features/schedule/api/sch
 import { useShiftTemplates } from "../../features/shift-templates/api/shift-templates";
 import { useAnalysisRun } from "../../features/what-if/api/analysis";
 import { AnalysisStatus } from "../../features/what-if/components/AnalysisStatus";
+import { BaselineCompare } from "../../features/what-if/components/BaselineCompare";
 import { ScenarioCompare } from "../../features/what-if/components/ScenarioCompare";
 import { SensitivityHeatmap } from "../../features/what-if/components/SensitivityHeatmap";
 import { StaffingSweepView } from "../../features/what-if/components/StaffingSweepView";
@@ -18,6 +19,7 @@ import { useLaborRules } from "../../lib/labor-rules";
 import { vi } from "../../locales/vi";
 import type {
   AnalysisRunRead,
+  BaselineCompareResult,
   DemandSweepResult,
   MarginalCostResult,
   SolveRunRead,
@@ -41,6 +43,12 @@ function isStaffing(
   return run?.kind === "staffing_sweep" && run.result !== null && run.result !== undefined;
 }
 
+function isBaseline(
+  run: AnalysisRunRead | undefined,
+): run is AnalysisRunRead & { result: BaselineCompareResult } {
+  return run?.kind === "baseline_compare" && run.result !== null && run.result !== undefined;
+}
+
 function isMarginal(
   run: AnalysisRunRead | undefined,
 ): run is AnalysisRunRead & { result: MarginalCostResult } {
@@ -50,7 +58,7 @@ function isMarginal(
 function SetupPanel({
   onStarted,
 }: {
-  onStarted: (kind: "sweep" | "marginal" | "staffing", runId: number) => void;
+  onStarted: (kind: "sweep" | "marginal" | "staffing" | "baseline", runId: number) => void;
 }) {
   const profiles = useDemandProfiles();
   const templates = useShiftTemplates();
@@ -154,6 +162,8 @@ export function WhatIfRoute() {
   const sweep = useAnalysisRun(sweepId);
   const marginal = useAnalysisRun(marginalId);
   const staffing = useAnalysisRun(staffingId);
+  const baselineId = numberParam(params, "baseline");
+  const baseline = useAnalysisRun(baselineId);
   const sweepResult =
     sweep.data?.status === "succeeded" && isSweep(sweep.data) ? sweep.data.result : undefined;
 
@@ -213,6 +223,22 @@ export function WhatIfRoute() {
             activeLabel={vi.whatIf.marginalActive(marginal.data.id)}
           >
             {isMarginal(marginal.data) && <SensitivityHeatmap result={marginal.data.result} />}
+          </AnalysisStatus>
+        )}
+      </Panel>
+      <Panel title={vi.whatIf.baselinePanel} labelledBy="baseline-title">
+        {baselineId === undefined && (
+          <EmptyState title={vi.whatIf.noBaselineTitle}>{vi.whatIf.noBaselineBody}</EmptyState>
+        )}
+        {baseline.isError && <Notice kind="error" title={errorMessage(baseline.error)} />}
+        {baseline.data && (
+          <AnalysisStatus
+            run={baseline.data}
+            activeLabel={vi.whatIf.baselineActive(baseline.data.id)}
+          >
+            {isBaseline(baseline.data) && (
+              <BaselineCompare result={baseline.data.result} analysisId={baseline.data.id} />
+            )}
           </AnalysisStatus>
         )}
       </Panel>

@@ -3,6 +3,7 @@ import { apiFetch, jsonInit } from "../../../lib/api-client";
 import type {
   AnalysisAccepted,
   AnalysisRunRead,
+  BaselineCompareRequest,
   DemandSweepRequest,
   MarginalCostRequest,
   StaffingSweepRequest,
@@ -28,6 +29,13 @@ export function useMarginalCost() {
   return useMutation({
     mutationFn: (body: MarginalCostRequest) =>
       apiFetch<AnalysisAccepted>("/analysis/marginal-cost", jsonInit("POST", body)),
+  });
+}
+
+export function useBaselineCompare() {
+  return useMutation({
+    mutationFn: (body: BaselineCompareRequest) =>
+      apiFetch<AnalysisAccepted>("/analysis/baseline-compare", jsonInit("POST", body)),
   });
 }
 
