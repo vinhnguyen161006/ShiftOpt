@@ -8,7 +8,7 @@
 
 Trong phạm vi bản đầu (CLAUDE.md mục 13–14):
 - Một địa điểm, một loại kỹ năng; lịch tuần 7×24; một chế độ nhu cầu trên một lần chạy.
-- Hai nguồn nhu cầu: bán lẻ (FreshRetailNet, một store) và tổng đài (giả lập có seed).
+- Một nguồn nhu cầu từ dữ liệu: bán lẻ (FreshRetailNet, một store, ingest file doanh số trên web). Không hỗ trợ tổng đài (D18).
 - Tối ưu lịch theo nhân viên (CP-SAT), validator độc lập, KPI, độ nhạy (quét λ, chi phí biên, dual LP xấp xỉ, quét giả định quy đổi).
 - Giao diện: nhập nhu cầu, mẫu ca, nhân viên, Optimize, lịch, cảnh báo tuân thủ, sửa tay, What-if, xuất CSV.
 
@@ -18,8 +18,8 @@ Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, 
 
 | Mã | Yêu cầu | Kiểm chứng |
 |---|---|---|
-| FR-1 | Nhập nhu cầu bằng lưới 168 ô, CSV, FreshRetailNet hoặc tổng đài. Ô là số nguyên không âm, tối đa 1000. | `test_csv_import.py`, `test_demand_schema.py` |
-| FR-2 | Quy đổi nhu cầu ra số người: tuyến tính `r = max(floor, ceil(alpha·D/p))`, hoặc Erlang A/C. Mọi tham số hiện trên UI và trong metadata. | `test_kpi_and_staffing.py`, `test_erlang_a.py` |
+| FR-1 | Nhập nhu cầu bằng lưới 168 ô, CSV hoặc FreshRetailNet (ingest file parquet). Ô là số nguyên không âm, tối đa 1000. | `test_csv_import.py`, `test_demand_schema.py` |
+| FR-2 | Quy đổi nhu cầu ra số người: tuyến tính `r = max(floor, ceil(alpha·D/p))`. Mọi tham số hiện trên UI và trong metadata. | `test_kpi_and_staffing.py`, `test_dataset_loader.py` |
 | FR-3 | Mẫu ca (giờ bắt đầu, độ dài). Nhân viên có giờ tối đa riêng (≤ luật), ngày không làm được, ngày mong muốn nghỉ. | `test_validation.py`, `test_roster_cpsat.py` |
 | FR-4 | Optimize tạo một lượt giải bất biến, trả `job_id` ngay, poll theo `job_id`. Lưu đủ tái lập (nguyên tắc 10). | `test_schedules_flow.py` (MySQL) |
 | FR-5 | Mọi nghiệm qua validator. Vi phạm cứng > 0 thì lượt đánh dấu `failed`, không hiện như thành công. | `test_validation.py`, smoke flow |
@@ -47,10 +47,11 @@ Người chốt: Claude theo ủy quyền. Chờ nhóm xác nhận. Lý do ghi c
 | D11 | Trọng số `M_u`, `λ_F` | Không dùng trọng số; giải lexicographic 4 tầng | Tránh chọn `M` tùy tiện (CLAUDE.md 5.2) |
 | D12 | So sánh CP-SAT với HiGHS | Trên mô hình tổng hợp có nghỉ ngầm, không trên mô hình theo nhân viên | Mô hình theo nhân viên chỉ có CP-SAT; sai lệch nghiệm thu dòng 4 |
 | D13 | Kịch bản cơ sở | Store 18, D7–D9, 3 ca 0/8/16 h, 30 nhân viên, 48 giờ | Dữ liệu thật, không sinh ngẫu nhiên |
-| D14 | Dataset tổng đài công khai | Chưa dùng; dùng giả lập có seed | Chưa kiểm giấy phép |
+| D14 | Dataset tổng đài công khai | Bỏ, thay bằng D18 | — |
 | D15 | Giết tiến trình con khi quá hạn | Không làm; ghi là giới hạn đã biết | CP-SAT tự dừng theo time limit |
 | D16 | Hợp đồng nhân viên | Chỉ thêm giờ tối đa riêng; không thêm loại hợp đồng | Đủ cho bán thời gian; MVP mục 8.1 |
 | D17 | Báo cáo nghiên cứu nền | Không có trong repo; đặc tả thay vai trò nguồn | File không tồn tại |
+| D18 | Chế độ tổng đài (Erlang A/C) | Bỏ khỏi sản phẩm (người dùng quyết định 2026-11-07) | Nhóm không hỗ trợ tổng đài; giữ một chế độ bán lẻ |
 
 ## 4. Ràng buộc pháp lý
 
@@ -98,5 +99,4 @@ Lấy từ CLAUDE.md mục 13. Kết quả đo và bằng chứng nằm trong [a
 - Kịch bản căng (8 nhân viên, sức chứa 384 < 468) không đạt tối ưu trong 60 giây: coverage 70,3%, gap 100%. Kết quả là `FEASIBLE`, không được gọi là tối ưu.
 - Chỉ đo một store, 3 seed, 1 và 8 worker; không suy ra cho store khác.
 - Ngưỡng Đ.109 (6 giờ) và các điều luật ở mục 4 chưa đối chiếu nguyên văn.
-- Chưa có dữ liệu tổng đài công khai; dùng giả lập.
 - Chưa có chấm công; không đo adherence.

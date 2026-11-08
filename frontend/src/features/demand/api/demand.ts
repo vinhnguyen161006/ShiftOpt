@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, jsonInit } from "../../../lib/api-client";
 import type {
-  CallCenterDemandRequest,
   CsvDemandRequest,
   DatasetDemandRequest,
   DemandProfileCreate,
   DemandProfileRead,
   DemandProfileUpdate,
+  SalesIngestQuery,
 } from "../../../types/models";
 
 const PROFILES_KEY = ["demand-profiles"];
@@ -56,8 +56,15 @@ export function useCreateDemandProfileFromCsv() {
   );
 }
 
-export function useCreateDemandProfileFromCallCenter() {
-  return useProfileMutation((body: CallCenterDemandRequest) =>
-    apiFetch<DemandProfileRead>("/demand-profiles/from-call-center", jsonInit("POST", body)),
-  );
+export function useIngestSales() {
+  return useProfileMutation(({ file, query }: { file: File; query: SalesIngestQuery }) => {
+    const search = new URLSearchParams(
+      Object.entries(query).map(([key, value]) => [key, String(value)]),
+    );
+    return apiFetch<DemandProfileRead>(`/demand-profiles/ingest?${search}`, {
+      method: "POST",
+      body: file,
+      headers: { "Content-Type": "application/octet-stream" },
+    });
+  });
 }

@@ -75,7 +75,7 @@ Test tích hợp backend cần `SHIFTOPT_TEST_DATABASE_URL`; thiếu biến này
   uv run --locked python scripts/build_demand_store.py --store-id 18
   ```
 
-  File thô vào `data/raw/` (không commit), file xử lý vào `data/processed/`.
+  `train.parquet` vào `data/demo/` (file ingest khi demo, không commit), `eval.parquet` vào `data/raw/`, file xử lý vào `data/processed/`.
 
 - **Curtois & Qu (2014)**, benchmark xếp ca: tải về `data/benchmarks/curtois_qu/` bằng script có kiểm SHA-256 ghim. Không commit vì trang nguồn không ghi giấy phép:
 
@@ -84,7 +84,7 @@ Test tích hợp backend cần `SHIFTOPT_TEST_DATABASE_URL`; thiếu biến này
   uv run --locked python benchmarks/download_curtois_qu.py
   ```
 
-Các hệ số `alpha`, `p`, `r_min`, và giả định về lưu lượng cuộc gọi là **giả định của nhóm**, hiển thị trên UI.
+Các hệ số `alpha`, `p`, `r_min` là **giả định của nhóm**, hiển thị trên UI.
 
 ## Benchmark và đo hiệu năng
 
@@ -103,7 +103,7 @@ Nghiệm thu bản đầu theo CLAUDE.md mục 13: [docs/acceptance.md](docs/acc
 - **Tối ưu chỉ được khẳng định khi solver báo `OPTIMAL`.** Kết quả `FEASIBLE` hiển thị kèm gap và cận dưới. Mọi kết luận hiệu năng chỉ áp dụng cho các instance và time limit đã đo.
 - **Dual chỉ có từ LP relaxation** và luôn gắn nhãn "xấp xỉ". Không có shadow price của mô hình nguyên.
 - **Chưa có hợp đồng riêng theo nhân viên** (giờ tối đa, loại hợp đồng). Engine chỉ đọc `max_weekly_hours` và `max_consecutive_days` chung.
-- **Erlang A chưa có dataset tổng đài công khai.** Dữ liệu tổng đài hiện là mô phỏng có seed; dataset công khai (ngân hàng Đông Bắc Mỹ, SEELab Technion) chưa kiểm giấy phép.
+- **Không hỗ trợ tổng đài.** Chế độ Erlang A/C đã bỏ (đặc tả D18).
 - **Time limit không giết tiến trình con.** Khi quá hạn, API báo lỗi và bỏ chờ; CP-SAT tự dừng theo time limit của chính nó.
 - **Giới hạn số job đang chạy** đếm rồi mới thêm, không khóa; trong điều kiện nhiều request đồng thời, số job có thể vượt nhẹ `max_pending_jobs`.
 - **Không xác thực, không phân quyền.** Triển khai cục bộ hoặc trong mạng tin cậy.
