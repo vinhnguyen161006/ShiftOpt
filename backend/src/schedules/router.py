@@ -10,6 +10,8 @@ from src.schedules.schemas import (
     ManualEditRequest,
     RepairRequest,
     ReplacementRead,
+    RerosterRequest,
+    ScheduleChangesRead,
     SolveRequest,
     SolveRunRead,
 )
@@ -103,3 +105,21 @@ async def get_replacements(
     limit: int = Query(default=5, ge=1, le=20),
 ) -> list[ReplacementRead]:
     return service.get_replacements(run, employee_code, day, limit)
+
+
+@router.post("/{run_id}/reroster", response_model=JobAccepted, status_code=status.HTTP_202_ACCEPTED)
+async def create_reroster(
+    run: ValidRun,
+    payload: RerosterRequest,
+    session: SessionDep,
+    jobs: JobsDep,
+    background: BackgroundTasks,
+) -> JobAccepted:
+    queued = await service.create_reroster(session, run, payload)
+    background.add_task(service.execute_run, jobs, queued.id)
+    return JobAccepted(job_id=queued.id, status=queued.status)
+
+
+@router.get("/{run_id}/changes", response_model=ScheduleChangesRead)
+async def get_schedule_changes(run: ValidRun, session: SessionDep) -> ScheduleChangesRead:
+    return await service.changes_for(session, run)
