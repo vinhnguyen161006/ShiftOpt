@@ -71,6 +71,59 @@ Lệnh: `cd engine && uv run --locked python benchmarks/compare_solvers.py`
 
 Kết luận trong phạm vi đã đo: 3 instance, cả hai solver chứng minh cùng objective; cả hai đều quá nhanh để phân biệt hiệu năng. Mô hình này nhỏ (không có phân công từng người); không suy ra cho mô hình theo nhân viên (mục 3).
 
+### 2b. Mô hình theo nhân viên: CP-SAT và HiGHS (`roster_mip.py`)
+
+Cùng công thức C1–C8 ([model.md](model.md) mục 2a), cùng tầng lexicographic, cùng seed, `num_workers = 1`, time limit 60 giây cho cả lượt giải (chia đều cho các tầng). Nhu cầu sinh theo `weekly_instance` trong `engine/benchmarks/run_roster_scale.py`.
+
+Lệnh: `cd engine && uv run --locked python -u benchmarks/run_roster_scale.py --solver both --sizes 10 20 30 --seeds 0 1 2 --time-limit 60 --workers 1`
+
+Cột `shortfall` và `chi phí` là giá trị tầng 1 (thiếu người) và tầng 2 (chi phí lương). Cột `objective` là tầng cuối, không dùng để so chi phí giữa các dòng.
+
+| Nhân viên | Seed | Solver | Status | Shortfall (giờ) | Chi phí tầng 2 | Wall (s) |
+|---|---|---|---|---|---|---|
+| 10 | 0 | CP-SAT | feasible | 28 | 5 148 000 | 26,5 |
+| 10 | 0 | HiGHS | optimal | 28 | 5 148 000 | 31,1 |
+| 10 | 1 | CP-SAT | feasible | 34 | 5 136 000 | 60,5 |
+| 10 | 1 | HiGHS | optimal | 34 | 5 136 000 | 28,6 |
+| 10 | 2 | CP-SAT | feasible | 34 | 5 106 000 | 60,5 |
+| 10 | 2 | HiGHS | feasible | 34 | 5 106 000 | 29,1 |
+| 20 | 0 | CP-SAT | optimal | 0 | 6 352 000 | 17,1 |
+| 20 | 0 | HiGHS | optimal | 0 | 6 352 000 | 17,1 |
+| 20 | 1 | CP-SAT | optimal | 0 | 6 518 000 | 27,9 |
+| 20 | 1 | HiGHS | optimal | 0 | 6 518 000 | 17,6 |
+| 20 | 2 | CP-SAT | optimal | 0 | 6 414 000 | 22,2 |
+| 20 | 2 | HiGHS | optimal | 0 | 6 414 000 | 18,5 |
+| 30 | 0 | CP-SAT | optimal | 0 | 6 352 000 | 23,6 |
+| 30 | 0 | HiGHS | optimal | 0 | 6 352 000 | 21,8 |
+| 30 | 1 | CP-SAT | optimal | 0 | 6 518 000 | 26,8 |
+| 30 | 1 | HiGHS | optimal | 0 | 6 518 000 | 23,2 |
+| 30 | 2 | CP-SAT | optimal | 0 | 6 414 000 | 25,4 |
+| 30 | 2 | HiGHS | optimal | 0 | 6 414 000 | 26,6 |
+
+Kết luận trong phạm vi đã đo:
+
+- 20 và 30 nhân viên: cả hai solver chứng minh đủ tầng 1 và 2, cùng shortfall và cùng chi phí ở mọi seed. Thời gian 17–28 giây cho cả hai, không khác biệt đáng kể.
+- 10 nhân viên khó hơn: nhu cầu đỉnh 3–4 người nhiều hơn số người có sẵn, nên thiếu 28–34 giờ và tầng 2 phải cân nhắc nhiều hơn. CP-SAT không chứng minh được trong 60 giây ở cả 3 seed (chạm giới hạn ở seed 1 và 2). HiGHS chứng minh được 2/3 seed; seed 2 chỉ `FEASIBLE`.
+- Nơi cả hai cùng chứng minh hoặc cùng có lời giải, shortfall và chi phí khớp nhau. Không có dòng nào mà solver này cho chi phí thấp hơn solver kia với cùng shortfall.
+- Đây là 3 seed, 3 cỡ, 1 worker. Không suy ra cho instance khác. 40 nhân viên không có trong lượt này; xem mục 3a cho CP-SAT ở 40 nhân viên.
+
+### 2c. Kích thước mô hình theo số nhân viên
+
+Đếm biến và ràng buộc của mô hình dựng xong, chưa giải. Lệnh: `cd engine && uv run --locked python -u benchmarks/run_roster_scale.py --sizes-only --sizes 10 20 30 40`
+
+| Nhân viên | Bộ ca | CP-SAT biến | CP-SAT ràng buộc | HiGHS biến | HiGHS ràng buộc |
+|---|---|---|---|---|---|
+| 10 | 3 ca (0/8/16) | 3 331 | 2 440 | 3 320 | 7 278 |
+| 20 | 3 ca | 6 491 | 4 710 | 6 470 | 14 388 |
+| 30 | 3 ca | 9 651 | 6 980 | 9 620 | 21 498 |
+| 40 | 3 ca | 12 811 | 9 250 | 12 770 | 28 608 |
+| 10 | 6 ca (0/4/…/20) | 4 801 | 3 140 | 4 790 | 14 488 |
+| 20 | 6 ca | 9 431 | 6 110 | 9 410 | 28 808 |
+| 30 | 6 ca | 14 061 | 9 080 | 14 030 | 43 128 |
+| 40 | 6 ca | 18 691 | 12 050 | 18 650 | 57 448 |
+
+Số biến của hai mô hình gần như bằng nhau và tăng tuyến tính theo số nhân viên. Số ràng buộc không so trực tiếp được: CP-SAT gộp mỗi cửa sổ 24 giờ nghỉ (C5) thành một ràng buộc có điều kiện cho mỗi `(e, t)`, còn HiGHS viết từng cặp `(x, v)`. Cách viết từng cặp làm số hàng của HiGHS gấp 2–3 lần. Theo lý thuyết, dạng từng cặp chặt hơn ở phép nới lỏng LP; chưa đo riêng ([model.md](model.md) mục 2a).
+
 ## 3. Lịch tuần 7×24, 20–40 nhân viên (mục 9.4)
 
 Máy và phiên bản như mục đầu. Nhu cầu: đỉnh 3–4 người ban ngày, nền 1–2 người ban đêm, sinh theo seed (`weekly_instance` trong `engine/benchmarks/run_roster_scale.py`). Phá đối xứng tắt (mặc định). `relative_gap_limit = 0.01`, time limit 60 giây.

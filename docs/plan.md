@@ -47,9 +47,9 @@ Kiểm tra ngày 2026-11-08: engine 162 test pass, coverage 98,36%; backend 101 
 
 | Mục | Trạng thái | Việc |
 |---|---|---|
-| Công thức ILP mô hình theo nhân viên | Thiếu | B1, B2 |
+| Công thức ILP mô hình theo nhân viên | Xong 2026-11-08: `model.md` mục 2a, bản HiGHS `roster_mip.py` | B5 (store 18) |
 | Acceptance dòng 2, phủ nhu cầu | Đạt có điều kiện: kịch bản cơ sở dư sức chứa; kịch bản 8 người cho coverage 0,703, gap 1,0 | E |
-| Acceptance dòng 4, so sánh solver | Sai lệch: chỉ so trên mô hình tổng hợp (D12) | B3 |
+| Acceptance dòng 4, so sánh solver | Đạt có điều kiện: mô hình theo nhân viên 10–30 nhân viên, 3 seed, 60 giây (`benchmarks.md` 2b) | Phạm vi, không mở rộng |
 | Acceptance dòng 5 và 9, UI | Chờ người duyệt tay | D |
 | Phạm vi dữ liệu | Mọi kết quả chỉ trên store 18 | C2 |
 | Nhận xét quản lý | Có số đo, chưa có nhận xét | J2 |
@@ -99,12 +99,12 @@ Chia việc cho hai người: một người làm B và C (engine, thực nghi�
 
 | # | Việc | Xong khi |
 |---|---|---|
-| B1 | Viết công thức ILP đầy đủ của mô hình theo nhân viên vào `model.md` và báo cáo: tập, tham số, biến `x[e,d,s]` nhị phân, `u_h` nguyên không âm, mọi ràng buộc (Đ.105, 109, 110, 111, ngày liên tiếp) dạng bất đẳng thức tuyến tính, mục tiêu lexicographic, cách tuyến tính hóa nghỉ 24 giờ và max/min của công bằng, tầng thay đổi của repair | Mỗi ràng buộc trong code có một dòng công thức; có bảng đối chiếu ràng buộc ↔ hàm trong `roster_cpsat.py` |
-| B2 | `engine/src/shiftopt/models/roster_mip.py`: cùng công thức B1, giải bằng PuLP + HiGHS, lexicographic bằng cách cố định tầng trước | Validator cho 0 vi phạm; với 10–20 nhân viên, cùng giá trị tầng thiếu người và chi phí với CP-SAT |
-| B3 | So sánh solver trên mô hình theo nhân viên: `compare_solvers.py` thêm chế độ roster, 10/20/30 nhân viên, cùng time limit và seed | Bảng trong benchmarks.md mục 2; CLAUDE §13 dòng 4 chuyển Đạt hoặc ghi rõ phạm vi |
-| B4 | Kích thước mô hình: số biến, số ràng buộc theo số nhân viên (10, 20, 30, 40) và số loại ca, cho CP-SAT và MIP | Bảng và biểu đồ trong báo cáo |
-| B5 | Integrality gap: so LP relaxation với nghiệm nguyên tối ưu trên nhiều instance, cả mô hình tổng hợp và MIP theo nhân viên | Bảng trong báo cáo, kèm giải thích vì sao dual LP chỉ là xấp xỉ |
-| B6 | Lexicographic so với trọng số: cùng instance, thử `M_u` nhỏ, vừa, lớn; chỉ ra khi nào trọng số đảo thứ tự ưu tiên | Bảng trong báo cáo |
+| B1 | **Xong 2026-11-08** (`model.md` 2a, `báo cáo.md` mục 2). Viết công thức ILP đầy đủ của mô hình theo nhân viên vào `model.md` và báo cáo: tập, tham số, biến `x[e,d,s]` nhị phân, `u_h` nguyên không âm, mọi ràng buộc (Đ.105, 109, 110, 111, ngày liên tiếp) dạng bất đẳng thức tuyến tính, mục tiêu lexicographic, cách tuyến tính hóa nghỉ 24 giờ và max/min của công bằng, tầng thay đổi của repair | Mỗi ràng buộc trong code có một dòng công thức; có bảng đối chiếu ràng buộc ↔ hàm trong `roster_cpsat.py` |
+| B2 | **Xong 2026-11-08** (9 test, khớp CP-SAT trên instance nhỏ). `engine/src/shiftopt/models/roster_mip.py`: cùng công thức B1, giải bằng PuLP + HiGHS, lexicographic bằng cách cố định tầng trước | Validator cho 0 vi phạm; với 10–20 nhân viên, cùng giá trị tầng thiếu người và chi phí với CP-SAT |
+| B3 | **Xong 2026-11-08** (`benchmarks.md` 2b). So sánh solver trên mô hình theo nhân viên: `compare_solvers.py` thêm chế độ roster, 10/20/30 nhân viên, cùng time limit và seed | Bảng trong benchmarks.md mục 2; CLAUDE §13 dòng 4 chuyển Đạt hoặc ghi rõ phạm vi |
+| B4 | **Xong 2026-11-08** (`benchmarks.md` 2c). Kích thước mô hình: số biến, số ràng buộc theo số nhân viên (10, 20, 30, 40) và số loại ca, cho CP-SAT và MIP | Bảng và biểu đồ trong báo cáo |
+| B5 | **Xong 2026-11-08** (`benchmarks.md` 5), trừ store 18: engine không dựng được nhu cầu store 18 nếu không gọi backend. Integrality gap: so LP relaxation với nghiệm nguyên tối ưu trên nhiều instance, cả mô hình tổng hợp và MIP theo nhân viên | Bảng trong báo cáo, kèm giải thích vì sao dual LP chỉ là xấp xỉ |
+| B6 | **Xong 2026-11-08** (`benchmarks.md` 6). Lexicographic so với trọng số: cùng instance, thử `M_u` nhỏ, vừa, lớn; chỉ ra khi nào trọng số đảo thứ tự ưu tiên | Bảng trong báo cáo |
 
 B2 chậm trên instance lớn thì chỉ báo cáo phạm vi đã đo và giải thích lý do (MIP lớn hơn, CP-SAT mạnh ở ràng buộc chuỗi).
 
@@ -193,7 +193,7 @@ CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; m
 
 1. **Đã chốt 2026-11-08:** giữ repair D20, bỏ FR-9 (`tulee`); nộp từ `main`.
 2. Duyệt đặc tả D1–D20, gồm D20 (repair: tầng "số ca thay đổi" đứng **trước** chi phí).
-3. Chấp nhận sai lệch CLAUDE §13 dòng 4 nếu B3 không xong.
+3. Chấp nhận phạm vi CLAUDE §13 dòng 4 (mô hình theo nhân viên 10–30 nhân viên, 3 seed; CP-SAT không chứng minh được ở 10 nhân viên).
 4. Xác nhận kịch bản cơ sở D13 (store 18, 30 nhân viên).
 5. Thêm Playwright làm dependency cho D1 hay không.
 6. Có làm F, H, I không (mỗi mục đổi đặc tả).
