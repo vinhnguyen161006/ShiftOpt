@@ -6,8 +6,14 @@ from ortools.sat.python import cp_model
 from shiftopt.constraints.sequences import consecutive_day_windows, forbidden_shift_pairs
 from shiftopt.domain import Assignment, Employee, Instance, RepairSpec, Solution
 from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
-from shiftopt.solvers.base import SolveParams, SolveResult, SolveStatus
-from shiftopt.solvers.cpsat import SOLVER_NAME, run_cp_model, with_time_share
+from shiftopt.solvers.base import (
+    SolveParams,
+    SolveResult,
+    SolveStatus,
+    combine_tiers,
+    with_time_share,
+)
+from shiftopt.solvers.cpsat import run_cp_model
 from shiftopt.staffing.linear import tolerant_ceil
 from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_WEEK, hour_of_week, shift_hours
 
@@ -370,7 +376,7 @@ class _RosterModel:
     def _outcome(
         self, best: Any, results: tuple[SolveResult, ...], stage_count: int
     ) -> RosterOutcome:
-        combined = _combine(results, stage_count)
+        combined = combine_tiers(results, stage_count)
         if best is None:
             return RosterOutcome(Solution(()), combined, results, None, None, None)
         return RosterOutcome(
@@ -403,25 +409,3 @@ class _RosterModel:
             )
             assignments.append(Assignment(self.employees[e_index].id, day, shift.name, offset))
         return Solution(tuple(assignments))
-
-
-def _combine(results: tuple[SolveResult, ...], stage_count: int) -> SolveResult:
-    last = next((result for result in reversed(results) if result.objective is not None), None)
-    if last is None:
-        status = SolveStatus.UNKNOWN
-    elif len(results) == stage_count and all(
-        result.status is SolveStatus.OPTIMAL for result in results
-    ):
-        status = SolveStatus.OPTIMAL
-    else:
-        status = SolveStatus.FEASIBLE
-    return SolveResult(
-        status=status,
-        objective=last.objective if last else None,
-        bound=last.bound if last else None,
-        gap=last.gap if last else None,
-        wall_time_seconds=sum(result.wall_time_seconds for result in results),
-        solver=SOLVER_NAME,
-        solver_version=results[0].solver_version,
-        log="\n".join(result.log for result in results),
-    )
