@@ -392,5 +392,5 @@ Lệnh: `docker compose up -d --build`, rồi mở `http://localhost:3000`.
 - Repair khóa theo ngày, không theo giờ. Tuần vẫn quấn vòng, nên ca của ngày bị khóa vẫn ràng buộc ca Chủ nhật qua luật nghỉ 12 giờ và 24 giờ.
 - Gợi ý người thay chỉ xét giao nguyên ca cho một người khác; không đổi chéo hai người, không đổi loại ca.
 - Repair và gợi ý người thay chưa chạy integration test trên MySQL và chưa duyệt trên trình duyệt.
-- Nội dung điều luật chưa được đối chiếu với nguyên văn văn bản luật ([đặc tả.md](đặc%20tả.md) mục 4).
+- Nghị định 145/2020 chưa được đối chiếu với văn bản gốc (đặc tả mục 4).
 - Mọi số liệu hiệu năng chỉ đúng cho các trường hợp đã đo ([benchmarks.md](benchmarks.md)).

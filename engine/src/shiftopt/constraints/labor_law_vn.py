@@ -16,7 +16,8 @@ class LaborRules:
     during a shift; 45 minutes applies when the shift works at night. Modelled as one lost
     coverage hour, which is conservative.
     break_required_from_hours: shifts of this length or longer must contain a break. The value 6
-    is a placeholder that must be checked against the text of Article 109 (WORKLOG task 0.2).
+    checked against the consolidated text VBHN 125/VBHN-VPQH (2025); see section 4 of the
+    spec draft in docs.
     """
 
     max_daily_hours: int = 8
