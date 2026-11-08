@@ -9,6 +9,8 @@ import { ManualEditor } from "../../features/compliance/components/ManualEditor"
 import { ViolationList } from "../../features/compliance/components/ViolationList";
 import { useDemandProfiles } from "../../features/demand/api/demand";
 import { useEmployees } from "../../features/employees/api/employees";
+import { ChangesSummary } from "../../features/reroster/components/ChangesSummary";
+import { RerosterForm } from "../../features/reroster/components/RerosterForm";
 import {
   isActive,
   useScheduleKpi,
@@ -24,6 +26,7 @@ import { SolveDetails, SolveNotice } from "../../features/schedule/components/So
 import { useShiftTemplates } from "../../features/shift-templates/api/shift-templates";
 import { errorMessage } from "../../lib/api-client";
 import { useLaborRules } from "../../lib/labor-rules";
+import { DAY_NAMES } from "../../lib/time";
 import { vi } from "../../locales/vi";
 
 function Prerequisites({ missing }: { missing: { label: string; to: string }[] }) {
@@ -108,6 +111,7 @@ function RunView({ runId }: { runId: number }) {
   const kpi = useScheduleKpi(runId, hasSchedule);
   const compliance = useCompliance(runId, hasSchedule);
   const [editing, setEditing] = useState(false);
+  const [rerostering, setRerostering] = useState(false);
 
   if (run.isPending) {
     return <Loading label={vi.schedule.loadingRun(runId)} />;
@@ -126,7 +130,16 @@ function RunView({ runId }: { runId: number }) {
   return (
     <div className="page">
       <PageHeader
-        eyebrow={vi.schedule.runEyebrow(data.id, data.parent_run_id)}
+        eyebrow={
+          data.reroster
+            ? vi.schedule.reroster.eyebrow(
+                data.id,
+                data.parent_run_id,
+                data.reroster.employee_code,
+                data.reroster.absent_days.map((day) => DAY_NAMES[day]).join(", "),
+              )
+            : vi.schedule.runEyebrow(data.id, data.parent_run_id)
+        }
         title={vi.schedule.resultTitle}
         lead={vi.schedule.resultLead(
           new Date(data.created_at).toLocaleString("vi-VN"),
@@ -148,14 +161,26 @@ function RunView({ runId }: { runId: number }) {
           title={vi.schedule.compliance}
           labelledBy="compliance-title"
           aside={
-            <Button size="sm" onClick={() => setEditing(true)}>
-              {vi.schedule.editByHand}
-            </Button>
+            <span className="run-header-actions">
+              {data.status === "succeeded" && (
+                <Button size="sm" onClick={() => setRerostering(true)}>
+                  {vi.schedule.reroster.button}
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setEditing(true)}>
+                {vi.schedule.editByHand}
+              </Button>
+            </span>
           }
         >
           {compliance.isPending && <Loading label={vi.schedule.checking} />}
           {compliance.isError && <Notice kind="error" title={errorMessage(compliance.error)} />}
           {compliance.data && <ViolationList compliance={compliance.data} />}
+        </Panel>
+      )}
+      {hasSchedule && data.parent_run_id !== null && !isActive(data.status) && (
+        <Panel title={vi.schedule.reroster.changesTitle} labelledBy="changes-title">
+          <ChangesSummary runId={data.id} parentId={data.parent_run_id} />
         </Panel>
       )}
       {!isActive(data.status) && (
@@ -171,6 +196,20 @@ function RunView({ runId }: { runId: number }) {
           <Panel title={vi.schedule.laborCost} labelledBy="cost-title">
             {kpi.data && <CostSummary kpi={kpi.data} />}
           </Panel>
+          <Modal
+            title={vi.schedule.reroster.modalTitle(data.id)}
+            open={rerostering}
+            onClose={() => setRerostering(false)}
+            wide
+          >
+            <RerosterForm
+              run={data}
+              onCreated={(createdId) => {
+                setRerostering(false);
+                navigate(`/schedule/${createdId}`);
+              }}
+            />
+          </Modal>
           <Modal
             title={vi.schedule.editTitle(data.id)}
             open={editing}

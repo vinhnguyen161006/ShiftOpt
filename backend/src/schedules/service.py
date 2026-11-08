@@ -1,12 +1,14 @@
 import csv
 import io
 import logging
+from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any
 
 from shiftopt import kpi
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.domain import Instance, Solution
+from shiftopt.domain import Assignment, Instance, Solution
+from shiftopt.schedule_diff import diff_solutions
 from shiftopt.solvers.base import ModelInvalidError
 from shiftopt.validation import LEGAL_BASIS, validate
 from sqlalchemy import select
@@ -19,9 +21,12 @@ from src.exceptions import ConflictError, InstanceTooLargeError, InvalidInputErr
 from src.jobs import JOB_GRACE_SECONDS, JobContext, ensure_job_capacity, run_in_child
 from src.schedules.models import RunStatus, SolveRun
 from src.schedules.schemas import (
+    AssignmentRead,
     ComplianceRead,
     KpiRead,
     ManualEditRequest,
+    RerosterRequest,
+    ScheduleChangesRead,
     SolveRequest,
     ViolationRead,
 )
@@ -188,9 +193,30 @@ def _outcome_fields(snapshot: Snapshot, payload: dict[str, Any]) -> dict[str, An
             status=RunStatus.FAILED,
             error=f"validator found {len(violations)} hard-constraint violations",
         )
+    elif (error := _locked_days_error(snapshot, payload["assignments"])) is not None:
+        fields.update(status=RunStatus.FAILED, error=error)
     else:
         fields.update(status=RunStatus.SUCCEEDED, error=None)
     return fields
+
+
+def _locked_days_error(snapshot: Snapshot, assignments: list[dict[str, Any]]) -> str | None:
+    info = snapshot.get("reroster")
+    if info is None:
+        return None
+    if _rows_before(assignments, info["from_day"]) != _rows_before(
+        info["previous"], info["from_day"]
+    ):
+        return "re-roster changed assignments before its first absence day"
+    return None
+
+
+def _rows_before(rows: list[dict[str, Any]], day_limit: int) -> set[tuple[str, int, str]]:
+    return {
+        (row["employee_code"], row["day"], row["shift_name"])
+        for row in rows
+        if row["day"] < day_limit
+    }
 
 
 async def _finish(jobs: JobContext, run_id: int, fields: dict[str, Any]) -> None:
@@ -303,6 +329,73 @@ def kpi_csv(read: KpiRead) -> str:
     return buffer.getvalue()
 
 
+async def create_reroster(
+    session: AsyncSession, base: SolveRun, payload: RerosterRequest
+) -> SolveRun:
+    if base.status is not RunStatus.SUCCEEDED or base.assignments is None:
+        raise ConflictError(f"solve run {base.id} is not a valid schedule to re-roster")
+    snapshot: Snapshot = deepcopy(base.instance_snapshot)
+    employee = next(
+        (row for row in snapshot["employees"] if row["id"] == payload.employee_code), None
+    )
+    if employee is None:
+        raise InvalidInputError(f"unknown employee {payload.employee_code}")
+    first_absence = payload.absent_days[0]
+    from_day = first_absence if payload.from_day is None else payload.from_day
+    if from_day > first_absence:
+        raise InvalidInputError("from_day must not be after the first absent day")
+    employee["unavailable_days"] = sorted(
+        set(employee["unavailable_days"]) | set(payload.absent_days)
+    )
+    snapshot["reroster"] = {
+        "employee_code": payload.employee_code,
+        "absent_days": payload.absent_days,
+        "from_day": from_day,
+        "previous": deepcopy(base.assignments),
+    }
+    await ensure_job_capacity(session)
+    run = SolveRun(
+        demand_profile_id=base.demand_profile_id,
+        parent_run_id=base.id,
+        status=RunStatus.QUEUED,
+        params=dict(base.params),
+        instance_snapshot=snapshot,
+    )
+    session.add(run)
+    await session.commit()
+    await session.refresh(run)
+    return run
+
+
+async def changes_for(session: AsyncSession, run: SolveRun) -> ScheduleChangesRead:
+    if run.parent_run_id is None:
+        raise NotFoundError(f"solve run {run.id} has no parent run to compare with")
+    parent = await get_run(session, run.parent_run_id)
+    if parent.assignments is None or run.assignments is None:
+        raise ConflictError(f"solve run {run.id} or its parent has no schedule")
+    diff = diff_solutions(
+        solution_from_rows(parent.assignments), solution_from_rows(run.assignments)
+    )
+    return ScheduleChangesRead(
+        kept=[_assignment_read(a) for a in diff.kept],
+        added=[_assignment_read(a) for a in diff.added],
+        removed=[_assignment_read(a) for a in diff.removed],
+    )
+
+
+def _assignment_read(assignment: Assignment) -> AssignmentRead:
+    return AssignmentRead(
+        employee_code=assignment.employee_id,
+        day=assignment.day,
+        shift_name=assignment.shift_name,
+        break_offset=assignment.break_offset,
+    )
+
+
+def _without_reroster(snapshot: Snapshot) -> Snapshot:
+    return {key: value for key, value in snapshot.items() if key != "reroster"}
+
+
 async def create_manual_edit(
     session: AsyncSession, base: SolveRun, payload: ManualEditRequest
 ) -> SolveRun:
@@ -326,7 +419,7 @@ async def create_manual_edit(
         status=RunStatus.FAILED if violations else RunStatus.SUCCEEDED,
         solver="manual",
         params=base.params,
-        instance_snapshot=base.instance_snapshot,
+        instance_snapshot=_without_reroster(base.instance_snapshot),
         assignments=rows,
         understaffed_hours=kpi.compute_kpi(instance, solution).understaffed_hours,
         hard_violations=len(violations),

@@ -2,7 +2,7 @@ from typing import Any
 
 from httpx import AsyncClient
 
-DAY_DEMAND = [1 if 8 <= hour < 16 else 0 for hour in range(168)]
+DAY_DEMAND = [1 if 8 <= hour % 24 < 16 else 0 for hour in range(168)]
 TERMINAL = ("succeeded", "failed")
 
 
