@@ -1,7 +1,8 @@
 """Linear conversion of an hourly load index into required head count (retail mode).
 
 alpha and productivity are team assumptions, not facts from the data, and must be shown on the UI.
-The default values below are team assumptions pending approval (spec draft in docs, decisions D7 to D9).
+The default values below are team assumptions pending approval (spec draft in docs,
+decisions D7 to D9).
 """
 
 import math
