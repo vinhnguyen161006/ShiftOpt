@@ -70,6 +70,30 @@ def solve_roster(
     return replace(outcome, approximate=True, result=_downgrade(outcome.result))
 
 
+def solve_roster_weighted(
+    instance: Instance,
+    params: SolveParams,
+    *,
+    shortfall_weight: int,
+    fairness_weight: int = 1,
+) -> RosterOutcome:
+    """Single-objective roster for the weighted-versus-lexicographic comparison. Minimises
+    shortfall_weight * shortfall hours + labour cost + fairness_weight * night spread in one
+    CP-SAT solve, instead of the ordered tiers of solve_roster. A large shortfall_weight
+    approximates the lexicographic order; a small one can trade coverage for cost. Result status
+    is OPTIMAL only when this single solve is proven optimal."""
+    if shortfall_weight < 0 or fairness_weight < 0:
+        raise ValueError("weights must be non-negative")
+    return _RosterModel(instance).solve_weighted(params, shortfall_weight, fairness_weight)
+
+
+def roster_model_size(instance: Instance) -> tuple[int, int]:
+    """Number of CP-SAT variables and constraints of the per-employee model, built but not
+    solved. Used by the model-size table in the benchmark report."""
+    proto = _RosterModel(instance).model.proto
+    return len(proto.variables), len(proto.constraints)
+
+
 def symmetry_pairs(employees: tuple[Employee, ...]) -> list[tuple[int, int]]:
     """Consecutive index pairs of employees with equal wage and no requests. Only these are
     interchangeable: swapping two employees with different contracts or requests can change the
@@ -352,6 +376,18 @@ class _RosterModel:
         if any(employee.preferred_days_off for employee in self.employees):
             stages.append(("preference", self._preference_misses()))
         return stages
+
+    def solve_weighted(
+        self, params: SolveParams, shortfall_weight: int, fairness_weight: int
+    ) -> RosterOutcome:
+        objective = shortfall_weight * self._sum(self.shortfall) + self._cost()
+        if self.night_max is not None:
+            objective = objective + fairness_weight * (self.night_max - self.night_min)
+        self.model.minimize(objective)
+        solver, result = run_cp_model(self.model, params)
+        if result.objective is None:
+            return self._outcome(None, (result,), 1)
+        return self._outcome(solver, (result,), 1)
 
     def solve(self, params: SolveParams) -> RosterOutcome:
         stages = self._stages()
