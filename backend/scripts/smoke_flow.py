@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 TERMINAL = ("succeeded", "failed")
-DAY_DEMAND = [2 if 8 <= hour < 16 else 0 for hour in range(168)]
+DAY_DEMAND = [2 if 8 <= hour % 24 < 16 else 0 for hour in range(168)]
 EMPLOYEE_COUNT = 25
 SHIFT_TEMPLATES = (("day", 8), ("early", 6), ("evening", 14))
 REST_KIND = "rest_between_shifts"
@@ -104,14 +104,122 @@ def check_manual_edit(client: httpx.Client, run: dict[str, Any], tag: str) -> No
     expect(original["violations"] == [], "original schedule was changed by the edit")
 
 
+def repair_body(time_limit: float = 20.0) -> dict[str, Any]:
+    return {
+        "time_limit_seconds": time_limit,
+        "relative_gap_limit": 0.01,
+        "num_workers": 4,
+        "random_seed": 0,
+    }
+
+
+def first_on_day(run: dict[str, Any], day: int) -> dict[str, Any]:
+    matches: list[dict[str, Any]] = [row for row in run["assignments"] if row["day"] == day]
+    expect(bool(matches), f"no assignment on day {day} to test with")
+    first: dict[str, Any] = matches[0]
+    return first
+
+
+def check_repair(client: httpx.Client, run: dict[str, Any]) -> dict[str, Any]:
+    absent = first_on_day(run, 3)["employee_code"]
+    body = {**repair_body(), "from_day": 2, "absences": [{"employee_code": absent, "days": [3]}]}
+    accepted = client.post(f"/api/schedules/{run['id']}/repair", json=body)
+    expect(accepted.status_code == 202, f"POST repair: {accepted.status_code} {accepted.text}")
+    repaired = poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+    expect(repaired["status"] == "succeeded", f"repair failed: {repaired['error']}")
+    expect(
+        repaired["hard_violations"] == 0, f"repair hard violations: {repaired['hard_violations']}"
+    )
+    expect(repaired["repair_from_day"] == 2, f"repair_from_day {repaired['repair_from_day']}")
+    expect(repaired["changes"] is not None, "repair reports no change count")
+    locked_before = sorted(str(row) for row in run["assignments"] if row["day"] < 2)
+    locked_after = sorted(str(row) for row in repaired["assignments"] if row["day"] < 2)
+    expect(locked_before == locked_after, "repair changed a locked day")
+    expect(
+        not any(
+            row["employee_code"] == absent and row["day"] == 3 for row in repaired["assignments"]
+        ),
+        "absent employee still assigned on day 3",
+    )
+    changes = client.get(f"/api/schedules/{repaired['id']}/changes")
+    expect(changes.status_code == 200, f"GET changes: {changes.status_code}")
+    body_changes = changes.json()
+    expect(len(body_changes["added"]) == len(body_changes["removed"]), "added and removed differ")
+    return repaired
+
+
+def check_repair_rejects_locked_absence(client: httpx.Client, run: dict[str, Any]) -> None:
+    absent = first_on_day(run, 0)["employee_code"]
+    body = {**repair_body(), "from_day": 2, "absences": [{"employee_code": absent, "days": [0]}]}
+    refused = client.post(f"/api/schedules/{run['id']}/repair", json=body)
+    expect(refused.status_code == 422, f"locked absence accepted: {refused.status_code}")
+
+
+def check_replacements(client: httpx.Client, run: dict[str, Any]) -> dict[str, Any]:
+    target = first_on_day(run, 1)
+    response = client.get(
+        f"/api/schedules/{run['id']}/replacements",
+        params={"employee_code": target["employee_code"], "day": target["day"]},
+    )
+    expect(response.status_code == 200, f"replacements: {response.status_code} {response.text}")
+    candidates = response.json()
+    expect(bool(candidates), "no replacement candidate found")
+    busy = {row["employee_code"] for row in run["assignments"] if row["day"] == target["day"]}
+    expect(
+        all(item["employee_code"] not in busy for item in candidates),
+        "replacement candidate already works that day",
+    )
+    pick = candidates[0]
+    rows = [row for row in run["assignments"] if row is not target]
+    rows.append(
+        {
+            "employee_code": pick["employee_code"],
+            "day": target["day"],
+            "shift_name": pick["shift_name"],
+            "break_offset": pick["break_offset"],
+        }
+    )
+    applied = client.post(f"/api/schedules/{run['id']}/edits", json={"assignments": rows})
+    expect(applied.status_code == 201, f"apply replacement: {applied.status_code} {applied.text}")
+    result: dict[str, Any] = applied.json()
+    expect(
+        result["hard_violations"] == 0, f"replacement hard violations {result['hard_violations']}"
+    )
+    expect(result["status"] == "succeeded", f"replacement status {result['status']}")
+    return result
+
+
+def check_reroster(client: httpx.Client, run: dict[str, Any]) -> None:
+    absent = first_on_day(run, 4)["employee_code"]
+    accepted = client.post(
+        f"/api/schedules/{run['id']}/reroster",
+        json={"employee_code": absent, "absent_days": [4]},
+    )
+    expect(accepted.status_code == 202, f"POST reroster: {accepted.status_code} {accepted.text}")
+    child = poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+    expect(child["status"] == "succeeded", f"reroster failed: {child['error']}")
+    expect(child["hard_violations"] == 0, f"reroster hard violations {child['hard_violations']}")
+    expect(child["repair_from_day"] == 4, f"reroster from_day {child['repair_from_day']}")
+    expect(
+        not any(row["employee_code"] == absent and row["day"] == 4 for row in child["assignments"]),
+        "absent employee still assigned on the absence day",
+    )
+
+
 def check_sweep(client: httpx.Client, profile_id: int, shift_ids: list[int]) -> None:
     accepted = client.post(
         "/api/analysis/demand-sweep",
-        json={"solve": solve_body(profile_id, shift_ids, 20), "multipliers": [0.9, 1.0]},
+        json={
+            "solve": solve_body(profile_id, shift_ids, 20),
+            "multipliers": [0.8, 1.0, 1.3],
+        },
     )
     expect(accepted.status_code == 202, f"demand-sweep: {accepted.status_code} {accepted.text}")
     sweep = poll(client, f"/api/analysis/{accepted.json()['job_id']}")
     expect(sweep["status"] == "succeeded", f"sweep failed: {sweep['error']}")
+    points = sweep["result"]["points"]
+    expect(len(points) == 3, f"sweep returned {len(points)} points")
+    expect(all(point["solve_status"] for point in points), "sweep point without status")
 
 
 def run_flow(base_url: str) -> None:
@@ -120,6 +228,10 @@ def run_flow(base_url: str) -> None:
         profile_id, shift_ids = seed(client, tag)
         run = check_optimize(client, profile_id, shift_ids)
         check_manual_edit(client, run, tag)
+        check_repair(client, run)
+        check_repair_rejects_locked_absence(client, run)
+        check_replacements(client, run)
+        check_reroster(client, run)
         check_sweep(client, profile_id, shift_ids)
 
 

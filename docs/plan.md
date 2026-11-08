@@ -125,10 +125,10 @@ Trạng thái: C1–C5 đã làm (2026-11-08); C6 chưa làm theo yêu cầu. Ch
 
 | # | Việc | Xong khi |
 |---|---|---|
-| D1 | Script end-to-end trên stack Compose: nhu cầu → mẫu ca → nhân viên → Optimize → lịch, coverage, tuân thủ, chi phí → kéo λ → xếp lại → gợi ý người thay → sửa tay gây vi phạm. Playwright cần nhóm đồng ý (CLAUDE.md mục 10); nếu không, mở rộng `smoke_flow` ở mức API | Chạy hai lần liên tiếp đều pass |
-| D2 | Ảnh nghiệm thu mới: `repair.png` (ô đổi, ngày khóa), `replacements.png`, `schedule_dark.png` | Ảnh chèn vào `slides.md` và `báo cáo.md` |
+| D1 | **Xong 2026-11-08** (`backend/scripts/smoke_flow.py`, `make smoke`; không dùng Playwright, nhóm chưa thêm dependency). Gồm: tối ưu, sửa tay, xếp lại, từ chối ngày khóa, gợi ý người thay (áp dụng), báo nghỉ, quét nhu cầu 3 điểm. Chạy trên stack `shiftopt-e2e`, hai lần liên tiếp đều `smoke flow passed`. Sửa kèm: `DAY_DEMAND` thiếu `hour % 24`, nên nhu cầu chỉ có ở ngày đầu tuần | Chạy hai lần liên tiếp đều pass |
+| D2 | **Chụp xong 2026-11-08** trên stack demo (store 18, lượt 1 OPTIMAL, lượt 2 xếp lại, lượt 3 báo nghỉ): `docs/images/repair.png`, `replacements.png`, `reroster.png`, `schedule_dark.png`. **Chưa** chèn vào `slides.md` và `báo cáo.md` | Ảnh chèn vào `slides.md` và `báo cáo.md` |
 | D3 | Một người duyệt tay theo checklist mục 7 | CLAUDE §13 dòng 5 và 9 chuyển Đạt, có tên và ngày |
-| D4 | Sửa lỗi tìm được ở D1–D3. Tiêu đề lượt repair hiện "sửa từ lượt …": đổi thành "xếp lại từ lượt …" ở `RunWorkspace` và `SolveStatusPanel` | Không còn lỗi đã ghi; `npm run ci` pass |
+| D4 | **Xong 2026-11-08** (chưa có lỗi từ D2–D3). Tiêu đề lượt xếp lại và lượt báo nghỉ ghi "xếp lại từ lượt …", lượt sửa tay vẫn "sửa từ lượt …" (`runEyebrow`, helper `lib/run-kind.ts`). Cột "Từ lượt" trong bảng lượt có nhãn "xếp lại" hoặc "sửa tay". Đã xóa khóa `repairMeta` không dùng. Biome, tsc và vite build pass (chạy binary Linux trực tiếp vì `npm` của WSL gọi cmd.exe) | Không còn lỗi đã ghi; `npm run ci` pass |
 
 ### E. Coverage khi thiếu người (P1)
 
