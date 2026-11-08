@@ -23,7 +23,7 @@ Cập nhật: 2026-11-08, sau merge `feat/phase-9-10` vào `main` (`256e94a`), [
 2. **Bằng chứng tối ưu hóa:** so với baseline xếp tay, so hai solver, đo độ nhạy và đánh đổi, trên nhiều store.
 3. **Sản phẩm chạy được, trình bày trung thực:** UI được duyệt, báo cáo và slide khớp số đo, giới hạn nói rõ.
 
-Mức ưu tiên: **P0** bắt buộc, **P1** nên có, **P2** có thì tốt. Việc đụng phạm vi đã chốt trong CLAUDE.md (mục 14) hoặc thứ tự ưu tiên của mô hình (mục 5.2) ghi **"cần duyệt đặc tả"** và chỉ làm sau khi nhóm đồng ý.
+Mức ưu tiên: **P0** bắt buộc, **P1** nên có, **P2** có thì tốt. Việc đụng phạm vi đã chốt trong CLAUDE.md (mục 14) hoặc thứ tự ưu tiên của mô hình (mục 5.2) ghi **"cần duyệt đặc tả"**. Đặc tả đã duyệt 2026-11-08 (D21–D23 cho phép F, H, I có điều kiện).
 
 ## 2. Hiện trạng
 
@@ -88,7 +88,7 @@ Chia việc cho hai người: một người làm B và C (engine, thực nghi�
 | A0 | **Xong 2026-11-08**: giữ repair, bỏ FR-9, merge vào `main`. Gốc: commit thay đổi của `feat/phase-9-10`. Fetch nhánh `tulee`, so FR-9 (`bbff7c2`) với repair (D20). Chọn **một** đường API và **một** giao diện cho báo nghỉ, bỏ bản còn lại | Một PR duy nhất chứa ingest D19, giao diện tối, báo nghỉ đã hợp nhất; không còn hai endpoint cùng việc |
 | A1 | Merge PR vào `main` | CI trên `main` xanh. **Xong 2026-11-08**: `main` = `256e94a`, run `42484777634` |
 | A2 | Đồng bộ tài liệu với D18 | Đã làm 2026-11-08: `grep -n -i "tổng đài\|erlang" CLAUDE.md docs/*.md` chỉ còn câu ghi D18 và giới hạn |
-| A3 | Nhóm duyệt đặc tả D1–D20 và "Việc cần nhóm quyết" (mục 5 của file này) | Đặc tả bỏ nhãn "bản nháp"; ghi ngày và người duyệt ở đầu `đặc tả.md` |
+| A3 | **Xong 2026-11-08**: Vinh ủy quyền cho Claude duyệt D1–D24 và các việc cần quyết (mục 5). Thành viên khác chưa xem; ai không đồng ý sửa phiếu duyệt trong `đặc tả.md` | Đặc tả bỏ nhãn "bản nháp"; ghi ngày và người duyệt ở đầu `đặc tả.md` |
 | A4 | Đối chiếu nguyên văn Đ.98, 105, 106, 109, 110, 111 và NĐ 145/2020 với văn bản 45/2019/QH14 | Đặc tả mục 4 trích nguyên văn, ghi nguồn chính thức |
 | A5 | Nguồn UI thứ hai cho màn xếp lại và gợi ý người thay: mở được trang, ghi ngày xem | phụ lục nguồn UI trong `báo cáo.md` R15 có nguồn đã mở (thay snippet Deputy) |
 | A6 | Chạy integration test backend trên MySQL 8.4 (gồm 3 test repair mới), `alembic check` | **Xong 2026-11-08** qua CI run `42484777634`: 128 passed, 0 skip, `alembic check` sạch |
@@ -139,7 +139,7 @@ Trạng thái: C1–C5 đã làm (2026-11-08); C6 chưa làm theo yêu cầu. Ch
 
 ### F. Đánh đổi chi phí và công bằng (P1, cần duyệt đặc tả)
 
-CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi phí để công bằng hơn, tức đổi thứ tự này. Nhóm duyệt trước khi làm.
+CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi phí để công bằng hơn, tức đổi thứ tự này. **Đã duyệt (D21)**: `cost_tolerance` mặc định 0 nên hành vi cũ không đổi. Làm xong thì sửa CLAUDE.md mục 5.2.
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -159,7 +159,7 @@ CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi p
 
 ### H. Tuần không quấn vòng (P2, cần duyệt đặc tả)
 
-Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùng tuần. CLAUDE.md mục 14 để chân trời nhiều tuần ngoài phạm vi bản đầu. Không làm thì ghi rõ giới hạn trong báo cáo và chuẩn bị câu trả lời (mục 8).
+Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùng tuần. CLAUDE.md mục 14 để chân trời nhiều tuần ngoài phạm vi bản đầu. **Đã duyệt có điều kiện (D22)**: mặc định vẫn `cyclic`, làm sau A–F và J. Làm xong thì sửa CLAUDE.md mục 14. Không làm thì ghi rõ giới hạn trong báo cáo và chuẩn bị câu trả lời (mục 8).
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -169,7 +169,7 @@ Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùn
 
 ### I. Dự báo tối giản (P2, cần duyệt đặc tả)
 
-CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; mục 10 cấm thêm thư viện. Chỉ làm khi A–F xong và nhóm đồng ý.
+CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; mục 10 cấm thêm thư viện. **Đã duyệt có điều kiện (D23)**: chỉ baseline mùa vụ, không thêm thư viện. Chỉ làm khi A–F xong.
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -192,11 +192,11 @@ CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; m
 ## 5. Việc cần nhóm quyết
 
 1. **Đã chốt 2026-11-08:** giữ repair D20, bỏ FR-9 (`tulee`); nộp từ `main`.
-2. Duyệt đặc tả D1–D20, gồm D20 (repair: tầng "số ca thay đổi" đứng **trước** chi phí).
-3. Chấp nhận phạm vi CLAUDE §13 dòng 4 (mô hình theo nhân viên 10–30 nhân viên, 3 seed; CP-SAT không chứng minh được ở 10 nhân viên).
-4. Xác nhận kịch bản cơ sở D13 (store 18, 30 nhân viên).
-5. Thêm Playwright làm dependency cho D1 hay không.
-6. Có làm F, H, I không (mỗi mục đổi đặc tả).
+2. **Đã chốt 2026-11-08:** duyệt đặc tả D1–D24, gồm D20 (repair: tầng "số ca thay đổi" đứng **trước** chi phí).
+3. **Đã chốt 2026-11-08:** chấp nhận phạm vi CLAUDE §13 dòng 4 (mô hình theo nhân viên 10–30 nhân viên, 3 seed; CP-SAT không chứng minh được ở 10 nhân viên).
+4. **Đã chốt 2026-11-08:** kịch bản cơ sở D13 (store 18, 30 nhân viên).
+5. **Đã chốt 2026-11-08:** không thêm Playwright (D24).
+6. **Đã chốt 2026-11-08:** cho phép làm F, H, I có điều kiện (D21–D23).
 
 ## 6. Kiểm tra cho mọi việc
 
