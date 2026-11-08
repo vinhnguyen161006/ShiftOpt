@@ -216,6 +216,7 @@ Bắt buộc (1–3), kịch bản (4) nên có, (5–6) là mở rộng:
 8. Bảng chi phí: tổng lương, phụ cấp đêm, % chi phí lao động.
 9. **What-if**: thanh trượt λ, so sánh hai kịch bản cạnh nhau, heatmap chi phí biên theo giờ.
 10. Xuất CSV (PDF là mức mở rộng).
+11. **Báo nghỉ đột xuất**: từ một lượt thành công, chọn nhân viên và ngày nghỉ; lượt mới giữ nguyên các ngày trước mốc và thay đổi ít phân công nhất (FR-9 trong đặc tả).
 
 Kéo-thả chỉnh tay là mức mở rộng, và nếu làm thì phải kiểm tra lại ràng buộc sau mỗi thao tác.
 
@@ -332,6 +333,7 @@ engine/
     solvers/                base.py (SolveStatus, SolveParams, SolveResult), cpsat.py, pulp_backend.py
     sensitivity/            lp_duals.py, parametric.py, scenarios.py
     validation.py           kiểm tra hậu nghiệm mọi ràng buộc cứng, độc lập với solver
+    schedule_diff.py        so hai lịch thành giữ / thêm / bỏ (lượt tái lập)
     kpi.py
   tests/
     conftest.py             fixture three_shifts, build_instance
@@ -361,6 +363,7 @@ frontend/
       shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip
       schedule/             api (poll), NewRunForm, RunsTable, RunWorkspace (panel kết quả như trang chủ), SolveStatusPanel (SolveNotice, SolveDetails), ScheduleGrid, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
       compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới)
+      reroster/             api, RerosterForm (báo nghỉ đột xuất), ChangesSummary (giữ / thêm / bỏ so với lượt gốc)
       what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
 data/                       raw/ (gitignore), processed/ (parquet gitignore), benchmarks/curtois_qu/ (script tải)
 docs/

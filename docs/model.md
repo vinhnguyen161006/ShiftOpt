@@ -98,4 +98,13 @@ Call-centre mode: Erlang A (with abandonment) targeting 80/20 service level.
 - Parametric sweep: `lambda in {0.8, ..., 1.3}`, demand scaled by `tolerant_ceil(lambda * r_t)`. Each point carries `proven`; a `FEASIBLE` point is never read as an optimum.
 - Re-solve resolvers: `aggregate_resolver` (head-count model) or `roster_resolver` (CP-SAT roster). Labor cost comes from `kpi.labor_cost`, not from the lexicographic objective, whose last tier is not a cost.
 - Covariate scenarios: `DemandScenario` scales demand per weekday and keeps the source text beside the result. The promotion uplift `1.43` is a suggested default from the FreshRetailNet paper (arXiv:2505.16319 v5). Holiday and rain have no default: the caller supplies the factor and its source.
+
+## 6. Re-roster after an absence
+
+- Input: a solved roster `previous`, an employee whose unavailable days grow by the absent days, and `from_day`. Days below `from_day` are locked: for every employee, `work[e,d,s]` equals its value in `previous`.
+- Changes: `changes = sum over unlocked (e,d,s) of |work[e,d,s] - previous[e,d,s]|`, plus the previous assignments that have no variable any more (absent days, or shifts no longer in the instance). The reported count is exact for the returned roster.
+- Priority: shortfall, then changes, then labour cost, night spread, preferences. Coverage stays first and soft; changes only break ties that shortfall leaves open, and cost only breaks ties that changes leave open.
+- Warm start: the first tier is hinted with `previous`; later tiers use the previous tier's solution, as before.
+- Rest (Article 110), the 24-hour weekly rest (Article 111), the weekly and consecutive-day limits are enforced on the whole cyclic week, including locked days. A replacement cannot break the rest rule against a locked shift.
+- Without `reroster`, the model and its objective are unchanged.
 - Staffing assumptions: `sweep_staffing_assumption` re-derives demand with `required_staff` for each value of `alpha`, `productivity`, `min_staff` or `night_min_staff`, then re-solves. Sensitivity to these team assumptions is part of the analysis.

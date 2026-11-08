@@ -10,4 +10,5 @@ dist/
 .env
 data/raw/
 data/processed/*.parquet
+*.parquet
 data/benchmarks/curtois_qu/Instance*.txt
