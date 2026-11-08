@@ -496,6 +496,36 @@ export const vi = {
     runDetails: "Chi tiết lượt giải",
     laborCost: "Chi phí lao động",
     editTitle: (id: number) => `Sửa tay lượt ${id}`,
+    reroster: {
+      button: "Báo nghỉ đột xuất",
+      modalTitle: (id: number) => `Lập lại lịch từ lượt ${id}`,
+      eyebrow: (id: number, parent: number | null, code: string, days: string) =>
+        parent === null
+          ? `Lượt ${id}`
+          : `Lượt ${id}, lập lại từ lượt ${parent} vì ${code} nghỉ ${days}`,
+      employee: "Nhân viên nghỉ",
+      absentDays: "Ngày nghỉ",
+      absentHint:
+        "Chọn các ngày nhân viên không đi làm. Các phân công khác được giữ nếu vẫn đủ người.",
+      fromDay: "Giữ nguyên lịch trước ngày",
+      fromDayDefault: "Ngày nghỉ đầu tiên",
+      fromDayHint: "Các ngày trước mốc này không đổi. Mặc định là ngày nghỉ đầu tiên.",
+      needDay: "Chọn ít nhất một ngày nghỉ.",
+      submit: "Lập lịch lại",
+      submitting: "Đang gửi...",
+      changesTitle: "Thay đổi so với lượt gốc",
+      loadingChanges: "Đang so sánh với lượt gốc",
+      caption: (id: number) => `Khác biệt với lượt ${id}`,
+      summary: (kept: number, added: number, removed: number) =>
+        `Giữ ${kept} phân công, thêm ${added}, bỏ ${removed}.`,
+      noChanges: "Lịch không thay đổi so với lượt gốc.",
+      changeAdded: "Thêm",
+      changeRemoved: "Bỏ",
+      columnChange: "Thay đổi",
+      columnEmployee: "Nhân viên",
+      columnDay: "Ngày",
+      columnShift: "Ca",
+    },
     runs: {
       caption: "Các lượt tối ưu",
       run: "Lượt",
@@ -505,7 +535,7 @@ export const vi = {
       gap: "Gap",
       short: "Giờ thiếu",
       violations: "Vi phạm cứng",
-      editedFrom: "Sửa từ",
+      parent: "Lượt gốc",
       manualEdit: "sửa tay",
     },
     runStatus: {

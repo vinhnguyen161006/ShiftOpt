@@ -977,6 +977,72 @@
         "title": "MarginalCostResult",
         "type": "object"
       },
+      "RerosterRead": {
+        "properties": {
+          "absent_days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Absent Days",
+            "type": "array"
+          },
+          "employee_code": {
+            "title": "Employee Code",
+            "type": "string"
+          },
+          "from_day": {
+            "title": "From Day",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "employee_code",
+          "absent_days",
+          "from_day"
+        ],
+        "title": "RerosterRead",
+        "type": "object"
+      },
+      "RerosterRequest": {
+        "properties": {
+          "absent_days": {
+            "items": {
+              "maximum": 6.0,
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "maxItems": 7,
+            "minItems": 1,
+            "title": "Absent Days",
+            "type": "array"
+          },
+          "employee_code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Employee Code",
+            "type": "string"
+          },
+          "from_day": {
+            "anyOf": [
+              {
+                "maximum": 6.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Day"
+          }
+        },
+        "required": [
+          "employee_code",
+          "absent_days"
+        ],
+        "title": "RerosterRequest",
+        "type": "object"
+      },
       "RunStatus": {
         "enum": [
           "queued",
@@ -986,6 +1052,38 @@
         ],
         "title": "RunStatus",
         "type": "string"
+      },
+      "ScheduleChangesRead": {
+        "properties": {
+          "added": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentRead"
+            },
+            "title": "Added",
+            "type": "array"
+          },
+          "kept": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentRead"
+            },
+            "title": "Kept",
+            "type": "array"
+          },
+          "removed": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentRead"
+            },
+            "title": "Removed",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kept",
+          "added",
+          "removed"
+        ],
+        "title": "ScheduleChangesRead",
+        "type": "object"
       },
       "ShiftTemplateCreate": {
         "properties": {
@@ -1316,6 +1414,16 @@
             ],
             "title": "Parent Run Id"
           },
+          "reroster": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RerosterRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "shift_types": {
             "items": {
               "$ref": "#/components/schemas/ShiftTypeRead"
@@ -1381,6 +1489,7 @@
           "shift_types",
           "demand_profile_id",
           "parent_run_id",
+          "reroster",
           "status",
           "solver",
           "solver_version",
@@ -2649,6 +2758,48 @@
         ]
       }
     },
+    "/api/schedules/{run_id}/changes": {
+      "get": {
+        "operationId": "get_schedule_changes_api_schedules__run_id__changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleChangesRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Schedule Changes",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
     "/api/schedules/{run_id}/compliance": {
       "get": {
         "operationId": "get_schedule_compliance_api_schedules__run_id__compliance_get",
@@ -2860,6 +3011,58 @@
           }
         },
         "summary": "Get Kpi Csv",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/reroster": {
+      "post": {
+        "operationId": "create_reroster_api_schedules__run_id__reroster_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerosterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Reroster",
         "tags": [
           "schedules"
         ]

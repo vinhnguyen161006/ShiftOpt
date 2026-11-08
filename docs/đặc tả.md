@@ -26,6 +26,7 @@ Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, 
 | FR-6 | Sửa tay tạo lượt mới, chạy lại validator, lịch gốc không đổi. | `test_crud_api` / smoke flow |
 | FR-7 | KPI: coverage, giờ thiếu/thừa, hiệu suất, chi phí, phụ cấp đêm, độ lệch ca đêm và cuối tuần. Xuất CSV. | `test_kpi_and_staffing.py`, `test_schedule_views.py` |
 | FR-8 | Độ nhạy: quét λ ∈ [0,8; 1,3], chi phí biên 168 giờ bằng giải lại, dual LP có nhãn xấp xỉ, quét giả định quy đổi. | `test_sensitivity.py`, `test_worker.py` |
+| FR-9 | Báo nghỉ đột xuất: từ một lượt thành công, chọn nhân viên và các ngày nghỉ, hệ thống tạo lượt mới. Các ngày trước mốc giữ nguyên; các phân công khác thay đổi ít nhất có thể, sau khi đã ưu tiên đủ người. Lượt gốc không đổi. Mốc mặc định là ngày nghỉ đầu tiên. | `test_reroster.py`, `test_schedule_diff.py`, `test_schedules_flow.py` (MySQL) |
 
 ## 3. Quyết định đã chốt (bản nháp)
 

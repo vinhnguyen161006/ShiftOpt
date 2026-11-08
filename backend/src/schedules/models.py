@@ -56,3 +56,14 @@ class SolveRun(Base):
     def shift_types(self) -> list[dict[str, Any]]:
         """Shift types of the solved instance, in snapshot order."""
         return cast("list[dict[str, Any]]", self.instance_snapshot["shift_types"])
+
+    @property
+    def reroster(self) -> dict[str, Any] | None:
+        info = cast("dict[str, Any] | None", self.instance_snapshot.get("reroster"))
+        if info is None:
+            return None
+        return {
+            "employee_code": info["employee_code"],
+            "absent_days": info["absent_days"],
+            "from_day": info["from_day"],
+        }

@@ -4,6 +4,7 @@ from typing import Any
 
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.domain import Assignment, Employee, Instance, ShiftType, Solution
+from shiftopt.models.roster_cpsat import Reroster
 
 from src.employees.models import EmployeeRecord
 from src.shifts.models import ShiftTemplate
@@ -61,6 +62,16 @@ def instance_from_snapshot(snapshot: Snapshot) -> Instance:
             for row in snapshot["shift_types"]
         ),
         rules=LaborRules(**snapshot["rules"]),
+    )
+
+
+def reroster_inputs(snapshot: Snapshot) -> Reroster | None:
+    info = snapshot.get("reroster")
+    if info is None:
+        return None
+    return Reroster(
+        previous=solution_from_rows(info["previous"]),
+        locked_days=frozenset(range(info["from_day"])),
     )
 
 

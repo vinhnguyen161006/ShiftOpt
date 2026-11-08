@@ -1,8 +1,11 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.schedules.models import RunStatus
+
+WeekDayIndex = Annotated[int, Field(ge=0, le=6)]
 
 
 class SolveRequest(BaseModel):
@@ -40,6 +43,31 @@ class ManualEditRequest(BaseModel):
     assignments: list[AssignmentWrite] = Field(max_length=2000)
 
 
+class RerosterRequest(BaseModel):
+    employee_code: str = Field(min_length=1, max_length=32)
+    absent_days: list[WeekDayIndex] = Field(min_length=1, max_length=7)
+    from_day: WeekDayIndex | None = None
+
+    @field_validator("absent_days")
+    @classmethod
+    def _distinct_days(cls, days: list[int]) -> list[int]:
+        if len(set(days)) != len(days):
+            raise ValueError("absent_days must not repeat a day")
+        return sorted(days)
+
+
+class RerosterRead(BaseModel):
+    employee_code: str
+    absent_days: list[int]
+    from_day: int
+
+
+class ScheduleChangesRead(BaseModel):
+    kept: list[AssignmentRead]
+    added: list[AssignmentRead]
+    removed: list[AssignmentRead]
+
+
 class ShiftTypeRead(BaseModel):
     name: str
     start_hour: int
@@ -54,6 +82,7 @@ class SolveRunRead(BaseModel):
     shift_types: list[ShiftTypeRead]
     demand_profile_id: int | None
     parent_run_id: int | None
+    reroster: RerosterRead | None
     status: RunStatus
     solver: str
     solver_version: str | None
