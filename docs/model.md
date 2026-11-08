@@ -48,6 +48,66 @@ Options:
 - `symmetry_breaking` (default off): for employees with equal wage and no requests, `shifts_e >= shifts_{e+1}`. No measurement is kept in the repo for this option; it stays off.
 - `decompose` (default off): solve the aggregate model with implicit breaks (section 1b), then cap starts per day and shift type to `ceil(count)`. The result is an approximation and is reported as `FEASIBLE`, never `OPTIMAL`.
 
+## 2a. ILP formulation of the per-employee roster
+
+The same model is built twice: as a CP-SAT model (`roster_cpsat.py`, the production path) and as an integer program solved by HiGHS through PuLP (`roster_mip.py`, used for the solver comparison and the integrality gap). Both use the rows below. Row numbers match the code comments in the docstrings.
+
+Sets and parameters:
+
+- `E` employees, `D = {0..6}` days (0 is Monday), `S` shift types with length at most `max_daily_hours`.
+- `H = {0..167}` hours of the week. `A(d,s)` is the set of hours covered by shift `s` starting on day `d` (cyclic).
+- `B(s)` is the break window of `s` (Article 109): offsets 1 to `L-2`, only for shifts of at least `break_required_from_hours`.
+- `K = max_consecutive_days`; `W_k` is every cyclic window of `K+1` days.
+- `P` is the set of forbidden pairs `(s, s', o)`, `o` in 1..6, whose rest `24 o + start(s') - end(s)` is below `min_rest_between_shifts` (Article 110).
+- `T_e(t)` is the set of `(d,s)` whose hours intersect the 24 cyclic hours `t .. t+23`.
+- `N` is the set of night shifts (more than half of the shift inside 22:00 to 06:00).
+- `wage_e`, `cost(s) = cost_per_wage_unit(s)` (100 times length plus 30 times night hours), `cap_e = min(max_weekly_hours, max_weekly_hours_e)`, `r_h` the demand, `pref(e)` the preferred days off.
+
+Variables:
+
+- `x[e,d,s]` in {0,1}, only for days that `e` can work.
+- `b[e,d,s,k]` in {0,1} for `k` in `B(s)`: the break of that shift starts at offset `k`.
+- `u[h]` integer, `0 <= u[h] <= r_h`: shortfall at hour `h`.
+- `v[e,t]` in {0,1}: the 24-hour rest window of `e` starts at hour `t`.
+- `n[e]`, `n_max`, `n_min`: integer, nonnegative auxiliaries for the night spread.
+
+Rows:
+
+| Row | Rule | Constraint |
+|---|---|---|
+| C1 | At most one shift a day (code: `_add_one_shift_per_day`) | `sum_s x[e,d,s] <= 1` |
+| C2 | Weekly hours, Article 105 (code: `_add_weekly_hours`) | `sum_{d,s} L_s x[e,d,s] <= cap_e` |
+| C3 | Rest of at least 12 hours between shifts, Article 110 (code: `_add_rest_between_shifts`) | `x[e,d,s] + x[e,(d+o) mod 7,s'] <= 1` for every `(s,s',o)` in `P` |
+| C4 | At most `K` working days in any `K+1` cyclic days (code: `_add_consecutive_days`) | `sum_{d in W, s} x[e,d,s] <= K` for every window `W` |
+| C5 | At least 24 consecutive hours of rest a week, Article 111 (code: `_add_weekly_rest`) | `v[e,t] + x[e,d,s] <= 1` for every `(d,s)` in `T_e(t)`, and `sum_t v[e,t] >= 1` |
+| C6 | One break per shift that needs one, Article 109 (code: `_add_breaks_and_coverage`) | `sum_k b[e,d,s,k] = x[e,d,s]` when `B(s)` is not empty |
+| C7 | Coverage with breaks removed, soft (code: `_add_breaks_and_coverage`) | `sum_{(e,d,s): h in A(d,s)} x[e,d,s] - sum_{(e,d,s,k): hour(d, start(s)+k) = h} b[e,d,s,k] + u[h] >= r_h` |
+| C8 | Night spread (code: `_add_night_spread`) | `n[e] = sum_{d, s in N} x[e,d,s]`; `n_max >= n[e]`; `n_min <= n[e]` |
+
+Why C5 is written pairwise: a 24-hour rest window starting at `t` exists exactly when no worked hour falls in `t .. t+23`. The pairwise rows are tighter than one big-M row per window, at the cost of more rows (see the model-size table in `benchmarks.md`).
+
+Why C8 is exact at the optimum: the tier minimises `n_max - n_min`. Increasing `n_max` and decreasing `n_min` only make the objective worse, so at the optimum `n_max` equals the largest `n[e]` and `n_min` the smallest.
+
+Repair (`RepairSpec`, code: `_add_repair`): for `d < from_day` and for pinned shifts, `x` is fixed to 1 if the shift is in the locked set and to 0 otherwise. A locked break is fixed to its offset when the offset is in `B(s)`. The change count is
+
+```
+changes = sum_{(e,d,s) in baseline} (1 - x[e,d,s]) + sum_{(e,d,s) not in baseline} x[e,d,s] + #{baseline shifts with no variable}
+```
+
+which equals the size of the symmetric difference between the baseline and the new roster.
+
+Lexicographic objective. Each tier is one solve; after tier `j` with optimum `f_j*` the row `f_j <= f_j*` is added:
+
+1. `min sum_h u[h]` (shortfall, hours);
+2. `min changes` (repair only);
+3. `min sum_{e,d,s} wage_e cost(s) x[e,d,s]` (labour cost including the Article 98 premium);
+4. `min n_max - n_min` (night spread; only with at least two employees);
+5. `min sum_{e,d in pref(e)} sum_s x[e,d,s]` (preference misses; only when some employee has preferences).
+
+The MIP and the CP-SAT model share tiers 1 to 5 and therefore agree on the optimum of each tier whenever both prove it (`tests/test_roster_mip.py`).
+
+Code map (row to function): C1 `_add_one_shift_per_day`, C2 `_add_weekly_hours`, C3 `_add_rest_between_shifts`, C4 `_add_consecutive_days`, C5 `_add_weekly_rest`, C6 and C7 `_add_breaks_and_coverage`, C8 `_add_night_spread`, repair `_add_repair`, tiers `_stages`. The MIP has the same names in `roster_mip.py` (`_add_*`, `_stages`).
+
 ## 1b. Implicit Breaks (Bechtold-Jacobs style)
 
 Each worker of a shift that needs a break is counted once in `x[d, s]` and once in one slot `y[d, s, k]` inside the break window. The break removes that worker from coverage at hour `k`. This has the same optimum as enumerating every (shift, break position) column; the test suite checks this against an explicit enumeration on small instances.

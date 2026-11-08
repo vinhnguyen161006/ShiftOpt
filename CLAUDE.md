@@ -82,7 +82,7 @@ Phân rã hai pha là chiến lược giảm kích thước khi instance lớn: 
 
 ### 3.3 Quyết định kiến trúc đã chốt
 
-- **CP-SAT cho mô hình theo nhân viên; PuLP + HiGHS cho mô hình Dantzig và dual LP.** `solvers/cpsat.py` và `solvers/pulp_backend.py` dùng chung `SolveParams` / `SolveResult` để benchmark hai bên trên cùng instance. Gurobi chỉ là tùy chọn qua license học thuật, không phải phụ thuộc.
+- **CP-SAT cho mô hình theo nhân viên; PuLP + HiGHS cho mô hình Dantzig và dual LP.** Mô hình theo nhân viên cũng có bản PuLP + HiGHS (`roster_mip.py`), chỉ để đối chiếu và đo integrality gap; lịch sản phẩm luôn do CP-SAT giải. `solvers/cpsat.py` và `solvers/pulp_backend.py` dùng chung `SolveParams` / `SolveResult` để benchmark hai bên trên cùng instance. Gurobi chỉ là tùy chọn qua license học thuật, không phải phụ thuộc.
 - **Timefold Solver Python bị loại** (repo đã archive, chậm hơn Java). Chỉ tham khảo UI và mô hình miền từ bản Java.
 - **MySQL 8** (InnoDB, `utf8mb4`) cho dữ liệu ứng dụng (nhân viên, mẫu ca, nhu cầu, lượt giải, kết quả). SQLAlchemy 2 + Alembic, driver `PyMySQL` hoặc `asyncmy` (ghim version). Lịch, log solver, tham số lưu ở cột `JSON`. Không dùng SQLite thay MySQL trong test. Ghi chú Alembic: DDL của MySQL không transactional, migration lỗi giữa chừng không tự rollback; review tay kỹ.
 - **Job giải = hàng trong bảng `solve_runs`; job độ nhạy = hàng trong `analysis_runs`.** API tạo job, chạy giải trong tiến trình con (`ProcessPoolExecutor`), frontend poll theo `job_id`. Khi backend khởi động lại, job đang `running` được đánh dấu `failed` với lý do rõ ràng. **Không thêm Redis/Celery, không WebSocket** ở bản đầu.
@@ -324,7 +324,7 @@ engine/
     domain.py               dataclass bất biến: ShiftType, Employee, Instance, Assignment, Solution
     time_grid.py            hằng số giờ/ngày/tuần, quấn vòng mod 168, giờ đêm
     staffing/               linear.py, latent_demand.py
-    models/                 set_covering_pulp.py, implicit_breaks.py, roster_cpsat.py
+    models/                 set_covering_pulp.py, implicit_breaks.py, roster_cpsat.py, roster_mip.py (ILP, HiGHS, đối chiếu)
     constraints/            labor_law_vn.py (LaborRules), sequences.py, fairness.py
     solvers/                base.py (SolveStatus, SolveParams, SolveResult), cpsat.py, pulp_backend.py
     sensitivity/            lp_duals.py, parametric.py, scenarios.py
@@ -335,8 +335,8 @@ engine/
     conftest.py             fixture three_shifts, build_instance
     test_smoke.py           khai báo thật: LaborRules, validate của dataclass
     test_time_grid.py, test_labor_law_vn.py, test_validation.py, test_kpi_and_staffing.py,
-    test_set_covering.py, test_roster_cpsat.py, test_sensitivity.py
-  benchmarks/run_curtois_qu.py
+    test_set_covering.py, test_roster_cpsat.py, test_roster_mip.py, test_roster_weighted.py, test_sensitivity.py
+  benchmarks/               run_curtois_qu.py, compare_solvers.py, run_roster_scale.py (--solver, --sizes-only), integrality_gap.py, weighted_vs_lexicographic.py
 frontend/
   package.json, package-lock.json, vite.config.ts, tsconfig.json, biome.json, index.html
   Dockerfile, nginx.conf, .dockerignore
