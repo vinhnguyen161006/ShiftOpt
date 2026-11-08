@@ -156,3 +156,50 @@ Kết luận trong phạm vi đã đo:
 - Kịch bản này dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người. Cần kịch bản căng (ít nhân viên hơn) để kiểm tiêu chí đó; chưa đo.
 - Kết quả phụ thuộc `alpha`, `p`, các sàn. Đổi `p` đổi toàn bộ nhu cầu; xem độ nhạy theo giả định (`sweep_staffing_assumption`, mục 8.6).
 - 1 store, 3 seed. Không suy ra cho store khác.
+
+## 5. Tối ưu so với baseline greedy (plan C5)
+
+Số liệu từ `docs/experiments/scenario_results.csv`, sinh ngày 2026-11-08 bằng `backend/scripts/run_experiments.py` (`--time-limit 30`, seed 0–2 cho kịch bản cơ sở, seed 0 cho các kịch bản khác, 1 worker). Ba store đã chọn theo `docs/experiments/store_ranking.csv`: 18, 84, 578. Tổng 108 lượt, mọi lượt `violations = 0`, không có lỗi.
+
+Greedy là heuristic (`engine/src/shiftopt/baseline.py`), không báo `OPTIMAL`. Trạng thái CP-SAT ghi theo ba tầng (thiếu người / chi phí / lệch ca đêm); lượt chỉ là `optimal` khi cả ba tầng `optimal`.
+
+| Store | Kịch bản | CP-SAT: giờ thiếu / chi phí | Greedy: giờ thiếu / chi phí | Chênh lệch chi phí (cùng giờ thiếu) | Tầng CP-SAT |
+|---|---|---|---|---|---|
+| 18 | cơ sở | 12 / 7 740 000 | 22 / 7 212 000 | không so sánh được | optimal / optimal / feasible |
+| 18 | λ = 1,3 | 101 / 7 632 000 | 168 / 6 606 000 | không so sánh được | feasible / optimal / feasible |
+| 18 | bớt 5 người | 81 / 5 028 000 | 121 / 4 684 000 | không so sánh được | feasible / feasible / feasible |
+| 18 | p = 3 | 60 / 7 608 000 | 97 / 6 994 000 | không so sánh được | optimal / optimal / feasible |
+| 84 | cơ sở | 2 / 5 178 000 | 14 / 4 614 000 | không so sánh được | optimal / optimal / optimal |
+| 84 | bớt 5 người | 112 / 2 532 000 | 110 / 2 562 000 | không so sánh được (gần bằng) | feasible / feasible / feasible |
+| 578 | cơ sở | 1 / 4 176 000 | 10 / 3 832 000 | không so sánh được | optimal / optimal / optimal |
+| 578 | λ = 1,1 | 86 / 4 170 000 | 86 / 4 170 000 | 0,0% | optimal / optimal / optimal |
+| 578 | λ = 1,3 | 88 / 4 158 000 | 88 / 4 170 000 | +0,3% (CP-SAT rẻ hơn) | optimal / optimal / optimal |
+| 578 | bớt 5 người | 128 / 1 482 000 | 128 / 1 566 000 | +5,7% (CP-SAT rẻ hơn) | feasible / feasible / feasible |
+
+Báo nghỉ 1 người từ thứ Tư (`repair` so với greedy chạy lại từ đầu), số phân công thay đổi:
+
+| Store | Nghỉ 1 ngày | Nghỉ 2 ngày | Nghỉ 3 ngày |
+|---|---|---|---|
+| 18 | 10 / 16 | 9 / 29 | 8 / 42 |
+| 84 | 8 / 16 | 13 / 31 | 8 / 45 |
+| 578 | 10 / 20 | 5 / 41 | 4 / 52 |
+
+Đọc kết quả trong phạm vi đã đo:
+
+- Trên cả ba store, greedy thường thiếu người nhiều hơn CP-SAT (ví dụ store 18 cơ sở: 22 giờ so với 12). Chi phí thấp hơn của greedy vì vậy không phải là lợi thế; chỉ so chi phí khi cùng số giờ thiếu.
+- Chỉ có những kịch bản cùng số giờ thiếu mới có so sánh chi phí: store 578 với λ ≥ 1,1 và khi bớt 5 người. Ở đó CP-SAT rẻ hơn từ 0 đến 5,7%.
+- Báo nghỉ: `repair` của CP-SAT đổi ít phân công hơn greedy ở mọi kịch bản (4–13 so với 16–52). Greedy được chạy lại từ đầu, không phải sửa từ lịch cũ, nên đây là so sánh số thay đổi chứ không phải so sánh thuật toán.
+- Nhiều lượt CP-SAT chỉ đạt `feasible` ở tầng chi phí hoặc ca đêm trong 30 giây. Không có kết luận tối ưu cho các lượt đó.
+
+Giới hạn: ba store, 30 giây mỗi lượt, một worker. Kết quả không suy ra cho store khác hay cho giới hạn thời gian dài hơn.
+
+Tái chạy:
+
+```
+cd backend
+uv run --locked python -m scripts.rank_stores > ../docs/experiments/store_ranking.csv
+uv run --locked python -m scripts.run_experiments --time-limit 30 --seeds 0 1 2
+uv run --locked python -m scripts.run_experiments --summary
+```
+
+Lần chạy đầy đủ mất khoảng 36 phút trên một máy.
