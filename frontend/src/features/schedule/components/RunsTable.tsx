@@ -67,7 +67,7 @@ export function RunsTable({ runs }: RunsTableProps) {
         },
         {
           key: "parent",
-          label: vi.schedule.runs.parent,
+          label: vi.schedule.runs.editedFrom,
           render: (run) =>
             run.parent_run_id === null ? (
               "-"

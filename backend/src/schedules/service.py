@@ -1,14 +1,13 @@
 import csv
 import io
 import logging
-from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any
 
 from shiftopt import kpi
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.domain import Assignment, Instance, Solution
-from shiftopt.schedule_diff import diff_solutions
+from shiftopt.domain import Instance, Solution
+from shiftopt.replacement import suggest_replacements
 from shiftopt.solvers.base import ModelInvalidError
 from shiftopt.validation import LEGAL_BASIS, validate
 from sqlalchemy import select
@@ -21,19 +20,21 @@ from src.exceptions import ConflictError, InstanceTooLargeError, InvalidInputErr
 from src.jobs import JOB_GRACE_SECONDS, JobContext, ensure_job_capacity, run_in_child
 from src.schedules.models import RunStatus, SolveRun
 from src.schedules.schemas import (
-    AssignmentRead,
     ComplianceRead,
     KpiRead,
     ManualEditRequest,
-    RerosterRequest,
-    ScheduleChangesRead,
+    RepairRequest,
+    ReplacementRead,
     SolveRequest,
+    SolveSettings,
     ViolationRead,
 )
 from src.schedules.snapshot import (
     Snapshot,
     build_snapshot,
     instance_from_snapshot,
+    repair_from_snapshot,
+    repair_snapshot,
     solution_from_rows,
 )
 from src.schedules.worker import solve_snapshot
@@ -57,7 +58,7 @@ def _utc_now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def solve_params(payload: SolveRequest) -> dict[str, float]:
+def solve_params(payload: SolveSettings) -> dict[str, float]:
     return {
         "time_limit_seconds": payload.time_limit_seconds,
         "relative_gap_limit": payload.relative_gap_limit,
@@ -93,7 +94,7 @@ async def _employees(session: AsyncSession, ids: list[int] | None) -> list[Emplo
     return found
 
 
-def check_limits(payload: SolveRequest) -> None:
+def check_limits(payload: SolveSettings) -> None:
     settings = get_settings()
     if payload.time_limit_seconds > settings.max_solve_seconds:
         raise InstanceTooLargeError(
@@ -193,30 +194,9 @@ def _outcome_fields(snapshot: Snapshot, payload: dict[str, Any]) -> dict[str, An
             status=RunStatus.FAILED,
             error=f"validator found {len(violations)} hard-constraint violations",
         )
-    elif (error := _locked_days_error(snapshot, payload["assignments"])) is not None:
-        fields.update(status=RunStatus.FAILED, error=error)
     else:
         fields.update(status=RunStatus.SUCCEEDED, error=None)
     return fields
-
-
-def _locked_days_error(snapshot: Snapshot, assignments: list[dict[str, Any]]) -> str | None:
-    info = snapshot.get("reroster")
-    if info is None:
-        return None
-    if _rows_before(assignments, info["from_day"]) != _rows_before(
-        info["previous"], info["from_day"]
-    ):
-        return "re-roster changed assignments before its first absence day"
-    return None
-
-
-def _rows_before(rows: list[dict[str, Any]], day_limit: int) -> set[tuple[str, int, str]]:
-    return {
-        (row["employee_code"], row["day"], row["shift_name"])
-        for row in rows
-        if row["day"] < day_limit
-    }
 
 
 async def _finish(jobs: JobContext, run_id: int, fields: dict[str, Any]) -> None:
@@ -329,73 +309,6 @@ def kpi_csv(read: KpiRead) -> str:
     return buffer.getvalue()
 
 
-async def create_reroster(
-    session: AsyncSession, base: SolveRun, payload: RerosterRequest
-) -> SolveRun:
-    if base.status is not RunStatus.SUCCEEDED or base.assignments is None:
-        raise ConflictError(f"solve run {base.id} is not a valid schedule to re-roster")
-    snapshot: Snapshot = deepcopy(base.instance_snapshot)
-    employee = next(
-        (row for row in snapshot["employees"] if row["id"] == payload.employee_code), None
-    )
-    if employee is None:
-        raise InvalidInputError(f"unknown employee {payload.employee_code}")
-    first_absence = payload.absent_days[0]
-    from_day = first_absence if payload.from_day is None else payload.from_day
-    if from_day > first_absence:
-        raise InvalidInputError("from_day must not be after the first absent day")
-    employee["unavailable_days"] = sorted(
-        set(employee["unavailable_days"]) | set(payload.absent_days)
-    )
-    snapshot["reroster"] = {
-        "employee_code": payload.employee_code,
-        "absent_days": payload.absent_days,
-        "from_day": from_day,
-        "previous": deepcopy(base.assignments),
-    }
-    await ensure_job_capacity(session)
-    run = SolveRun(
-        demand_profile_id=base.demand_profile_id,
-        parent_run_id=base.id,
-        status=RunStatus.QUEUED,
-        params=dict(base.params),
-        instance_snapshot=snapshot,
-    )
-    session.add(run)
-    await session.commit()
-    await session.refresh(run)
-    return run
-
-
-async def changes_for(session: AsyncSession, run: SolveRun) -> ScheduleChangesRead:
-    if run.parent_run_id is None:
-        raise NotFoundError(f"solve run {run.id} has no parent run to compare with")
-    parent = await get_run(session, run.parent_run_id)
-    if parent.assignments is None or run.assignments is None:
-        raise ConflictError(f"solve run {run.id} or its parent has no schedule")
-    diff = diff_solutions(
-        solution_from_rows(parent.assignments), solution_from_rows(run.assignments)
-    )
-    return ScheduleChangesRead(
-        kept=[_assignment_read(a) for a in diff.kept],
-        added=[_assignment_read(a) for a in diff.added],
-        removed=[_assignment_read(a) for a in diff.removed],
-    )
-
-
-def _assignment_read(assignment: Assignment) -> AssignmentRead:
-    return AssignmentRead(
-        employee_code=assignment.employee_id,
-        day=assignment.day,
-        shift_name=assignment.shift_name,
-        break_offset=assignment.break_offset,
-    )
-
-
-def _without_reroster(snapshot: Snapshot) -> Snapshot:
-    return {key: value for key, value in snapshot.items() if key != "reroster"}
-
-
 async def create_manual_edit(
     session: AsyncSession, base: SolveRun, payload: ManualEditRequest
 ) -> SolveRun:
@@ -419,7 +332,7 @@ async def create_manual_edit(
         status=RunStatus.FAILED if violations else RunStatus.SUCCEEDED,
         solver="manual",
         params=base.params,
-        instance_snapshot=_without_reroster(base.instance_snapshot),
+        instance_snapshot=base.instance_snapshot,
         assignments=rows,
         understaffed_hours=kpi.compute_kpi(instance, solution).understaffed_hours,
         hard_violations=len(violations),
@@ -432,6 +345,107 @@ async def create_manual_edit(
     await session.commit()
     await session.refresh(run)
     return run
+
+
+def _absences(payload: RepairRequest, employee_codes: set[str]) -> dict[str, list[int]]:
+    absences: dict[str, list[int]] = {}
+    for item in payload.absences:
+        if item.employee_code not in employee_codes:
+            raise InvalidInputError(f"unknown employee {item.employee_code}")
+        for day in item.days:
+            if day < payload.from_day:
+                raise InvalidInputError(
+                    f"absence of {item.employee_code} on day {day} falls on a locked day"
+                )
+        absences.setdefault(item.employee_code, []).extend(item.days)
+    return absences
+
+
+def _pinned_rows(payload: RepairRequest, instance: Instance) -> list[dict[str, Any]]:
+    employee_codes = {employee.id for employee in instance.employees}
+    shift_names = {shift.name for shift in instance.shift_types}
+    rows: list[dict[str, Any]] = []
+    for item in payload.pinned:
+        if item.employee_code not in employee_codes:
+            raise InvalidInputError(f"unknown employee {item.employee_code}")
+        if item.shift_name not in shift_names:
+            raise InvalidInputError(f"unknown shift {item.shift_name}")
+        if item.day < payload.from_day:
+            raise InvalidInputError(
+                f"pinned shift of {item.employee_code} on day {item.day} is a locked day"
+            )
+        rows.append(item.model_dump())
+    return rows
+
+
+def _check_locked(snapshot: Snapshot) -> None:
+    spec = repair_from_snapshot(snapshot)
+    if spec is None:
+        return
+    instance = instance_from_snapshot(snapshot)
+    violations = validate(instance, Solution(spec.locked()))
+    if violations:
+        details = "; ".join(f"{item.employee_id}: {item.detail}" for item in violations[:5])
+        raise InvalidInputError(f"locked shifts break hard constraints: {details}")
+
+
+async def create_repair_run(
+    session: AsyncSession, base: SolveRun, payload: RepairRequest
+) -> SolveRun:
+    if base.assignments is None:
+        raise ConflictError(f"solve run {base.id} has no schedule to repair")
+    check_limits(payload)
+    await ensure_job_capacity(session)
+    instance = instance_from_snapshot(base.instance_snapshot)
+    absences = _absences(payload, {employee.id for employee in instance.employees})
+    pinned = _pinned_rows(payload, instance)
+    demand_profile_id = base.demand_profile_id
+    demand = None
+    if payload.demand_profile_id is not None:
+        profile = await get_profile(session, payload.demand_profile_id)
+        demand = profile.required_staff
+        demand_profile_id = profile.id
+    snapshot = repair_snapshot(
+        base.instance_snapshot,
+        from_day=payload.from_day,
+        baseline_rows=base.assignments,
+        pinned_rows=pinned,
+        absences=absences,
+        demand=demand,
+    )
+    _check_locked(snapshot)
+    run = SolveRun(
+        demand_profile_id=demand_profile_id,
+        parent_run_id=base.id,
+        status=RunStatus.QUEUED,
+        params=solve_params(payload),
+        instance_snapshot=snapshot,
+    )
+    session.add(run)
+    await session.commit()
+    await session.refresh(run)
+    return run
+
+
+def get_replacements(
+    run: SolveRun, employee_code: str, day: int, limit: int
+) -> list[ReplacementRead]:
+    instance, solution = _schedule(run)
+    try:
+        candidates = suggest_replacements(instance, solution, employee_code, day, limit)
+    except ValueError as error:
+        raise InvalidInputError(str(error)) from error
+    return [
+        ReplacementRead(
+            employee_code=item.employee_id,
+            shift_name=item.shift_name,
+            break_offset=item.break_offset,
+            extra_cost=item.extra_cost,
+            weekly_hours=item.weekly_hours,
+            prefers_off=item.prefers_off,
+        )
+        for item in candidates
+    ]
 
 
 async def recover_stale_runs(session: AsyncSession) -> int:

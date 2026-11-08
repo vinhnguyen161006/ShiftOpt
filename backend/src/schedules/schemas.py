@@ -1,21 +1,24 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.schedules.models import RunStatus
 
-WeekDayIndex = Annotated[int, Field(ge=0, le=6)]
+WeekDay = Annotated[int, Field(ge=0, le=6)]
 
 
-class SolveRequest(BaseModel):
-    demand_profile_id: int
-    shift_template_ids: list[int] = Field(min_length=1, max_length=50)
-    employee_ids: list[int] | None = Field(default=None, max_length=500)
+class SolveSettings(BaseModel):
     time_limit_seconds: float = Field(60.0, gt=0)
     relative_gap_limit: float = Field(0.01, ge=0, le=1)
     num_workers: int = Field(8, ge=1)
     random_seed: int = 0
+
+
+class SolveRequest(SolveSettings):
+    demand_profile_id: int
+    shift_template_ids: list[int] = Field(min_length=1, max_length=50)
+    employee_ids: list[int] | None = Field(default=None, max_length=500)
     max_weekly_hours: int = Field(48, ge=1, le=168)
     max_consecutive_days: int = Field(6, ge=1, le=6)
 
@@ -43,29 +46,25 @@ class ManualEditRequest(BaseModel):
     assignments: list[AssignmentWrite] = Field(max_length=2000)
 
 
-class RerosterRequest(BaseModel):
+class AbsenceWrite(BaseModel):
     employee_code: str = Field(min_length=1, max_length=32)
-    absent_days: list[WeekDayIndex] = Field(min_length=1, max_length=7)
-    from_day: WeekDayIndex | None = None
-
-    @field_validator("absent_days")
-    @classmethod
-    def _distinct_days(cls, days: list[int]) -> list[int]:
-        if len(set(days)) != len(days):
-            raise ValueError("absent_days must not repeat a day")
-        return sorted(days)
+    days: list[WeekDay] = Field(min_length=1, max_length=7)
 
 
-class RerosterRead(BaseModel):
+class RepairRequest(SolveSettings):
+    from_day: WeekDay
+    absences: list[AbsenceWrite] = Field(default_factory=list, max_length=500)
+    pinned: list[AssignmentWrite] = Field(default_factory=list, max_length=2000)
+    demand_profile_id: int | None = None
+
+
+class ReplacementRead(BaseModel):
     employee_code: str
-    absent_days: list[int]
-    from_day: int
-
-
-class ScheduleChangesRead(BaseModel):
-    kept: list[AssignmentRead]
-    added: list[AssignmentRead]
-    removed: list[AssignmentRead]
+    shift_name: str
+    break_offset: int | None
+    extra_cost: int
+    weekly_hours: int
+    prefers_off: bool
 
 
 class ShiftTypeRead(BaseModel):
@@ -82,13 +81,15 @@ class SolveRunRead(BaseModel):
     shift_types: list[ShiftTypeRead]
     demand_profile_id: int | None
     parent_run_id: int | None
-    reroster: RerosterRead | None
     status: RunStatus
     solver: str
     solver_version: str | None
     solve_status: str | None
     params: dict[str, float]
     assignments: list[AssignmentRead] | None
+    repair_from_day: int | None
+    baseline_assignments: list[AssignmentRead] | None
+    changes: int | None
     objective: float | None
     best_bound: float | None
     gap: float | None

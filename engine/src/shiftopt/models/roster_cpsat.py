@@ -4,7 +4,7 @@ from typing import Any
 from ortools.sat.python import cp_model
 
 from shiftopt.constraints.sequences import consecutive_day_windows, forbidden_shift_pairs
-from shiftopt.domain import Assignment, Employee, Instance, Solution
+from shiftopt.domain import Assignment, Employee, Instance, RepairSpec, Solution
 from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
 from shiftopt.solvers.base import SolveParams, SolveResult, SolveStatus
 from shiftopt.solvers.cpsat import SOLVER_NAME, run_cp_model, with_time_share
@@ -24,23 +24,13 @@ class RosterOutcome:
     changes: int | None = None
 
 
-@dataclass(frozen=True)
-class Reroster:
-    """A previous roster to stay close to. Days in locked_days keep exactly the previous
-    assignments of every employee; on the other days each assignment added or dropped counts as
-    one change."""
-
-    previous: Solution
-    locked_days: frozenset[int] = frozenset()
-
-
 def solve_roster(
     instance: Instance,
     params: SolveParams,
     *,
     symmetry_breaking: bool = False,
     decompose: bool = False,
-    reroster: Reroster | None = None,
+    repair: RepairSpec | None = None,
 ) -> RosterOutcome:
     """Per-employee roster with Boolean work[e, d, s] solved by CP-SAT on a cyclic week.
 
@@ -57,19 +47,16 @@ def solve_roster(
     decompose first solves the aggregate model with implicit breaks, then caps the number of starts
     per day and shift type to that head count. The result is then an approximation and is never
     reported as OPTIMAL.
-
-    reroster repairs a previous roster, for example after a sudden absence added to an
-    employee's unavailable days. Locked days are fixed to the previous assignments, the search
-    starts from the previous roster, and a tier minimising the number of changes is solved right
-    after shortfall, so coverage still comes first and labour cost only breaks ties.
     """
+    if repair is not None and (symmetry_breaking or decompose):
+        raise ValueError("repair cannot be combined with symmetry breaking or decomposition")
     if not decompose:
-        model = _RosterModel(instance, reroster)
+        model = _RosterModel(instance, repair)
         if symmetry_breaking:
             model.add_symmetry_breaking()
         return model.solve(params)
     half = replace(params, time_limit_seconds=params.time_limit_seconds / 2)
-    model = _RosterModel(instance, reroster)
+    model = _RosterModel(instance)
     if symmetry_breaking:
         model.add_symmetry_breaking()
     model.add_start_caps(_aggregate_starts(instance, half))
@@ -108,15 +95,15 @@ def _downgrade(result: SolveResult) -> SolveResult:
 
 
 class _RosterModel:
-    def __init__(self, instance: Instance, reroster: Reroster | None = None) -> None:
+    def __init__(self, instance: Instance, repair: RepairSpec | None = None) -> None:
         self.instance = instance
-        self.reroster = reroster
         self.rules = instance.rules
         self.employees = instance.employees
         self.shifts = tuple(
             shift for shift in instance.shift_types if shift.length <= self.rules.max_daily_hours
         )
         self.shift_index = {shift.name: index for index, shift in enumerate(self.shifts)}
+        self.employee_index = {employee.id: index for index, employee in enumerate(self.employees)}
         self.model = cp_model.CpModel()
         self.zero = self.model.new_constant(0)
         self.all_vars: list[Any] = []
@@ -130,8 +117,9 @@ class _RosterModel:
         self.night_counts: list[Any] = []
         self.night_max: Any = None
         self.night_min: Any = None
-        self.previous_keys: set[tuple[int, int, int]] = set()
-        self.unmatched_previous = 0
+        self.repair = repair
+        self.baseline_keys: dict[tuple[int, int, int], int | None] = {}
+        self.changes: Any = None
         self._build()
 
     def _bool(self, name: str) -> Any:
@@ -151,44 +139,57 @@ class _RosterModel:
         self._add_weekly_rest()
         self._add_breaks_and_coverage()
         self._add_night_spread()
-        if self.reroster is not None:
-            self._index_previous(self.reroster)
-            self._lock_days(self.reroster.locked_days)
+        if self.repair is not None:
+            self._add_repair(self.repair)
 
-    def _index_previous(self, reroster: Reroster) -> None:
-        employee_index = {employee.id: index for index, employee in enumerate(self.employees)}
-        for assignment in reroster.previous.assignments:
-            key = (
-                employee_index.get(assignment.employee_id, -1),
-                assignment.day,
-                self.shift_index.get(assignment.shift_name, -1),
-            )
-            if key in self.work:
-                self.previous_keys.add(key)
-            elif assignment.day in reroster.locked_days:
+    def _keys_of(
+        self, assignments: tuple[Assignment, ...]
+    ) -> dict[tuple[int, int, int], int | None]:
+        keys: dict[tuple[int, int, int], int | None] = {}
+        for item in assignments:
+            if (
+                item.employee_id not in self.employee_index
+                or item.shift_name not in self.shift_index
+            ):
                 raise ValueError(
-                    f"locked assignment {assignment.employee_id} day {assignment.day} "
-                    f"{assignment.shift_name} is not allowed in the new instance"
+                    f"repair refers to unknown employee or shift: {item.employee_id} "
+                    f"{item.shift_name}"
                 )
-            else:
-                self.unmatched_previous += 1
+            key = (
+                self.employee_index[item.employee_id],
+                item.day,
+                self.shift_index[item.shift_name],
+            )
+            keys[key] = item.break_offset
+        return keys
 
-    def _lock_days(self, locked_days: frozenset[int]) -> None:
+    def _add_repair(self, spec: RepairSpec) -> None:
+        self.baseline_keys = self._keys_of(spec.baseline.assignments)
+        locked = self._keys_of(spec.locked())
+        if any(key not in self.work for key in locked):
+            raise ValueError("locked shift falls on a day the employee cannot work")
         for key, work in self.work.items():
-            if key[1] in locked_days:
-                self.model.add(work == int(key in self.previous_keys))
+            if key[1] < spec.from_day or key in locked:
+                self.model.add(work == int(key in locked))
+        for key, offset in locked.items():
+            window = self.shifts[key[2]].break_window(self.rules)
+            if offset in window:
+                for candidate in window:
+                    self.model.add(self.breaks[(*key, candidate)] == int(candidate == offset))
+        unmatched = sum(1 for key in self.baseline_keys if key not in self.work)
+        terms = [1 - work if key in self.baseline_keys else work for key, work in self.work.items()]
+        self.changes = self._sum(terms) + unmatched
 
-    def _changes(self) -> Any:
-        locked_days = self.reroster.locked_days if self.reroster else frozenset()
-        flips = self._sum(
-            (1 - work) if key in self.previous_keys else work
-            for key, work in self.work.items()
-            if key[1] not in locked_days
-        )
-        return flips + self.unmatched_previous
-
-    def _previous_hints(self) -> dict[Any, int]:
-        return {work: int(key in self.previous_keys) for key, work in self.work.items()}
+    def _repair_hints(self) -> dict[Any, int]:
+        hints: dict[Any, int] = {}
+        for key, work in self.work.items():
+            hints[work] = int(key in self.baseline_keys)
+        for key, offset in self.baseline_keys.items():
+            if key not in self.work:
+                continue
+            for candidate in self.shifts[key[2]].break_window(self.rules):
+                hints[self.breaks[(*key, candidate)]] = int(candidate == offset)
+        return hints
 
     def _create_shift_variables(self) -> None:
         for e_index, employee in enumerate(self.employees):
@@ -337,8 +338,8 @@ class _RosterModel:
 
     def _stages(self) -> list[tuple[str, Any]]:
         stages: list[tuple[str, Any]] = [("shortfall", self._sum(self.shortfall))]
-        if self.reroster is not None:
-            stages.append(("changes", self._changes()))
+        if self.changes is not None:
+            stages.append(("changes", self.changes))
         stages.append(("cost", self._cost()))
         if self.night_max is not None:
             stages.append(("night_spread", self.night_max - self.night_min))
@@ -351,7 +352,7 @@ class _RosterModel:
         stage_params = with_time_share(params, len(stages))
         results: list[SolveResult] = []
         best = None
-        hints = self._previous_hints() if self.reroster is not None else {}
+        hints: dict[Any, int] = self._repair_hints() if self.repair is not None else {}
         for _, expression in stages:
             self.model.proto.clear_solution_hint()
             for variable, value in hints.items():
@@ -383,7 +384,7 @@ class _RosterModel:
                 else None
             ),
             preference_misses=round(best.value(self._preference_misses())),
-            changes=round(best.value(self._changes())) if self.reroster is not None else None,
+            changes=None if self.changes is None else round(best.value(self.changes)),
         )
 
     def _solution(self, best: Any) -> Solution:

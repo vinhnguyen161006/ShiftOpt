@@ -115,6 +115,7 @@ def test_staffing_sweep_rederives_demand_for_each_value() -> None:
             "assumption": "alpha",
             "values": [1.0, 2.0],
             "load": load,
+            "night_from_sales": False,
             "base": {"alpha": 1.0, "productivity": 1.0, "min_staff": 1, "night_min_staff": 1},
         },
     )

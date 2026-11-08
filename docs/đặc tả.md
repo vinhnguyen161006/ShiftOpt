@@ -8,7 +8,7 @@
 
 Trong phạm vi bản đầu (CLAUDE.md mục 13–14):
 - Một địa điểm, một loại kỹ năng; lịch tuần 7×24; một chế độ nhu cầu trên một lần chạy.
-- Một nguồn nhu cầu từ dữ liệu: bán lẻ (FreshRetailNet, một store, ingest file doanh số trên web). Không hỗ trợ tổng đài (D18).
+- Một nguồn nhu cầu: file doanh số ingest trên web (CSV hoặc parquet), suy ra số người theo giờ. FreshRetailNet là dữ liệu mẫu cho demo. Không hỗ trợ tổng đài (D18).
 - Tối ưu lịch theo nhân viên (CP-SAT), validator độc lập, KPI, độ nhạy (quét λ, chi phí biên, dual LP xấp xỉ, quét giả định quy đổi).
 - Giao diện: nhập nhu cầu, mẫu ca, nhân viên, Optimize, lịch, cảnh báo tuân thủ, sửa tay, What-if, xuất CSV.
 
@@ -18,7 +18,7 @@ Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, 
 
 | Mã | Yêu cầu | Kiểm chứng |
 |---|---|---|
-| FR-1 | Nhập nhu cầu bằng lưới 168 ô, CSV hoặc FreshRetailNet (ingest file parquet). Ô là số nguyên không âm, tối đa 1000. | `test_csv_import.py`, `test_demand_schema.py` |
+| FR-1 | Nhập nhu cầu bằng lưới 168 ô, CSV, hoặc ingest file doanh số (CSV/parquet, người dùng chọn cột trên form). Ô là số nguyên không âm, tối đa 1000. | `test_csv_import.py`, `test_sales_ingest.py`, `test_demand_schema.py` |
 | FR-2 | Quy đổi nhu cầu ra số người: tuyến tính `r = max(floor, ceil(alpha·D/p))`. Mọi tham số hiện trên UI và trong metadata. | `test_kpi_and_staffing.py`, `test_dataset_loader.py` |
 | FR-3 | Mẫu ca (giờ bắt đầu, độ dài). Nhân viên có giờ tối đa riêng (≤ luật), ngày không làm được, ngày mong muốn nghỉ. | `test_validation.py`, `test_roster_cpsat.py` |
 | FR-4 | Optimize tạo một lượt giải bất biến, trả `job_id` ngay, poll theo `job_id`. Lưu đủ tái lập (nguyên tắc 10). | `test_schedules_flow.py` (MySQL) |
@@ -26,7 +26,6 @@ Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, 
 | FR-6 | Sửa tay tạo lượt mới, chạy lại validator, lịch gốc không đổi. | `test_crud_api` / smoke flow |
 | FR-7 | KPI: coverage, giờ thiếu/thừa, hiệu suất, chi phí, phụ cấp đêm, độ lệch ca đêm và cuối tuần. Xuất CSV. | `test_kpi_and_staffing.py`, `test_schedule_views.py` |
 | FR-8 | Độ nhạy: quét λ ∈ [0,8; 1,3], chi phí biên 168 giờ bằng giải lại, dual LP có nhãn xấp xỉ, quét giả định quy đổi. | `test_sensitivity.py`, `test_worker.py` |
-| FR-9 | Báo nghỉ đột xuất: từ một lượt thành công, chọn nhân viên và các ngày nghỉ, hệ thống tạo lượt mới. Các ngày trước mốc giữ nguyên; các phân công khác thay đổi ít nhất có thể, sau khi đã ưu tiên đủ người. Lượt gốc không đổi. Mốc mặc định là ngày nghỉ đầu tiên. | `test_reroster.py`, `test_schedule_diff.py`, `test_schedules_flow.py` (MySQL) |
 
 ## 3. Quyết định đã chốt (bản nháp)
 
@@ -52,6 +51,8 @@ Người chốt: Claude theo ủy quyền. Chờ nhóm xác nhận. Lý do ghi c
 | D16 | Hợp đồng nhân viên | Chỉ thêm giờ tối đa riêng; không thêm loại hợp đồng | Đủ cho bán thời gian; MVP mục 8.1 |
 | D17 | Báo cáo nghiên cứu nền | Không có trong repo; đặc tả thay vai trò nguồn | File không tồn tại |
 | D18 | Chế độ tổng đài (Erlang A/C) | Bỏ khỏi sản phẩm (người dùng quyết định 2026-11-07) | Nhóm không hỗ trợ tổng đài; giữ một chế độ bán lẻ |
+| D19 | Nguồn nhu cầu | Ingest file doanh số tổng quát, không gắn FreshRetailNet. Người dùng ingest file (CSV hoặc parquet) và chọn cột trên form; hệ thống gợi ý cột theo tên. FreshRetailNet là dữ liệu mẫu cho demo | Yêu cầu của người dùng: chỉ là ingest doanh số rồi suy ra nhu cầu; dữ liệu khác FreshRetailNet cũng phải chạy. Hồ sơ lưu tuần tải để quét giả định không cần file gốc |
+| D20 | Xếp lại lịch (repair) | Lịch gốc là bất biến. Repair tạo lượt mới: ngày trước `from_day` và ca ghim là cố định, người vắng không được xếp; tầng "thay đổi so với gốc" đặt sau thiếu người và trước chi phí. Gợi ý người thay chỉ dùng validator, không gọi solver | Giữ ổn định lịch đã công bố (nghiệp vụ người báo ốm); kiểm tra khả thi bằng tính đơn điệu của ràng buộc cứng, không để solver báo INFEASIBLE |
 
 ## 4. Ràng buộc pháp lý
 
@@ -72,7 +73,7 @@ Bẫy Đ.111 với ca qua đêm: validator tính khoảng nghỉ liên tục tr�
 
 ## 5. Tiêu chí nghiệm thu
 
-Lấy từ CLAUDE.md mục 13. Kết quả đo và bằng chứng nằm trong [acceptance.md](acceptance.md).
+Lấy từ CLAUDE.md mục 13. Kết quả đo nằm trong [benchmarks.md](benchmarks.md).
 
 | Tiêu chí | Ngưỡng |
 |---|---|

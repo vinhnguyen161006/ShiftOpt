@@ -87,13 +87,17 @@ Call-centre mode (Erlang A/C) was removed on 2026-11-07 (spec D18).
 - Parametric sweep: `lambda in {0.8, ..., 1.3}`, demand scaled by `tolerant_ceil(lambda * r_t)`. Each point carries `proven`; a `FEASIBLE` point is never read as an optimum.
 - Re-solve resolvers: `aggregate_resolver` (head-count model) or `roster_resolver` (CP-SAT roster). Labor cost comes from `kpi.labor_cost`, not from the lexicographic objective, whose last tier is not a cost.
 - Covariate scenarios: `DemandScenario` scales demand per weekday and keeps the source text beside the result. The promotion uplift `1.43` is a suggested default from the FreshRetailNet paper (arXiv:2505.16319 v5). Holiday and rain have no default: the caller supplies the factor and its source.
-
-## 6. Re-roster after an absence
-
-- Input: a solved roster `previous`, an employee whose unavailable days grow by the absent days, and `from_day`. Days below `from_day` are locked: for every employee, `work[e,d,s]` equals its value in `previous`.
-- Changes: `changes = sum over unlocked (e,d,s) of |work[e,d,s] - previous[e,d,s]|`, plus the previous assignments that have no variable any more (absent days, or shifts no longer in the instance). The reported count is exact for the returned roster.
-- Priority: shortfall, then changes, then labour cost, night spread, preferences. Coverage stays first and soft; changes only break ties that shortfall leaves open, and cost only breaks ties that changes leave open.
-- Warm start: the first tier is hinted with `previous`; later tiers use the previous tier's solution, as before.
-- Rest (Article 110), the 24-hour weekly rest (Article 111), the weekly and consecutive-day limits are enforced on the whole cyclic week, including locked days. A replacement cannot break the rest rule against a locked shift.
-- Without `reroster`, the model and its objective are unchanged.
 - Staffing assumptions: `sweep_staffing_assumption` re-derives demand with `required_staff` for each value of `alpha`, `productivity`, `min_staff` or `night_min_staff`, then re-solves. Sensitivity to these team assumptions is part of the analysis.
+
+## 6. Repair (C6)
+
+Input: lịch gốc `B` (một `Solution`), `from_day` (0..7) và ca ghim `P`. Tập khóa `L = {b in B : b.day < from_day} ∪ P`.
+
+- Ngày `d < from_day`: `work[e,d,s]` cố định bằng 1 khi `(e,d,s)` thuộc `L`, bằng 0 nếu không. Vị trí nghỉ cố định theo `break_offset` gốc khi offset nằm trong `break_window`.
+- Ca ghim: `work = 1`, nghỉ cố định như trên.
+- `changes = sum_{(e,d,s) in B} (1 - work[e,d,s]) + sum_{(e,d,s) not in B} work[e,d,s] + |{b in B : b không có biến work}|`. Đây là khoảng cách Hamming trên bộ (nhân viên, ngày, ca); đổi vị trí nghỉ không tính.
+- Thứ tự tầng: `shortfall`, `changes`, `cost`, `night_spread`, `preference`. Mỗi tầng ràng buộc bằng tối ưu của tầng trước (cùng cơ chế với mô hình thường).
+- Khả thi: mọi ràng buộc cứng (một ca/ngày, giờ, nghỉ 12 giờ, nghỉ 24 giờ tuần, ngày liên tiếp, ngày không làm được) đều đơn điệu: bỏ ca không bao giờ tạo vi phạm mới. Vậy tập `L` đã qua `validate` là nghiệm khả thi của mô hình (không thêm ca nào). Backend kiểm `L` trước khi tạo lượt; vi phạm trả 422 với danh sách. Solver không bao giờ nhận đầu vào không khả thi do khóa.
+- Không kết hợp với phá đối xứng và phân rã (lịch gốc phá vỡ tính đồng nhất).
+
+Gợi ý người thay (`shiftopt.replacement.suggest_replacements`): với ô (nhân viên vắng `a`, ngày `d`), thử từng nhân viên khác không có ca ngày `d` và không vắng `d`, cùng loại ca và cùng vị trí nghỉ; giữ ứng viên mà `validate` không báo vi phạm. Xếp theo `(muốn nghỉ ngày d, chi phí thêm, giờ tuần sau khi thay, mã)`. Không gọi solver.

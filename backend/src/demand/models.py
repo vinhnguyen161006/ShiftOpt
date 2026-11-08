@@ -10,7 +10,7 @@ from src.database import Base, enum_column
 class DemandSource(StrEnum):
     MANUAL = "manual"
     CSV = "csv"
-    FRESHRETAILNET = "freshretailnet"
+    SALES = "sales"
 
 
 class StaffingMode(StrEnum):
@@ -27,4 +27,9 @@ class DemandProfile(Base):
     required_staff: Mapped[list[int]] = mapped_column(JSON)
     conversion_params: Mapped[dict[str, float]] = mapped_column(JSON)
     source_metadata: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)
+    sales_load: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    @property
+    def has_sales_load(self) -> bool:
+        return self.sales_load is not None

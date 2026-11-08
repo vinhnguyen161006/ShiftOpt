@@ -41,8 +41,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    volumes:
-      - ./data:/app/data:ro
     ports:
       - "8000:8000"
 
