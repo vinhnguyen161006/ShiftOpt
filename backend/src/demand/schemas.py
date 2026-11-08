@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
-from shiftopt.staffing.erlang import MAX_PATIENCE_SECONDS
 from shiftopt.staffing.linear import (
     DEFAULT_ALPHA,
     DEFAULT_MIN_STAFF,
@@ -64,18 +63,14 @@ class DatasetDemandRequest(BaseModel):
     conversion_params: ConversionParams = Field(default_factory=ConversionParams)
 
 
+class SalesIngestQuery(ConversionParams):
+    """Query of a sales upload: the profile name, the store to extract and the conversion
+    assumptions, which are flat so they travel as query parameters next to the binary body."""
+
+    name: str = Field(min_length=1, max_length=120)
+    store_id: int
+
+
 class CsvDemandRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     csv_text: str = Field(min_length=1, max_length=MAX_CSV_CHARACTERS)
-
-
-class CallCenterDemandRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=120)
-    base_rate: float = Field(gt=0, le=100_000)
-    handle_seconds: float = Field(gt=0, le=3600)
-    patience_seconds: float = Field(gt=0, le=MAX_PATIENCE_SECONDS)
-    service_level: float = Field(0.8, gt=0, lt=1)
-    answer_seconds: float = Field(20.0, gt=0, le=3600)
-    min_staff: int = Field(1, ge=0, le=MAX_HOURLY_DEMAND)
-    noise: float = Field(0.0, ge=0, le=1)
-    seed: int = Field(0, ge=0)

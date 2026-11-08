@@ -77,18 +77,7 @@ zero, so their head count is the night floor `night_min_staff`. The night window
 caller assumption, recorded in the result metadata. The load is the normalized sales of an
 e-commerce front warehouse, not staffing demand.
 
-Call-centre mode: Erlang A (with abandonment) targeting 80/20 service level.
-- Erlang C (no abandonment, tends to overstaff) and square-root staffing `N = R + beta * sqrt(R)`.
-- Erlang A (`erlang_a_service_level`): M/M/n+M queue with exponential patience. The queue
-  distribution is a birth-death recursion in log space. The service level is measured on the
-  virtual waiting time (Garnett, Mandelbaum and Reiman 2002): a call that would be served without
-  its own abandonment counts; the abandonment of calls ahead still counts. Patience is capped at
-  one hour (`MAX_PATIENCE_SECONDS`), because the queue grows with patience. The agent search runs
-  in `[1, n_C]`, where `n_C` is the Erlang C staffing. The virtual wait CDF is
-  computed by uniformization, so every term is non-negative. As patience grows the result matches
-  Erlang C. `patience_seconds` has no default: it is a team assumption.
-- Synthetic arrivals (`staffing/call_arrivals.py`): a seeded weekly shape with weekday factors and
-  daily peaks. This is an assumption for testing the pipeline, not observed call data.
+Call-centre mode (Erlang A/C) was removed on 2026-11-07 (spec D18).
 
 ## 5. Sensitivity Analysis
 

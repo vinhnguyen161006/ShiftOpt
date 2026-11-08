@@ -107,23 +107,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/demand-profiles/from-call-center": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Profile From Call Center */
-        post: operations["create_profile_from_call_center_api_demand_profiles_from_call_center_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/demand-profiles/from-csv": {
         parameters: {
             query?: never;
@@ -152,6 +135,23 @@ export interface paths {
         put?: never;
         /** Create Profile From Dataset */
         post: operations["create_profile_from_dataset_api_demand_profiles_from_dataset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demand-profiles/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ingest Sales */
+        post: operations["ingest_sales_api_demand_profiles_ingest_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -511,42 +511,6 @@ export interface components {
             /** Shift Name */
             shift_name: string;
         };
-        /** CallCenterDemandRequest */
-        CallCenterDemandRequest: {
-            /**
-             * Answer Seconds
-             * @default 20
-             */
-            answer_seconds: number;
-            /** Base Rate */
-            base_rate: number;
-            /** Handle Seconds */
-            handle_seconds: number;
-            /**
-             * Min Staff
-             * @default 1
-             */
-            min_staff: number;
-            /** Name */
-            name: string;
-            /**
-             * Noise
-             * @default 0
-             */
-            noise: number;
-            /** Patience Seconds */
-            patience_seconds: number;
-            /**
-             * Seed
-             * @default 0
-             */
-            seed: number;
-            /**
-             * Service Level
-             * @default 0.8
-             */
-            service_level: number;
-        };
         /** ComplianceRead */
         ComplianceRead: {
             /** Run Id */
@@ -644,7 +608,7 @@ export interface components {
          * DemandSource
          * @enum {string}
          */
-        DemandSource: "manual" | "csv" | "freshretailnet" | "call_center";
+        DemandSource: "manual" | "csv" | "freshretailnet";
         /** DemandSweepRequest */
         DemandSweepRequest: {
             /** Multipliers */
@@ -1010,7 +974,7 @@ export interface components {
          * StaffingMode
          * @enum {string}
          */
-        StaffingMode: "linear" | "erlang";
+        StaffingMode: "linear";
         /** StaffingSweepPoint */
         StaffingSweepPoint: {
             /** Labor Cost */
@@ -1322,39 +1286,6 @@ export interface operations {
             };
         };
     };
-    create_profile_from_call_center_api_demand_profiles_from_call_center_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CallCenterDemandRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DemandProfileRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     create_profile_from_csv_api_demand_profiles_from_csv_post: {
         parameters: {
             query?: never;
@@ -1398,6 +1329,46 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DatasetDemandRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemandProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_sales_api_demand_profiles_ingest_post: {
+        parameters: {
+            query: {
+                alpha?: number;
+                productivity?: number;
+                min_staff?: number;
+                night_min_staff?: number;
+                name: string;
+                store_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
             };
         };
         responses: {

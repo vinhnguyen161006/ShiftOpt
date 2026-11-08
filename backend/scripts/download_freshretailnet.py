@@ -12,7 +12,10 @@ SHA256_BY_FILE = {
     "data/eval.parquet": "1b118840664280c6b88bffc84c80ee1f54c05d911e354b7599e5da10995e960e",
 }
 ROOT = Path(__file__).resolve().parents[2]
-TARGET_DIR = ROOT / "data" / "raw" / "freshretailnet50k"
+DESTINATION_BY_FILE = {
+    "data/train.parquet": ROOT / "data" / "demo" / "train.parquet",
+    "data/eval.parquet": ROOT / "data" / "raw" / "freshretailnet50k" / "data" / "eval.parquet",
+}
 CHUNK_BYTES = 1 << 20
 
 
@@ -25,7 +28,7 @@ def sha256_of(path: Path) -> str:
 
 
 def fetch(name: str, expected: str) -> None:
-    destination = TARGET_DIR / name
+    destination = DESTINATION_BY_FILE[name]
     if destination.exists() and sha256_of(destination) == expected:
         print(f"ok      {name}")
         return

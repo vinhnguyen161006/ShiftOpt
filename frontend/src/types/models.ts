@@ -1,4 +1,4 @@
-import type { components } from "./api";
+import type { components, operations } from "./api";
 
 type Schemas = components["schemas"];
 
@@ -8,7 +8,6 @@ export type DemandProfileCreate = Schemas["DemandProfileCreate"];
 export type DemandProfileUpdate = Schemas["DemandProfileUpdate"];
 export type DatasetDemandRequest = Schemas["DatasetDemandRequest"];
 export type CsvDemandRequest = Schemas["CsvDemandRequest"];
-export type CallCenterDemandRequest = Schemas["CallCenterDemandRequest"];
 export type DemandSource = Schemas["DemandSource"];
 export type StaffingMode = Schemas["StaffingMode"];
 export type EmployeeRead = Schemas["EmployeeRead"];
@@ -39,3 +38,6 @@ export type SweepPoint = Schemas["SweepPoint"];
 export type StaffingSweepRequest = Schemas["StaffingSweepRequest"];
 export type StaffingSweepResult = Schemas["StaffingSweepResult"];
 export type StaffingSweepPoint = Schemas["StaffingSweepPoint"];
+
+export type SalesIngestQuery =
+  operations["ingest_sales_api_demand_profiles_ingest_post"]["parameters"]["query"];
