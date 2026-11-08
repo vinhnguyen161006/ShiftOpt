@@ -31,7 +31,7 @@ Hai ca pháp lý của nghiệm thu được kiểm bằng test: ca 14h–22h r�
 
 - **Nguồn nhu cầu.** FreshRetailNet-50K (`Dingdong-Inc/FreshRetailNet-50K`, CC BY 4.0, arXiv:2505.16319). Đây là doanh số chuẩn hóa của kho tiền phương thương mại điện tử, **không phải dữ liệu nhân sự và không phải cửa hàng vật lý 24/7**. Số SKU ghi là ~863–865 (dataset card ghi 865, arXiv ghi 863; mâu thuẫn chưa giải quyết).
 - **Split.** Đã xác nhận bằng `dt.min()/max()` trong task 6.1: train 2024-03-28 đến 2024-06-25 (90 ngày), eval 2024-06-26 đến 2024-07-02 (7 ngày). Nhu cầu lấy từ train; eval giữ lại làm tập đánh giá. Chưa tính WAPE/MAPE vì chưa có mô hình dự báo.
-- **Nhu cầu ẩn.** Ô hết hàng (`hours_stock_status = 1`) được thay bằng trung bình doanh số cùng sản phẩm, cùng thứ, cùng giờ trên các ngày không hết hàng. Store 18: 90159 ô được thay; 1008 ô không có ngày không hết hàng để học nên giữ giá trị quan sát ([task 6.1](../WORKLOG.md)).
+- **Nhu cầu ẩn.** Ô hết hàng (`hours_stock_status = 1`) được thay bằng trung bình doanh số cùng sản phẩm, cùng thứ, cùng giờ trên các ngày không hết hàng. Store 18: 90159 ô được thay; 1008 ô không có ngày không hết hàng để học nên giữ giá trị quan sát.
 - **Quy đổi.** `r = max(sàn, ceil(alpha·D/p))`. Giả định của nhóm: `alpha = 1,0`, `p = 4,0` (giờ đỉnh cần 8 người với store 18), sàn 1 và 1. Giờ đêm được đặt bằng sàn đêm trước khi quy đổi ([đặc tả.md](đặc%20tả.md) mục 3).
 - **Phạm vi.** Chỉ hỗ trợ bán lẻ / kho; chế độ tổng đài (Erlang A/C) đã bỏ (D18).
 
@@ -53,7 +53,7 @@ Trên mô hình tổng hợp có nghỉ ngầm, 3 instance (đều, đỉnh, đ�
 
 ## 7. Độ nhạy
 
-- **Chi phí biên rời rạc** `z(r + e_t) − z(r)` cho 168 giờ, bằng giải lại. Đây là chi phí biên của mô hình nguyên, không phải shadow price. Kiểm bằng ví dụ tay (3 ca, nhu cầu 1, giờ 3 = 100 × 980) ([task 5.1](../WORKLOG.md)).
+- **Chi phí biên rời rạc** `z(r + e_t) − z(r)` cho 168 giờ, bằng giải lại. Đây là chi phí biên của mô hình nguyên, không phải shadow price. Kiểm bằng ví dụ tay (3 ca, nhu cầu 1, giờ 3 = 100 × 980).
 - **Dual LP** từ bản relax của cùng mô hình, luôn gắn nhãn xấp xỉ, integrality gap có thể lớn. Dual không bao giờ lấy từ CP-SAT hoặc MIP.
 - **Quét λ** trong {0,8; …; 1,3}: `z(λ)` không giảm. Điểm không `OPTIMAL` được đánh dấu `proven = False`.
 - **Quét giả định quy đổi** (`alpha`, `p`, sàn): chạy lại được qua API `staffing-sweep` và trên UI (what-if).
@@ -120,7 +120,9 @@ Không chép mã từ nguồn nào dưới đây. Mọi thứ được viết l�
 | R12 | web.dev, bài về `prefers-color-scheme` (tác giả ghi trên trang: Thomas Steiner; trang không hiện tiêu đề và ngày trong phần đọc được) | https://web.dev/articles/prefers-color-scheme | 2026-11-07 | Trang không ghi giấy phép trong phần đọc được; không lấy mã | Mẫu "theo tín hiệu của trình duyệt trước, cho người dùng ghi đè sau"; khai báo `color-scheme` để ô nhập và thanh cuộn của trình duyệt cũng tối |
 | R13 | MDN, thuộc tính CSS `color-scheme` | https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme | 2026-11-07, trang ghi sửa lần cuối 2026-07-21 | Creative Commons (chân trang không nêu rõ loại nào); không lấy mã | `color-scheme: dark` đổi màu nền canvas, thanh cuộn và mặc định của ô nhập; kiểm tra tín hiệu hệ thống bằng `prefers-color-scheme` |
 | R14 | Timefold quickstarts, employee scheduling (`use-cases/employee-scheduling`) | https://github.com/TimefoldAI/timefold-quickstarts (mục use-cases/employee-scheduling) | 2026-11-08 | Apache-2.0 (ghi trên trang repo); không lấy mã | Ý tưởng pinning và replanning từ chủ đề bài toán: giữ phần đã chạy, xếp lại phần còn lại. README của mục không đọc được qua công cụ, nên bố cục lưới lấy từ dự án ShiftOpt (`ScheduleGrid`), không từ mẫu Timefold |
-| R15 | Deputy, Find replacement (trợ giúp quản lý) | https://help.deputy.com/hc/en-au/articles/4688987465743 | 2026-11-08 | Trang chỉ đọc qua snippet tìm kiếm (trang trả 403 khi mở trực tiếp); không lấy nội dung | Luồng: từ ca cần thay, chọn Find replacement, xem danh sách người có thể nhận ca, mời người được chọn. Dự án chọn ứng viên từ validator (không gửi lời mời), nên chỉ lấy vị trí của hành động trong bảng |
+| R15 | Deputy, Find replacement (trợ giúp quản lý) | https://help.deputy.com/hc/en-au/articles/4688987465743 | 2026-11-08 | Trang trả 403 khi mở; không dùng làm nguồn | Không dùng. Thay bằng R17 |
+| R16 | Timefold docs, Employee Shift Scheduling, "Real-time planning" | https://docs.timefold.ai/employee-shift-scheduling/latest/real-time-planning | 2026-11-08 | Không ghi giấy phép trong phần đọc được; không lấy mã | Xếp lại: cập nhật đầu vào (người vắng) rồi giải lại; ca được ghim giữ nguyên, ca khác có thể đổi người; báo mức thay đổi (tỷ lệ ca và nhân viên bị ảnh hưởng) |
+| R17 | Connecteam, "Shift swap or shift replacement" (trợ giúp) | https://help.connecteam.com/en/articles/16644414-let-s-settle-this-once-and-for-all-shift-swap-or-shift-replacement | 2026-11-08 | Không ghi giấy phép trong phần đọc được; không lấy mã | Gợi ý người thay: tách thay ca (một chiều) và đổi ca (hai chiều); ứng viên được cảnh báo trùng ca hoặc không khả dụng; quản lý duyệt trước khi có hiệu lực. Trang không nói quản lý thấy gì trong danh sách, nên chỉ lấy hành vi chung |
 
 ### Bố cục lấy từ chính trang chủ
 
@@ -137,5 +139,5 @@ Màn hình Schedule (kết quả một run) và What-if (đường cong z(lambda
 | Schedule (Optimize, trạng thái, lịch, coverage, chi phí) | R1, R10, R9, R6 |
 | Compliance (danh sách vi phạm, sửa tay) | R1 (score analysis), R2, R9 |
 | What-if (lambda, đường cong, heatmap chi phí biên, so sánh kịch bản) | R4, R11, R9 |
-| Schedule: Xếp lại (repair) và đánh dấu ô đổi | R14, R1, R9 (khóa ngày dùng nhãn chữ, không chỉ màu) |
-| Schedule / Compliance: Gợi ý người thay | R15, R9, R10 |
+| Schedule: Xếp lại (repair) và đánh dấu ô đổi | R14, R16, R1, R9 (khóa ngày dùng nhãn chữ, không chỉ màu) |
+| Schedule / Compliance: Gợi ý người thay | R17, R9, R10 |
