@@ -13,16 +13,28 @@ class ModelInvalidError(RuntimeError):
     """The solver rejected the model. This is a programming error, never a user input error."""
 
 
+MAX_COST_TOLERANCE_PERCENT = 10.0
+
+
 @dataclass(frozen=True)
 class SolveParams:
     """Solver settings stored with every run. Identical instance, params and seed with
-    num_workers = 1 must reproduce the same objective."""
+    num_workers = 1 must reproduce the same objective. cost_tolerance_percent lets the labour cost
+    tier rise by that percentage above its optimum so that the later fairness tiers can improve;
+    0 keeps the strict lexicographic order."""
 
     time_limit_seconds: float = 60.0
     relative_gap_limit: float = 0.01
     num_workers: int = 8
     random_seed: int = 0
     log_search_progress: bool = False
+    cost_tolerance_percent: float = 0.0
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.cost_tolerance_percent <= MAX_COST_TOLERANCE_PERCENT:
+            raise ValueError(
+                f"cost_tolerance_percent must be between 0 and {MAX_COST_TOLERANCE_PERCENT}"
+            )
 
 
 @dataclass(frozen=True)

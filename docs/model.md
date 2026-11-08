@@ -161,3 +161,14 @@ Input: lịch gốc `B` (một `Solution`), `from_day` (0..7) và ca ghim `P`. T
 - Không kết hợp với phá đối xứng và phân rã (lịch gốc phá vỡ tính đồng nhất).
 
 Gợi ý người thay (`shiftopt.replacement.suggest_replacements`): với ô (nhân viên vắng `a`, ngày `d`), thử từng nhân viên khác không có ca ngày `d` và không vắng `d`, cùng loại ca và cùng vị trí nghỉ; giữ ứng viên mà `validate` không báo vi phạm. Xếp theo `(muốn nghỉ ngày d, chi phí thêm, giờ tuần sau khi thay, mã)`. Không gọi solver.
+
+## 7. Cost tolerance and worked-hours spread (F)
+
+Parameter `cost_tolerance_percent` t in [0, 10] (`SolveParams`, default 0; decision D21 in `đặc tả.md`).
+
+- t = 0: tiers are shortfall, changes (repair only), cost capped at its optimum, night spread, preference. This is the order of section 2 and it is unchanged.
+- t > 0: the cost tier is capped at floor(C * (100 + t) / 100), where C is the cost optimum the solver found. The cap is relative to that value: if the cost tier is FEASIBLE and not optimal, the tolerance is measured from the found value, not from the true optimum. Use kpi.labor_cost on the returned roster for the real cost, which can exceed the cost tier value.
+- t > 0 adds a tier hours_spread = H_max - H_min after the night-shift spread, before preference. H_e = sum over shifts of length_s * x[e,d,s]; H_max >= H_e and H_min <= H_e, the same linearisation as the night-shift spread in section 2a.
+- Scope: solve_roster (CP-SAT, also the decomposition path) and solve_roster_mip. solve_roster_weighted ignores the tolerance.
+- KPI: hours_spread = max - min of worked hours per employee, counting each shift at full length (breaks are not subtracted, as in the weekly-hours rule). Idle employees count as zero.
+- Rationale: the default order puts cost before fairness, so the cheapest employees take the night shifts. A tolerance of a few percent lets fairness improve at a bounded extra cost. Measured effect: docs/benchmarks.md section 6.

@@ -69,6 +69,7 @@ def solve_params(payload: SolveSettings) -> dict[str, float]:
         "relative_gap_limit": payload.relative_gap_limit,
         "num_workers": payload.num_workers,
         "random_seed": payload.random_seed,
+        "cost_tolerance_percent": payload.cost_tolerance_percent,
     }
 
 
@@ -264,6 +265,7 @@ def get_kpi(run: SolveRun) -> KpiRead:
         night_premium_cost=measures.night_premium_cost,
         night_shift_stddev=measures.night_shift_stddev,
         weekend_shift_stddev=measures.weekend_shift_stddev,
+        hours_spread=measures.hours_spread,
         hard_violations=len(validate(instance, solution)),
         staff_by_hour=list(kpi.staff_by_hour(instance, solution)),
         required_by_hour=list(instance.demand),
@@ -446,6 +448,7 @@ async def create_reroster(
         relative_gap_limit=base.params["relative_gap_limit"],
         num_workers=int(base.params["num_workers"]),
         random_seed=int(base.params["random_seed"]),
+        cost_tolerance_percent=float(base.params.get("cost_tolerance_percent", 0.0)),
         from_day=from_day,
         absences=[AbsenceWrite(employee_code=payload.employee_code, days=payload.absent_days)],
     )

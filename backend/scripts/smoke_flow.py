@@ -222,6 +222,19 @@ def check_sweep(client: httpx.Client, profile_id: int, shift_ids: list[int]) -> 
     expect(all(point["solve_status"] for point in points), "sweep point without status")
 
 
+def check_fairness_sweep(client: httpx.Client, profile_id: int, shift_ids: list[int]) -> None:
+    accepted = client.post(
+        "/api/analysis/fairness-sweep",
+        json={"solve": solve_body(profile_id, shift_ids, 20), "tolerances": [0.0, 5.0]},
+    )
+    expect(accepted.status_code == 202, f"fairness-sweep: {accepted.status_code} {accepted.text}")
+    sweep = poll(client, f"/api/analysis/{accepted.json()['job_id']}")
+    expect(sweep["status"] == "succeeded", f"fairness sweep failed: {sweep['error']}")
+    points = sweep["result"]["points"]
+    expect(len(points) == 2, f"fairness sweep returned {len(points)} points")
+    expect(points[0]["cost_increase_percent"] == 0.0, "tolerance 0 is not the cost baseline")
+
+
 def run_flow(base_url: str) -> None:
     tag = uuid.uuid4().hex[:6]
     with httpx.Client(base_url=base_url, timeout=60) as client:
@@ -233,6 +246,7 @@ def run_flow(base_url: str) -> None:
         check_replacements(client, run)
         check_reroster(client, run)
         check_sweep(client, profile_id, shift_ids)
+        check_fairness_sweep(client, profile_id, shift_ids)
 
 
 def main(base_url: str) -> int:

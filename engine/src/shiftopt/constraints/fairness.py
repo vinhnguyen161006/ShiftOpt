@@ -14,3 +14,17 @@ def night_shift_spread(instance: Instance, solution: Solution) -> int:
     if not counts:
         return 0
     return max(counts.values()) - min(counts.values())
+
+
+def worked_hours_spread(instance: Instance, solution: Solution) -> int:
+    """max - min of worked hours per employee, counting each shift at its full length (breaks are
+    not subtracted, as in the weekly-hours rule). Idle employees count as zero. The roster model
+    minimises the same quantity through AddMaxEquality and AddMinEquality when
+    cost_tolerance_percent is positive. Unknown shift names raise KeyError."""
+    hours = {employee.id: 0 for employee in instance.employees}
+    for assignment in solution.assignments:
+        if assignment.employee_id in hours:
+            hours[assignment.employee_id] += instance.shift_by_name(assignment.shift_name).length
+    if not hours:
+        return 0
+    return max(hours.values()) - min(hours.values())

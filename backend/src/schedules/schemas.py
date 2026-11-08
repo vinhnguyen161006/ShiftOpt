@@ -13,6 +13,7 @@ class SolveSettings(BaseModel):
     relative_gap_limit: float = Field(0.01, ge=0, le=1)
     num_workers: int = Field(8, ge=1)
     random_seed: int = 0
+    cost_tolerance_percent: float = Field(0.0, ge=0, le=10)
 
 
 class SolveRequest(SolveSettings):
@@ -143,6 +144,7 @@ class KpiRead(BaseModel):
     night_premium_cost: int
     night_shift_stddev: float
     weekend_shift_stddev: float
+    hours_spread: int
     hard_violations: int
     staff_by_hour: list[int] = Field(min_length=168, max_length=168)
     required_by_hour: list[int] = Field(min_length=168, max_length=168)

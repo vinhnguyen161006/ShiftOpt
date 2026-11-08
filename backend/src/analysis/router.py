@@ -10,6 +10,7 @@ from src.analysis.schemas import (
     AnalysisRunRead,
     BaselineCompareRequest,
     DemandSweepRequest,
+    FairnessSweepRequest,
     LpDualsRequest,
     MarginalCostRequest,
     StaffingSweepRequest,
@@ -77,6 +78,18 @@ async def staffing_sweep(
     background: BackgroundTasks,
 ) -> AnalysisAccepted:
     return await _accept(session, jobs, background, AnalysisKind.STAFFING_SWEEP, payload)
+
+
+@router.post(
+    "/fairness-sweep", response_model=AnalysisAccepted, status_code=status.HTTP_202_ACCEPTED
+)
+async def fairness_sweep(
+    payload: FairnessSweepRequest,
+    session: SessionDep,
+    jobs: JobsDep,
+    background: BackgroundTasks,
+) -> AnalysisAccepted:
+    return await _accept(session, jobs, background, AnalysisKind.FAIRNESS_SWEEP, payload)
 
 
 @router.post(

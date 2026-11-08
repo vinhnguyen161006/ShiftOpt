@@ -213,3 +213,9 @@
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
+
+.fairness-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}

@@ -1,10 +1,13 @@
 import os
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import replace
 from itertools import repeat
 from typing import Any
 
 from shiftopt.baseline import greedy_resolver
 from shiftopt.domain import Instance
+from shiftopt.kpi import labor_cost
+from shiftopt.models.roster_cpsat import solve_roster
 from shiftopt.sensitivity.lp_duals import compare_duals_with_marginal_cost, lp_relaxation_duals
 from shiftopt.sensitivity.parametric import (
     Evaluation,
@@ -14,7 +17,7 @@ from shiftopt.sensitivity.parametric import (
     scale_demand,
 )
 from shiftopt.sensitivity.scenarios import StaffingAssumption, sweep_staffing_assumption
-from shiftopt.solvers.base import SolveParams
+from shiftopt.solvers.base import SolveParams, SolveStatus
 from shiftopt.staffing.latent_demand import zero_night_load
 
 from src.analysis.models import AnalysisKind
@@ -35,6 +38,8 @@ def run_analysis(kind: str, request: dict[str, Any]) -> dict[str, Any]:
         return _staffing_sweep(instance, request, params)
     if kind == AnalysisKind.BASELINE_COMPARE:
         return _baseline_compare(instance, params)
+    if kind == AnalysisKind.FAIRNESS_SWEEP:
+        return _fairness_sweep(instance, request["tolerances"], params)
     raise ValueError(f"unknown analysis kind {kind}")
 
 
@@ -145,6 +150,50 @@ def _baseline_compare(instance: Instance, params: SolveParams) -> dict[str, Any]
             _baseline_row("greedy", greedy_resolver()(instance)),
         ]
     }
+
+
+def solve_fairness_point(
+    instance: Instance, tolerance: float, params: SolveParams
+) -> dict[str, Any]:
+    outcome = solve_roster(instance, replace(params, cost_tolerance_percent=tolerance))
+    solved = outcome.understaffed_hours is not None
+    return {
+        "tolerance_percent": tolerance,
+        "solve_status": outcome.result.status.value,
+        "proven": outcome.result.status is SolveStatus.OPTIMAL,
+        "labor_cost": float(labor_cost(instance, outcome.solution)) if solved else None,
+        "night_spread": outcome.night_spread,
+        "hours_spread": outcome.hours_spread,
+        "understaffed_hours": outcome.understaffed_hours,
+    }
+
+
+def _fairness_sweep(
+    instance: Instance, tolerances: list[float], params: SolveParams
+) -> dict[str, Any]:
+    parallel = parallel_points(len(tolerances), params.num_workers)
+    if parallel == 1:
+        rows = [solve_fairness_point(instance, tolerance, params) for tolerance in tolerances]
+    else:
+        with ProcessPoolExecutor(max_workers=parallel) as pool:
+            rows = list(
+                pool.map(solve_fairness_point, repeat(instance), tolerances, repeat(params))
+            )
+    base = next(
+        (
+            row["labor_cost"]
+            for row in rows
+            if row["tolerance_percent"] == 0 and row["labor_cost"] is not None
+        ),
+        None,
+    )
+    for row in rows:
+        row["cost_increase_percent"] = (
+            None
+            if base is None or row["labor_cost"] is None
+            else 100 * (row["labor_cost"] - base) / base
+        )
+    return {"points": rows}
 
 
 def _baseline_row(method: str, evaluation: Evaluation) -> dict[str, Any]:

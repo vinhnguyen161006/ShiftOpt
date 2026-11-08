@@ -34,6 +34,11 @@ export function ScheduleKpis({ kpi }: { kpi: KpiRead }) {
           value: formatDecimal(kpi.night_shift_stddev, 2),
           sub: vi.schedule.kpis.nightSpreadSub(formatDecimal(kpi.weekend_shift_stddev, 2)),
         },
+        {
+          label: vi.schedule.kpis.hoursSpread,
+          value: vi.home.sample.hours(kpi.hours_spread),
+          sub: vi.schedule.kpis.hoursSpreadSub,
+        },
       ]}
     />
   );

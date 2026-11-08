@@ -218,6 +218,8 @@ Nhờ có biến `u`, mô hình luôn có lời giải kể cả khi thiếu nh�
 3. **Tầng 3:** giữ nguyên hai kết quả trên, rồi chia ca đêm công bằng nhất, tức tối thiểu chênh lệch giữa người làm nhiều ca đêm nhất và người làm ít nhất.
 4. **Tầng 4:** chỉ khi có người đăng ký ngày muốn nghỉ, tối thiểu số lần xếp ca vào ngày đó.
 
+**Dung sai chi phí (tùy chọn, `cost_tolerance_percent` từ 0 đến 10, mặc định 0).** Khi lớn hơn 0, tầng 2 được nới: chi phí không vượt tối ưu tầng 2 × (100 + t) / 100. Sau tầng 3 thêm một tầng chênh giờ làm (max − min giờ làm mỗi người). Mục đích: đổi một phần nhỏ chi phí lấy ca đêm và giờ làm đều hơn. Với 0 thì thứ tự như trên. Chi tiết: `model.md` mục 7.
+
 **Giờ nghỉ được lưu theo từng ca.** Solver chọn giờ nghỉ cho mỗi ca cần nghỉ. Lịch lưu giờ này thành `break_offset` trong từng dòng phân ca: số giờ tính từ đầu ca, ví dụ ca Ngày 8h có `break_offset = 4` là nghỉ lúc 12h. KPI dùng `break_offset` để trừ người đang nghỉ khỏi số người có mặt; validator kiểm tra `break_offset` nằm trong khoảng cho phép. Khi sửa lịch bằng tay, **người dùng chọn** giờ nghỉ ở cột **Bắt đầu nghỉ**. Đổi ca thì giờ nghỉ bị xóa và phải chọn lại. Để trống ở ca cần nghỉ thì validator báo vi phạm Đ.109.
 
 Mỗi tầng không được làm xấu kết quả tầng trước. Thời gian giải chia đều cho các tầng. Lời giải tầng trước được dùng làm gợi ý khởi đầu cho tầng sau, giúp solver tìm nhanh hơn.
