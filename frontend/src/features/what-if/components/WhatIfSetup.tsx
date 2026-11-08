@@ -15,7 +15,12 @@ import type {
   ShiftTemplateRead,
   StaffingSweepRequest,
 } from "../../../types/models";
-import { useDemandSweep, useMarginalCost, useStaffingSweep } from "../api/analysis";
+import {
+  useBaselineCompare,
+  useDemandSweep,
+  useMarginalCost,
+  useStaffingSweep,
+} from "../api/analysis";
 import "../what-if.css";
 import { vi } from "../../../locales/vi";
 
@@ -24,7 +29,7 @@ type WhatIfSetupProps = {
   templates: ShiftTemplateRead[];
   employeeCount: number;
   rules: LaborRulesRead;
-  onStarted: (kind: "sweep" | "marginal" | "staffing", runId: number) => void;
+  onStarted: (kind: "sweep" | "marginal" | "staffing" | "baseline", runId: number) => void;
 };
 
 type StaffingField = StaffingSweepRequest["assumption"];
@@ -72,6 +77,7 @@ export function WhatIfSetup({
   const sweep = useDemandSweep();
   const marginal = useMarginalCost();
   const staffing = useStaffingSweep();
+  const baseline = useBaselineCompare();
   const [draft, setDraft] = useState(() => ({
     ...initialDraft(rules),
     demandProfileId: profiles[0] ? String(profiles[0].id) : "",
@@ -84,7 +90,7 @@ export function WhatIfSetup({
   const [valuesText, setValuesText] = useState("0.8, 1.0, 1.2");
   const selectedProfile = profiles.find((profile) => String(profile.id) === draft.demandProfileId);
   const canSweepAssumption = selectedProfile?.has_sales_load === true;
-  const error = sweep.error ?? marginal.error ?? staffing.error;
+  const error = sweep.error ?? marginal.error ?? staffing.error ?? baseline.error;
   const general = generalError(error);
 
   return (
@@ -199,6 +205,17 @@ export function WhatIfSetup({
           }}
         >
           {staffing.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runStaffing}
+        </Button>
+        <Button
+          disabled={baseline.isPending}
+          onClick={() => {
+            baseline.mutate(
+              { solve: toSolveRequest(draft) },
+              { onSuccess: (job) => onStarted("baseline", job.job_id) },
+            );
+          }}
+        >
+          {baseline.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runBaseline}
         </Button>
       </div>
     </div>

@@ -50,3 +50,18 @@ async def test_sweep_rejects_too_many_points(client: AsyncClient, seeded: dict[s
         json={"solve": solve_body(seeded), "multipliers": [1.0] * 21},
     )
     assert response.status_code == 422
+
+
+async def test_baseline_compare_returns_cpsat_and_greedy(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    accepted = await client.post(
+        "/api/analysis/baseline-compare", json={"solve": solve_body(seeded)}
+    )
+    assert accepted.status_code == 202
+    run = await poll(client, f"/api/analysis/{accepted.json()['job_id']}")
+
+    assert run["status"] == "succeeded", run["error"]
+    methods = [point["method"] for point in run["result"]["points"]]
+    assert methods == ["cpsat", "greedy"]
+    assert run["result"]["points"][1]["proven"] is False

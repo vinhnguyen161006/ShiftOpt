@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.analysis.models import AnalysisKind, AnalysisRun
 from src.analysis.schemas import (
+    BaselineCompareRequest,
     DemandSweepRequest,
     LpDualsRequest,
     MarginalCostRequest,
@@ -22,7 +23,13 @@ from src.schedules.service import check_limits, snapshot_for, solve_params
 
 logger = logging.getLogger(__name__)
 
-AnalysisRequest = DemandSweepRequest | MarginalCostRequest | LpDualsRequest | StaffingSweepRequest
+AnalysisRequest = (
+    DemandSweepRequest
+    | MarginalCostRequest
+    | LpDualsRequest
+    | StaffingSweepRequest
+    | BaselineCompareRequest
+)
 STAFFING_FIELDS = ("alpha", "productivity", "min_staff", "night_min_staff")
 
 
@@ -45,7 +52,7 @@ async def create_run(
         body["multipliers"] = request.multipliers
     elif isinstance(request, StaffingSweepRequest):
         body.update(await _staffing_inputs(session, request))
-    else:
+    elif not isinstance(request, BaselineCompareRequest):
         body["hourly_wage"] = request.hourly_wage
     run = AnalysisRun(kind=kind, status=RunStatus.QUEUED, request=body)
     session.add(run)

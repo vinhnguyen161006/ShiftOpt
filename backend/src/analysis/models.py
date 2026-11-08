@@ -13,6 +13,7 @@ class AnalysisKind(StrEnum):
     MARGINAL_COST = "marginal_cost"
     LP_DUALS = "lp_duals"
     STAFFING_SWEEP = "staffing_sweep"
+    BASELINE_COMPARE = "baseline_compare"
 
 
 class AnalysisRun(Base):

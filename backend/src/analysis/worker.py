@@ -3,6 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from itertools import repeat
 from typing import Any
 
+from shiftopt.baseline import greedy_resolver
 from shiftopt.domain import Instance
 from shiftopt.sensitivity.lp_duals import compare_duals_with_marginal_cost, lp_relaxation_duals
 from shiftopt.sensitivity.parametric import (
@@ -32,6 +33,8 @@ def run_analysis(kind: str, request: dict[str, Any]) -> dict[str, Any]:
         return _lp_duals(instance, int(request["hourly_wage"]), params)
     if kind == AnalysisKind.STAFFING_SWEEP:
         return _staffing_sweep(instance, request, params)
+    if kind == AnalysisKind.BASELINE_COMPARE:
+        return _baseline_compare(instance, params)
     raise ValueError(f"unknown analysis kind {kind}")
 
 
@@ -132,4 +135,24 @@ def _lp_duals(instance: Instance, hourly_wage: int, params: SolveParams) -> dict
         "duals_by_hour": list(lp.duals),
         "missing_hours": list(lp.missing_hours),
         "lp_objective": lp.lp_objective,
+    }
+
+
+def _baseline_compare(instance: Instance, params: SolveParams) -> dict[str, Any]:
+    return {
+        "points": [
+            _baseline_row("cpsat", roster_resolver(params)(instance)),
+            _baseline_row("greedy", greedy_resolver()(instance)),
+        ]
+    }
+
+
+def _baseline_row(method: str, evaluation: Evaluation) -> dict[str, Any]:
+    return {
+        "method": method,
+        "solve_status": evaluation.result.status.value,
+        "proven": evaluation.proven,
+        "labor_cost": evaluation.labor_cost,
+        "understaffed_hours": evaluation.understaffed_hours,
+        "staffed_hours": evaluation.staffed_hours,
     }

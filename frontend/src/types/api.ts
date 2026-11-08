@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/analysis/baseline-compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Baseline Compare */
+        post: operations["baseline_compare_api_analysis_baseline_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analysis/demand-sweep": {
         parameters: {
             query?: never;
@@ -511,7 +528,7 @@ export interface components {
          * AnalysisKind
          * @enum {string}
          */
-        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals" | "staffing_sweep";
+        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals" | "staffing_sweep" | "baseline_compare";
         /** AnalysisRunRead */
         AnalysisRunRead: {
             /**
@@ -527,7 +544,7 @@ export interface components {
             id: number;
             kind: components["schemas"]["AnalysisKind"];
             /** Result */
-            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | components["schemas"]["StaffingSweepResult"] | null;
+            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | components["schemas"]["StaffingSweepResult"] | components["schemas"]["BaselineCompareResult"] | null;
             status: components["schemas"]["RunStatus"];
         };
         /** AssignmentRead */
@@ -551,6 +568,38 @@ export interface components {
             employee_code: string;
             /** Shift Name */
             shift_name: string;
+        };
+        /** BaselineCompareRequest */
+        BaselineCompareRequest: {
+            solve: components["schemas"]["SolveRequest"];
+        };
+        /** BaselineCompareResult */
+        BaselineCompareResult: {
+            /**
+             * Label
+             * @default Greedy is a heuristic for comparison, not proven optimal
+             */
+            label: string;
+            /** Points */
+            points: components["schemas"]["BaselineRow"][];
+        };
+        /** BaselineRow */
+        BaselineRow: {
+            /** Labor Cost */
+            labor_cost: number | null;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "cpsat" | "greedy";
+            /** Proven */
+            proven: boolean;
+            /** Solve Status */
+            solve_status: string;
+            /** Staffed Hours */
+            staffed_hours: number | null;
+            /** Understaffed Hours */
+            understaffed_hours: number | null;
         };
         /** ComplianceRead */
         ComplianceRead: {
@@ -1162,6 +1211,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    baseline_compare_api_analysis_baseline_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BaselineCompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     demand_sweep_api_analysis_demand_sweep_post: {
         parameters: {
             query?: never;
