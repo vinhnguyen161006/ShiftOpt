@@ -10,6 +10,8 @@ import { ReplacementList } from "../../features/compliance/components/Replacemen
 import { ViolationList } from "../../features/compliance/components/ViolationList";
 import { useDemandProfiles } from "../../features/demand/api/demand";
 import { useEmployees } from "../../features/employees/api/employees";
+import { ChangesSummary } from "../../features/reroster/components/ChangesSummary";
+import { RerosterForm } from "../../features/reroster/components/RerosterForm";
 import {
   isActive,
   useScheduleKpi,
@@ -111,6 +113,7 @@ function RunView({ runId }: { runId: number }) {
   const compliance = useCompliance(runId, hasSchedule);
   const [editing, setEditing] = useState(false);
   const [repairing, setRepairing] = useState(false);
+  const [rerostering, setRerostering] = useState(false);
 
   if (run.isPending) {
     return <Loading label={vi.schedule.loadingRun(runId)} />;
@@ -152,6 +155,11 @@ function RunView({ runId }: { runId: number }) {
           labelledBy="compliance-title"
           aside={
             <span className="run-header-actions">
+              {data.status === "succeeded" && (
+                <Button size="sm" onClick={() => setRerostering(true)}>
+                  {vi.schedule.reroster.button}
+                </Button>
+              )}
               <Button size="sm" onClick={() => setRepairing(true)}>
                 {vi.schedule.repairButton}
               </Button>
@@ -174,6 +182,11 @@ function RunView({ runId }: { runId: number }) {
           />
         </Panel>
       )}
+      {hasSchedule && data.parent_run_id !== null && !isActive(data.status) && (
+        <Panel title={vi.schedule.reroster.changesTitle} labelledBy="changes-title">
+          <ChangesSummary runId={data.id} parentId={data.parent_run_id} />
+        </Panel>
+      )}
       {!isActive(data.status) && (
         <Panel title={vi.schedule.runDetails} labelledBy="details-title">
           <div className="form-stack">
@@ -187,6 +200,20 @@ function RunView({ runId }: { runId: number }) {
           <Panel title={vi.schedule.laborCost} labelledBy="cost-title">
             {kpi.data && <CostSummary kpi={kpi.data} />}
           </Panel>
+          <Modal
+            title={vi.schedule.reroster.modalTitle(data.id)}
+            open={rerostering}
+            onClose={() => setRerostering(false)}
+            wide
+          >
+            <RerosterForm
+              run={data}
+              onCreated={(createdId) => {
+                setRerostering(false);
+                navigate(`/schedule/${createdId}`);
+              }}
+            />
+          </Modal>
           <Modal
             title={vi.schedule.repairTitle(data.id)}
             open={repairing}

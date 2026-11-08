@@ -6,8 +6,9 @@ from typing import Any
 
 from shiftopt import kpi
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.domain import Instance, Solution
+from shiftopt.domain import Assignment, Instance, Solution
 from shiftopt.replacement import suggest_replacements
+from shiftopt.schedule_diff import diff_solutions
 from shiftopt.solvers.base import ModelInvalidError
 from shiftopt.validation import LEGAL_BASIS, validate
 from sqlalchemy import select
@@ -20,11 +21,15 @@ from src.exceptions import ConflictError, InstanceTooLargeError, InvalidInputErr
 from src.jobs import JOB_GRACE_SECONDS, JobContext, ensure_job_capacity, run_in_child
 from src.schedules.models import RunStatus, SolveRun
 from src.schedules.schemas import (
+    AbsenceWrite,
+    AssignmentRead,
     ComplianceRead,
     KpiRead,
     ManualEditRequest,
     RepairRequest,
     ReplacementRead,
+    RerosterRequest,
+    ScheduleChangesRead,
     SolveRequest,
     SolveSettings,
     ViolationRead,
@@ -425,6 +430,51 @@ async def create_repair_run(
     await session.commit()
     await session.refresh(run)
     return run
+
+
+async def create_reroster(
+    session: AsyncSession, base: SolveRun, payload: RerosterRequest
+) -> SolveRun:
+    if base.status is not RunStatus.SUCCEEDED or base.assignments is None:
+        raise ConflictError(f"solve run {base.id} is not a valid schedule to re-roster")
+    first_absence = payload.absent_days[0]
+    from_day = first_absence if payload.from_day is None else payload.from_day
+    if from_day > first_absence:
+        raise InvalidInputError("from_day must not be after the first absent day")
+    request = RepairRequest(
+        time_limit_seconds=base.params["time_limit_seconds"],
+        relative_gap_limit=base.params["relative_gap_limit"],
+        num_workers=int(base.params["num_workers"]),
+        random_seed=int(base.params["random_seed"]),
+        from_day=from_day,
+        absences=[AbsenceWrite(employee_code=payload.employee_code, days=payload.absent_days)],
+    )
+    return await create_repair_run(session, base, request)
+
+
+async def changes_for(session: AsyncSession, run: SolveRun) -> ScheduleChangesRead:
+    if run.parent_run_id is None:
+        raise NotFoundError(f"solve run {run.id} has no parent run to compare with")
+    parent = await get_run(session, run.parent_run_id)
+    if parent.assignments is None or run.assignments is None:
+        raise ConflictError(f"solve run {run.id} or its parent has no schedule")
+    diff = diff_solutions(
+        solution_from_rows(parent.assignments), solution_from_rows(run.assignments)
+    )
+    return ScheduleChangesRead(
+        kept=[_assignment_read(a) for a in diff.kept],
+        added=[_assignment_read(a) for a in diff.added],
+        removed=[_assignment_read(a) for a in diff.removed],
+    )
+
+
+def _assignment_read(assignment: Assignment) -> AssignmentRead:
+    return AssignmentRead(
+        employee_code=assignment.employee_id,
+        day=assignment.day,
+        shift_name=assignment.shift_name,
+        break_offset=assignment.break_offset,
+    )
 
 
 def get_replacements(

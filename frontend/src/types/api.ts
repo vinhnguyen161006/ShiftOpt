@@ -283,6 +283,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/{run_id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Schedule Changes */
+        get: operations["get_schedule_changes_api_schedules__run_id__changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schedules/{run_id}/compliance": {
         parameters: {
             query?: never;
@@ -396,6 +413,23 @@ export interface paths {
         get: operations["get_replacements_api_schedules__run_id__replacements_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/schedules/{run_id}/reroster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Reroster */
+        post: operations["create_reroster_api_schedules__run_id__reroster_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -845,6 +879,15 @@ export interface components {
             /** Weekly Hours */
             weekly_hours: number;
         };
+        /** RerosterRequest */
+        RerosterRequest: {
+            /** Absent Days */
+            absent_days: number[];
+            /** Employee Code */
+            employee_code: string;
+            /** From Day */
+            from_day?: number | null;
+        };
         /**
          * RunStatus
          * @enum {string}
@@ -864,6 +907,15 @@ export interface components {
             rows: number;
             /** Stores */
             stores: string[];
+        };
+        /** ScheduleChangesRead */
+        ScheduleChangesRead: {
+            /** Added */
+            added: components["schemas"]["AssignmentRead"][];
+            /** Kept */
+            kept: components["schemas"]["AssignmentRead"][];
+            /** Removed */
+            removed: components["schemas"]["AssignmentRead"][];
         };
         /** ShiftTemplateCreate */
         ShiftTemplateCreate: {
@@ -1808,6 +1860,37 @@ export interface operations {
             };
         };
     };
+    get_schedule_changes_api_schedules__run_id__changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleChangesRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_schedule_compliance_api_schedules__run_id__compliance_get: {
         parameters: {
             query?: never;
@@ -2024,6 +2107,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReplacementRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_reroster_api_schedules__run_id__reroster_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RerosterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
                 };
             };
             /** @description Validation Error */
