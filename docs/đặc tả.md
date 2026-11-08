@@ -44,7 +44,7 @@ Người chốt: Claude theo ủy quyền. Chờ nhóm xác nhận. Lý do ghi c
 | D9 | Sàn `min_staff`, `night_min_staff` | 1 và 1 | Nguyên tắc 7 gợi ý 1–2 |
 | D10 | Doanh thu cho tỷ lệ chi phí lao động | Không mặc định; nhập trên UI | Không có dữ liệu doanh thu thật |
 | D11 | Trọng số `M_u`, `λ_F` | Không dùng trọng số; giải lexicographic 4 tầng | Tránh chọn `M` tùy tiện (CLAUDE.md 5.2) |
-| D12 | So sánh CP-SAT với HiGHS | Trên mô hình tổng hợp có nghỉ ngầm, không trên mô hình theo nhân viên | Mô hình theo nhân viên chỉ có CP-SAT; sai lệch nghiệm thu dòng 4 |
+| D12 | So sánh CP-SAT với HiGHS | Trên mô hình tổng hợp có nghỉ ngầm, và trên mô hình theo nhân viên (HiGHS qua `roster_mip.py`, chỉ để đối chiếu; lõi sản phẩm vẫn là CP-SAT) | Đối chiếu có bảng kết quả ở `benchmarks.md` mục 2b; phạm vi 10–30 nhân viên, 3 seed, 60 giây |
 | D13 | Kịch bản cơ sở | Store 18, D7–D9, 3 ca 0/8/16 h, 30 nhân viên, 48 giờ | Dữ liệu thật, không sinh ngẫu nhiên |
 | D14 | Dataset tổng đài công khai | Bỏ, thay bằng D18 | — |
 | D15 | Giết tiến trình con khi quá hạn | Không làm; ghi là giới hạn đã biết | CP-SAT tự dừng theo time limit |

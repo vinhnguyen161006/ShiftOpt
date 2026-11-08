@@ -14,6 +14,8 @@ from shiftopt.solvers.base import (
 from shiftopt.solvers.pulp_backend import run_problem
 from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_WEEK, hour_of_week, shift_hours
 
+TIER_TOLERANCE = 1e-6
+
 
 def solve_roster_mip(
     instance: Instance,
@@ -290,7 +292,7 @@ class _RosterMip:
             if result.objective is None:
                 break
             snapshot = self._values()
-            self._row(expression <= round(result.objective), f"tier_{name}")
+            self._row(expression <= result.objective + TIER_TOLERANCE, f"tier_{name}")
         return self._outcome(snapshot, tuple(results), len(stages))
 
     def _values(self) -> dict[str, float]:
