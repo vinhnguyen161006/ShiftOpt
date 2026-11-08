@@ -23,7 +23,7 @@ Validator độc lập (`validation.py`) kiểm lại mọi nghiệm trên trụ
 
 Các hằng nằm trong `LaborRules`: giờ/ngày 8, giờ/tuần 48, nghỉ 12 giờ giữa ca, nghỉ 24 giờ hằng tuần, khung đêm 22h–06h, phụ cấp đêm 30%, nghỉ giữa giờ 30 phút (45 phút ban đêm), `K = 6` ngày liên tiếp.
 
-**Chưa đối chiếu nguyên văn.** Trang văn bản chính thức trả HTTP 403; các nguồn tra được là tóm tắt thứ cấp. Ngưỡng ca từ 6 giờ cho nghỉ giữa giờ, và nội dung đầy đủ của Đ.98, 105, 106, 109, 110, 111 cần đối chiếu với 45/2019/QH14 và NĐ 145/2020 trước khi nộp. Xem [đặc tả.md](đặc%20tả.md) mục 4.
+**Đối chiếu luật.** Điều 98, 105, 106, 109, 110, 111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025); Đ.111 khoản 1 và Đ.105 khoản 2 của code chặt hơn luật. Nghị định 145/2020 chưa đối chiếu văn bản gốc. Xem [đặc tả.md](đặc%20tả.md) mục 4.
 
 Hai ca pháp lý của nghiệm thu được kiểm bằng test: ca 14h–22h rồi 06h–14h bị cấm; ca qua đêm rồi nghỉ đủ 24 giờ không bị báo vi phạm (`test_afternoon_then_morning_breaks_rest_rule`, `test_overnight_shift_then_full_24_hour_rest_is_allowed`) (CLAUDE.md mục 13, dòng 6).
 
@@ -75,7 +75,7 @@ Backend chạy 102 test trên MySQL 8.4.10 thật, không skip. Migration `3a7c9
 - Chỉ một store, 3 seed, 1 và 8 worker. Không suy ra cho store khác.
 - Coverage khi thiếu người chỉ đo ở một kịch bản; solver không chứng minh tối ưu trong 60 giây khi thiếu nhân viên.
 - Nghỉ giữa giờ xấp xỉ bằng một giờ phủ, bảo thủ.
-- Ngưỡng 6 giờ (Đ.109) và nội dung điều luật chưa đối chiếu nguyên văn.
+- Nghị định 145/2020 chưa đối chiếu văn bản gốc.
 - Nhu cầu là doanh số kho tiền phương, không phải nhu cầu nhân sự; mọi quy đổi là giả định của nhóm.
 - Chưa có chấm công, nên không đo adherence. Không hỗ trợ tổng đài.
 - Không có dự báo; không tính WAPE/MAPE.

@@ -5,7 +5,7 @@ Hướng dẫn cho Claude Code khi làm việc trong repo **ShiftOpt** — xếp
 Nguồn sự thật về yêu cầu, theo thứ tự ưu tiên:
 
 1. Đề bài của nhóm (mục 1).
-2. [docs/đặc tả.md](docs/đặc tả.md) — **bản nháp, chờ nhóm duyệt** (Claude soạn theo ủy quyền; quyết định D1–D20 và nguồn luật chưa đối chiếu nguyên văn ghi trong file). Khi đặc tả được duyệt, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
+2. [docs/đặc tả.md](docs/đặc tả.md) — **bản nháp, chờ nhóm duyệt** (Claude soạn theo ủy quyền; quyết định D1–D20; luật Đ.98–111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025), NĐ 145/2020 chưa đối chiếu, ghi trong file). Khi đặc tả được duyệt, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
 3. Báo cáo nghiên cứu nền (nghiên cứu tham chiếu: dữ liệu, mô hình, pháp lý, solver). File không có trong repo (quyết định D17); mọi chỗ nó từng được dùng đã được chốt trong `docs/đặc tả.md` và các mục dưới.
 
 > **Trạng thái repo (2026-11-08, nhánh `main`):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine coverage 98%; CI và Makefile chặn dưới 80%. Mới trong nhánh: ingest doanh số tổng quát (đặc tả D19), giao diện tối, xếp lại lịch và gợi ý người thay (D20). Còn mở: duyệt tay UI trên trình duyệt, nhóm duyệt đặc tả và sai lệch nghiệm thu (mục 13). Việc còn lại và thứ tự làm: `docs/plan.md`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
