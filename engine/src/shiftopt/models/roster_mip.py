@@ -39,6 +39,12 @@ def solve_roster_mip(
     return model.solve(params)
 
 
+def roster_model_size(instance: Instance) -> tuple[int, int]:
+    """Number of PuLP variables and constraints of the per-employee ILP, built but not solved."""
+    model = _RosterMip(instance, None, relax=False)
+    return len(model.problem.variables()), model.rows
+
+
 class _RosterMip:
     def __init__(self, instance: Instance, repair: RepairSpec | None, relax: bool) -> None:
         self.instance = instance
