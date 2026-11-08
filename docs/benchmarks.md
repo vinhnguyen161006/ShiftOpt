@@ -71,6 +71,59 @@ Lệnh: `cd engine && uv run --locked python benchmarks/compare_solvers.py`
 
 Kết luận trong phạm vi đã đo: 3 instance, cả hai solver chứng minh cùng objective; cả hai đều quá nhanh để phân biệt hiệu năng. Mô hình này nhỏ (không có phân công từng người); không suy ra cho mô hình theo nhân viên (mục 3).
 
+### 2b. Mô hình theo nhân viên: CP-SAT và HiGHS (`roster_mip.py`)
+
+Cùng công thức C1–C8 ([model.md](model.md) mục 2a), cùng tầng lexicographic, cùng seed, `num_workers = 1`, time limit 60 giây cho cả lượt giải (chia đều cho các tầng). Nhu cầu sinh theo `weekly_instance` trong `engine/benchmarks/run_roster_scale.py`.
+
+Lệnh: `cd engine && uv run --locked python -u benchmarks/run_roster_scale.py --solver both --sizes 10 20 30 --seeds 0 1 2 --time-limit 60 --workers 1`
+
+Cột `shortfall` và `chi phí` là giá trị tầng 1 (thiếu người) và tầng 2 (chi phí lương). Cột `objective` là tầng cuối, không dùng để so chi phí giữa các dòng.
+
+| Nhân viên | Seed | Solver | Status | Shortfall (giờ) | Chi phí tầng 2 | Wall (s) |
+|---|---|---|---|---|---|---|
+| 10 | 0 | CP-SAT | feasible | 28 | 5 148 000 | 26,5 |
+| 10 | 0 | HiGHS | optimal | 28 | 5 148 000 | 31,1 |
+| 10 | 1 | CP-SAT | feasible | 34 | 5 136 000 | 60,5 |
+| 10 | 1 | HiGHS | optimal | 34 | 5 136 000 | 28,6 |
+| 10 | 2 | CP-SAT | feasible | 34 | 5 106 000 | 60,5 |
+| 10 | 2 | HiGHS | feasible | 34 | 5 106 000 | 29,1 |
+| 20 | 0 | CP-SAT | optimal | 0 | 6 352 000 | 17,1 |
+| 20 | 0 | HiGHS | optimal | 0 | 6 352 000 | 17,1 |
+| 20 | 1 | CP-SAT | optimal | 0 | 6 518 000 | 27,9 |
+| 20 | 1 | HiGHS | optimal | 0 | 6 518 000 | 17,6 |
+| 20 | 2 | CP-SAT | optimal | 0 | 6 414 000 | 22,2 |
+| 20 | 2 | HiGHS | optimal | 0 | 6 414 000 | 18,5 |
+| 30 | 0 | CP-SAT | optimal | 0 | 6 352 000 | 23,6 |
+| 30 | 0 | HiGHS | optimal | 0 | 6 352 000 | 21,8 |
+| 30 | 1 | CP-SAT | optimal | 0 | 6 518 000 | 26,8 |
+| 30 | 1 | HiGHS | optimal | 0 | 6 518 000 | 23,2 |
+| 30 | 2 | CP-SAT | optimal | 0 | 6 414 000 | 25,4 |
+| 30 | 2 | HiGHS | optimal | 0 | 6 414 000 | 26,6 |
+
+Kết luận trong phạm vi đã đo:
+
+- 20 và 30 nhân viên: cả hai solver chứng minh đủ tầng 1 và 2, cùng shortfall và cùng chi phí ở mọi seed. Thời gian 17–28 giây cho cả hai, không khác biệt đáng kể.
+- 10 nhân viên khó hơn: nhu cầu đỉnh 3–4 người nhiều hơn số người có sẵn, nên thiếu 28–34 giờ và tầng 2 phải cân nhắc nhiều hơn. CP-SAT không chứng minh được trong 60 giây ở cả 3 seed (chạm giới hạn ở seed 1 và 2). HiGHS chứng minh được 2/3 seed; seed 2 chỉ `FEASIBLE`.
+- Nơi cả hai cùng chứng minh hoặc cùng có lời giải, shortfall và chi phí khớp nhau. Không có dòng nào mà solver này cho chi phí thấp hơn solver kia với cùng shortfall.
+- Đây là 3 seed, 3 cỡ, 1 worker. Không suy ra cho instance khác. 40 nhân viên không có trong lượt này; xem mục 3a cho CP-SAT ở 40 nhân viên.
+
+### 2c. Kích thước mô hình theo số nhân viên
+
+Đếm biến và ràng buộc của mô hình dựng xong, chưa giải. Lệnh: `cd engine && uv run --locked python -u benchmarks/run_roster_scale.py --sizes-only --sizes 10 20 30 40`
+
+| Nhân viên | Bộ ca | CP-SAT biến | CP-SAT ràng buộc | HiGHS biến | HiGHS ràng buộc |
+|---|---|---|---|---|---|
+| 10 | 3 ca (0/8/16) | 3 331 | 2 440 | 3 320 | 7 278 |
+| 20 | 3 ca | 6 491 | 4 710 | 6 470 | 14 388 |
+| 30 | 3 ca | 9 651 | 6 980 | 9 620 | 21 498 |
+| 40 | 3 ca | 12 811 | 9 250 | 12 770 | 28 608 |
+| 10 | 6 ca (0/4/…/20) | 4 801 | 3 140 | 4 790 | 14 488 |
+| 20 | 6 ca | 9 431 | 6 110 | 9 410 | 28 808 |
+| 30 | 6 ca | 14 061 | 9 080 | 14 030 | 43 128 |
+| 40 | 6 ca | 18 691 | 12 050 | 18 650 | 57 448 |
+
+Số biến của hai mô hình gần như bằng nhau và tăng tuyến tính theo số nhân viên. Số ràng buộc không so trực tiếp được: CP-SAT gộp mỗi cửa sổ 24 giờ nghỉ (C5) thành một ràng buộc có điều kiện cho mỗi `(e, t)`, còn HiGHS viết từng cặp `(x, v)`. Cách viết từng cặp làm số hàng của HiGHS gấp 2–3 lần. Theo lý thuyết, dạng từng cặp chặt hơn ở phép nới lỏng LP; chưa đo riêng ([model.md](model.md) mục 2a).
+
 ## 3. Lịch tuần 7×24, 20–40 nhân viên (mục 9.4)
 
 Máy và phiên bản như mục đầu. Nhu cầu: đỉnh 3–4 người ban ngày, nền 1–2 người ban đêm, sinh theo seed (`weekly_instance` trong `engine/benchmarks/run_roster_scale.py`). Phá đối xứng tắt (mặc định). `relative_gap_limit = 0.01`, time limit 60 giây.
@@ -156,3 +209,62 @@ Kết luận trong phạm vi đã đo:
 - Kịch bản này dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người. Cần kịch bản căng (ít nhân viên hơn) để kiểm tiêu chí đó; chưa đo.
 - Kết quả phụ thuộc `alpha`, `p`, các sàn. Đổi `p` đổi toàn bộ nhu cầu; xem độ nhạy theo giả định (`sweep_staffing_assumption`, mục 8.6).
 - 1 store, 3 seed. Không suy ra cho store khác.
+
+## 5. Integrality gap: LP relaxation so với nghiệm nguyên
+
+Gap đo bằng cùng một công thức trên cả hai mô hình: `gap_pct = 100 (z_IP − z_LP) / max(1, z_IP)`. `z_LP` là tối ưu của bài toán nới lỏng (biến liên tục). Đây là nguồn gốc của nhãn "xấp xỉ" cho dual LP ở mục 7.5 của `model.md`: dual lấy từ bài toán nới lỏng, nên sai lệch với chi phí biên thật tùy theo gap.
+
+Lệnh: `cd engine && uv run --locked python -u -m benchmarks.integrality_gap`
+
+Mô hình tổng hợp (có nghỉ ngầm, [model.md](model.md) mục 1b), chi phí lương:
+
+| Instance | z_LP | z_IP | gap (%) |
+|---|---|---|---|
+| uniform_3_shifts | 2 217 600 | 3 696 000 | 40,0 |
+| peaked_3_shifts | 3 371 200 | 4 256 000 | 20,8 |
+| peaked_spaced_8_shifts | 3 570 000 | 3 570 000 | 0,0 |
+
+Mô hình theo nhân viên, 10 nhân viên, seed 0, 1, 2 (HiGHS, 60 giây, tầng 1 và tầng 2):
+
+| Seed | Tầng | z_LP | z_IP | gap (%) |
+|---|---|---|---|---|
+| 0 | thiếu người | 26,2 | 28,0 | 6,4 |
+| 0 | chi phí | 5 131 600 | 5 148 000 | 0,32 |
+| 1 | thiếu người | 31,2 | 34,0 | 8,4 |
+| 1 | chi phí | 5 127 000 | 5 136 000 | 0,18 |
+| 2 | thiếu người | 28,9 | 34,0 | 15,0 |
+| 2 | chi phí | 5 101 000 | 5 106 000 | 0,10 |
+
+Kết luận trong phạm vi đã đo:
+
+- Gap của tổng hợp lớn ở instance đều (40%) và đỉnh (21%). Ở instance ca cách đều 8 ca, gap bằng 0. Dual LP của mô hình tổng hợp vì vậy chỉ có thể dùng làm xấp xỉ, không thể đọc như chi phí biên của giờ nguyên.
+- Mô hình theo nhân viên: gap của tầng chi phí rất nhỏ (dưới 0,4%), gap của tầng thiếu người lớn hơn nhiều (6–15%). Lý do: nhu cầu 3–4 người không chia được đều theo ca 8 giờ, nên nghiệm nới lỏng có phần giờ thiếu không nguyên.
+- Không đo ở store 18 trong lượt này: engine không dựng được nhu cầu store 18 mà không gọi backend. Kết quả chỉ áp dụng cho các instance trên.
+
+## 6. Lexicographic so với mục tiêu có trọng số
+
+Mục tiêu có trọng số: `min w · thiếu người + chi phí + 1 · (n_max − n_min)`, một lần giải CP-SAT. Mục tiêu lexicographic là lượt giải theo tầng của `solve_roster`. Cùng nhu cầu, 1 worker, seed 0, 60 giây.
+
+Lệnh: `cd engine && uv run --locked python -u -m benchmarks.weighted_vs_lexicographic`
+
+| Nhân viên | Phương án | w | Status | Giờ thiếu | Chi phí lương | F |
+|---|---|---|---|---|---|---|
+| 8 | lexicographic | – | feasible | 87 | 4 092 000 | 4 |
+| 8 | có trọng số | 1 | optimal | 414 | 0 | 0 |
+| 8 | có trọng số | 1 000 | optimal | 414 | 0 | 0 |
+| 8 | có trọng số | 100 000 | feasible | 88 | 4 092 000 | 2 |
+| 8 | có trọng số | 10 000 000 | feasible | 86 | 4 110 000 | 3 |
+| 12 | lexicographic | – | feasible | 2 | 6 168 000 | 2 |
+| 12 | có trọng số | 1 | optimal | 414 | 0 | 0 |
+| 12 | có trọng số | 1 000 | optimal | 414 | 0 | 0 |
+| 12 | có trọng số | 100 000 | feasible | 11 | 5 892 000 | 0 |
+| 12 | có trọng số | 10 000 000 | feasible | 2 | 6 168 000 | 2 |
+
+Kết luận trong phạm vi đã đo:
+
+- Với w = 1 và w = 1 000, không xếp ai: giờ thiếu bằng toàn bộ nhu cầu (414), chi phí bằng 0. Một giờ-người phục vụ thêm chỉ tiết kiệm w, trong khi một ca 8 giờ tốn khoảng 80 000 đơn vị chi phí, tức khoảng 10 000 mỗi giờ. Trọng số dưới ngưỡng này làm mất hết độ phủ mà không báo lỗi.
+- Với w = 100 000, mục tiêu có trọng số bắt đầu phủ nhu cầu: 12 nhân viên thiếu 11 giờ thay vì 2 giờ, đổi lại chi phí thấp hơn 276 000 (khoảng 4,5%). Ngưỡng nằm giữa 10 000 và 100 000 cho cấu hình này.
+- Trọng số lớn (10⁷) cho kết quả gần lexicographic ở 12 nhân viên (cùng 2 giờ thiếu và cùng chi phí).
+- Ở 8 nhân viên, lượt lexicographic không chứng minh được tầng 1 trong 60 giây; lượt có trọng số 10⁷ tìm được 86 giờ thiếu so với 87 của lexicographic. Đây là giới hạn thời gian, không phải kết quả về thứ tự ưu tiên. Không kết luận cái nào tốt hơn ở cấu hình này.
+- Kết luận cho báo cáo: lexicographic không cần chọn trọng số, nên không có nguy cơ mất độ phủ âm thầm như trên; đổi lại mỗi tầng phải được giải riêng và chia thời gian.
+
