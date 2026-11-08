@@ -42,7 +42,7 @@ function fieldIdFor(path: string): string | undefined {
 }
 
 function SourceNotice({ profile }: { profile: DemandProfileRead }) {
-  if (profile.source === "freshretailnet") {
+  if (profile.source === "sales") {
     return (
       <Notice kind="warning" title={vi.demand.salesTitle}>
         {vi.demand.salesBody}

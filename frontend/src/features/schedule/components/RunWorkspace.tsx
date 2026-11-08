@@ -39,6 +39,15 @@ function rosterCaption(run: SolveRunRead): string {
   return vi.schedule.workspace.rosterCaption(run.employee_codes.length, shifts, hours);
 }
 
+function runTag(run: SolveRunRead): string | undefined {
+  if (run.solver === "manual") {
+    return vi.schedule.workspace.manualEdit;
+  }
+  return run.repair_from_day === null || run.repair_from_day === undefined
+    ? undefined
+    : vi.schedule.workspace.repairTag;
+}
+
 function runMeta(run: SolveRunRead): string {
   if (run.solver === "manual") {
     return vi.schedule.workspace.manualEdit;
@@ -62,7 +71,7 @@ export function RunWorkspace({ run, kpi }: RunWorkspaceProps) {
     <WorkspacePanel
       name={vi.schedule.workspace.run(run.id)}
       meta={new Date(run.created_at).toLocaleString("vi-VN")}
-      tag={run.solver === "manual" ? vi.schedule.workspace.manualEdit : undefined}
+      tag={runTag(run)}
     >
       {kpi ? (
         <KpiStrip
@@ -89,6 +98,15 @@ export function RunWorkspace({ run, kpi }: RunWorkspaceProps) {
               sub: verdict.sub,
               accent: true,
             },
+            ...(run.changes === null || run.changes === undefined
+              ? []
+              : [
+                  {
+                    label: vi.schedule.workspace.changes,
+                    value: String(run.changes),
+                    sub: vi.schedule.workspace.changesSub,
+                  },
+                ]),
           ]}
         />
       ) : (

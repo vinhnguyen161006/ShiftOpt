@@ -1,6 +1,6 @@
 # Kịch bản demo ShiftOpt trước lớp
 
-Cập nhật: 2026-11-06. Thời lượng: khoảng 20 phút trình bày, cộng 5 phút hỏi đáp.
+Cập nhật: 2026-11-08. Thời lượng: khoảng 20 phút trình bày, cộng 5 phút hỏi đáp.
 
 Tài liệu gồm sáu phần:
 
@@ -23,7 +23,7 @@ Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần c
 
 | Đầu vào | Ví dụ trong demo |
 |---|---|
-| Nhu cầu theo giờ: 168 con số, 7 ngày × 24 giờ | Lấy từ dữ liệu bán hàng FreshRetailNet, store 18 |
+| Nhu cầu theo giờ: 168 con số, 7 ngày × 24 giờ | Ingest file doanh số `data/demo/train.parquet` (cửa hàng 18) hoặc `data/demo/doanh_so_mau.csv` |
 | Danh sách nhân viên | 30 người, lương 100/giờ, một người chỉ làm tối đa 24 giờ/tuần |
 | Mẫu ca | 3 ca 8 giờ: Đêm 0h–8h, Ngày 8h–16h, Tối 16h–24h |
 | Tham số luật | 48 giờ/tuần, tối đa 6 ngày liên tiếp |
@@ -49,6 +49,7 @@ Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần c
    Mỗi tầng không được làm hỏng kết quả tầng trước.
 4. **Kiểm tra lại độc lập (validator).** Lịch solver trả về được một chương trình khác kiểm lại toàn bộ luật, không tin solver.
 5. **Phân tích độ nhạy.** Giải lại nhiều lần với nhu cầu khác nhau để thấy chi phí thay đổi.
+6. **Xếp lại khi có biến động.** Khi có người báo nghỉ, giải lại từ lịch đã công bố: các ngày đã qua giữ nguyên, ca được ghim giữ nguyên, solver đổi ít ca nhất có thể (đặc tả D20).
 
 ### A4. Ràng buộc pháp lý được cài (Bộ luật Lao động 2019)
 
@@ -69,7 +70,7 @@ Lưu ý khi trình bày: nội dung các điều luật chưa được đối ch
 
 1. **Solver đề xuất, validator phán xét.** Không tin trạng thái của solver; mọi lịch được kiểm lại.
 2. **Độ nhạy tính bằng giải lại thật**, không dùng "giá bóng" (shadow price) giả của mô hình nguyên. Dual của bài toán nới lỏng (LP) chỉ hiển thị kèm nhãn "xấp xỉ".
-3. **Giả định luôn hiện ra.** Dữ liệu FreshRetailNet là doanh số chuẩn hóa của kho thương mại điện tử, **không phải dữ liệu nhân sự**. `alpha` và `p` là giả định của nhóm.
+3. **Giả định luôn hiện ra.** Dữ liệu doanh số (ví dụ FreshRetailNet) là doanh số chuẩn hóa, **không phải dữ liệu nhân sự**. `alpha` và `p` là giả định của nhóm.
 
 ### A6. Thuật ngữ sẽ xuất hiện trên màn hình
 
@@ -98,13 +99,14 @@ Lưu ý khi trình bày: nội dung các điều luật chưa được đối ch
 
 Làm trước ít nhất một ngày, rồi **chạy thử toàn bộ phần C một lần**. Mọi lệnh chạy trong PowerShell.
 
-### B0. File doanh số FreshRetailNet (chỉ làm một lần trên mỗi máy)
+### B0. File dữ liệu demo (chỉ làm một lần trên mỗi máy)
 
 Mọi file dữ liệu dùng để demo nằm trong thư mục `data/demo/`:
 
 | File | Dùng ở | Trong git |
 |---|---|---|
-| `train.parquet` (106 MB) | Bước 2: ingest doanh số FreshRetailNet | Không (tải bằng script) |
+| `train.parquet` (106 MB) | Bước 2: ingest doanh số mẫu FreshRetailNet, cửa hàng 18 | Không (tải bằng script) |
+| `doanh_so_mau.csv` | Bước 2 (phương án thay thế): file không phải FreshRetailNet, tên cột tiếng Việt | Có |
 | `nhu_cau_cua_hang_24h.csv` | Nhập CSV (tùy chọn): 168 số người cần, cao điểm 8 | Có |
 
 Kiểm tra file doanh số:
@@ -155,7 +157,7 @@ docker compose run --rm seed
 
 ### B3. Hồ sơ nhu cầu cũ
 
-DB tạo trước ngày 2026-11-07 đã có sẵn hồ sơ `Store 18 demo` do bản `seed` cũ nạp. Vào **Nhu cầu**, mở hồ sơ đó, bấm **Xóa hồ sơ** trước buổi demo, để bước 2 tạo lại được đúng tên này. Nếu không xóa, đặt tên khác ở bước 2.
+Hồ sơ `Store 18 demo` có sẵn trong DB cũ không có tải nên không quét giả định được. Xóa hồ sơ đó trên web trước buổi demo rồi tạo lại ở bước 2. Nếu không xóa, đặt tên khác ở bước 2.
 
 ### B4. Dữ liệu cũ
 
@@ -169,7 +171,6 @@ Làm hết phần C một lần. Mỗi lần chạy thử tạo thêm lượt gi
 
 - Mở sẵn trình duyệt ở `http://localhost:3000`, zoom 100%.
 - Mở sẵn file này và `docs/benchmarks.md` để tra số liệu.
-- Mở sẵn thư mục `docs/acceptance/` (ảnh dự phòng).
 
 ---
 
@@ -182,13 +183,15 @@ Thời gian trong phần này đo bằng trình duyệt tự động (Playwright
 | # | Trang | Thao tác | Thấy gì |
 |---|---|---|---|
 | 1 | Trang chủ | Mở `localhost:3000`, cuộn qua các mục | Menu Nhu cầu, Nhân viên, Mẫu ca, Xếp lịch, Độ nhạy |
-| 2 | Nhu cầu | **Tạo hồ sơ nhu cầu** → **FreshRetailNet** → chọn file `train.parquet`, store `18`, `p` = 4 → **Tạo từ dữ liệu** | Khoảng 2 giây; lưới 7 × 24, cao điểm 8 người |
+| 2 | Nhu cầu | **Tạo hồ sơ nhu cầu** → **Ingest doanh số** → chọn file, kiểm tra cột tự gợi ý, `p` = 4 → **Tạo từ dữ liệu** | Vài giây; lưới 7 × 24, cao điểm 8 người |
 | 3 | Nhân viên, Mẫu ca | Bấm **Nhân viên**, chỉ E07 → bấm **Mẫu ca** | E07 tối đa 24 giờ; 3 ca 8 giờ |
 | 4 | Xếp lịch | Chọn hồ sơ → mở **Thiết lập solver và luật lao động** → **Số worker của solver** = 1 → bấm **Tối ưu** | Tự chuyển sang trang lượt mới, khoảng 7 giây |
 | 5 | Kết quả | Cuộn: trạng thái, lịch, biểu đồ phủ, chi phí | `OPTIMAL`, tỷ lệ phủ 100,0% |
 | 6 | Kết quả | Chỉ khung **Tuân thủ** | **0 vi phạm cứng** |
 | 7 | Kết quả | **Sửa lịch bằng tay** → tạo cặp ca Tối rồi Ngày cho một người → **Lưu thành lượt mới và kiểm tra lại** | 1 vi phạm Điều 110 |
 | 7b | Kết quả | **Tất cả lượt** → mở lượt gốc | Vẫn 0 vi phạm |
+| 7c | Kết quả lượt gốc | **Xếp lại** → **Xếp lại từ ngày** = Thứ Tư → **Thêm người vắng**, chọn một người, tick Thứ Năm → **Xếp lại** | Lượt mới: Thứ Hai, Thứ Ba có nhãn "khóa"; ô đổi có chữ "đổi"; KPI "Ca thay đổi"; 0 vi phạm |
+| 7d | Kết quả lượt gốc | Khung **Gợi ý người thay** → chọn một ca → **Áp dụng** ở dòng đầu | Lượt sửa tay mới, 0 vi phạm |
 | 8 | Độ nhạy | **Chạy quét nhu cầu** → kéo **Hệ số nhu cầu lambda** | Đường z(λ), khoảng 13 giây |
 | 9 | Độ nhạy | Chọn `alpha`, nhập `0.8, 1.0, 1.2` → **Chạy quét giả định** | Bảng 3 dòng, khoảng 20 giây |
 | 10 | Độ nhạy | Lương = `100` → **Tính chi phí biên theo giờ** | Bản đồ nhiệt, khoảng 5 giây |
@@ -208,15 +211,15 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 
 - **Làm:**
   1. Bấm **Nhu cầu** trên menu, bấm **Tạo hồ sơ nhu cầu**.
-  2. Trong cửa sổ, bấm ô chọn nguồn **FreshRetailNet**.
+  2. Trong cửa sổ, bấm ô chọn nguồn **Ingest doanh số**.
   3. **Tên hồ sơ**: `Store 18 demo`.
-  4. **File doanh số (train.parquet)**: chọn `D:\projects\ShiftOpt\data\demo\train.parquet`.
-  5. **Mã store**: `18`.
+  4. **File doanh số**: chọn `D:\projects\ShiftOpt\data\demo\doanh_so_mau.csv` (hoặc `train.parquet`). Hệ thống tự điền cột ngày, giờ, doanh số, hết hàng; kiểm tra lại trước khi bấm.
+  5. Với `train.parquet`, ô **Cửa hàng** = `18`; với file CSV để trống.
   6. Khung **Giả định của nhóm (không phải dữ liệu)**: **alpha (giải chuẩn hóa)** = `1`, **p (đơn vị mỗi người-giờ)** = `4`, **Sàn ban ngày (số người tối thiểu)** = `1`, **Sàn ban đêm (22:00-06:00)** = `1`. Nếu để `p = 1`, giờ cao điểm cần 29 người và 30 nhân viên không đủ.
   7. Bấm **Tạo từ dữ liệu**.
-- **Nói:** "Đầu vào là file doanh số thô theo giờ của bộ dữ liệu công khai FreshRetailNet-50K, gồm 898 kho. Hệ thống đọc file, lọc kho số 18, thay các giờ hết hàng bằng doanh số trung bình cùng giờ, cùng thứ, rồi gộp thành một tuần điển hình 168 giờ. Sau đó đổi doanh số ra số người bằng công thức với hai giả định của nhóm là alpha và p. Ở đây p = 4 nghĩa là một người xử lý được 4 đơn vị doanh số mỗi giờ. Giờ đêm không suy từ doanh số mà dùng mức tối thiểu cố định 1 người. Đây là doanh số của kho thương mại điện tử, **không phải** dữ liệu nhân sự."
+- **Nói:** "Hệ thống nhận file doanh số thô theo giờ. Nó tự nhận cột ngày, giờ, doanh số và hết hàng, gộp thành một tuần điển hình 168 giờ, thay giờ hết hàng bằng doanh số trung bình cùng giờ, cùng thứ, rồi đổi ra số người bằng công thức với hai giả định của nhóm là alpha và p. Ở đây p = 4 nghĩa là một người xử lý được 4 đơn vị doanh số mỗi giờ. Giờ đêm không suy từ doanh số mà dùng mức tối thiểu cố định 1 người. Đây là doanh số, không phải dữ liệu nhân sự."
 - **Ý nghĩa:** cho thấy đường đi từ dữ liệu thô tới nhu cầu nhân sự, và giả định không bị giấu. Nếu có người hỏi "số 4 ở đâu ra", trả lời rằng đó là giả định, và bước 9 cho thấy chi phí đổi thế nào khi giả định đổi.
-- **Mong đợi:** khoảng 2 giây (đo ngày 2026-11-07). Hồ sơ mới hiện lưới 7 × 24, cao điểm 8 người, nhãn "Doanh số chuẩn hóa, không phải nhu cầu nhân sự". Mở **Giả định và phương pháp**: `source` ghi `uploaded sales file, sha256 6706832d…`, trùng mã kiểm của file gốc đã ghim; 164 sản phẩm, 2024-03-28 đến 2024-06-25, 90.159 ô hết hàng đã thay.
+- **Mong đợi:** khoảng 2 giây (đo ngày 2026-11-07). Hồ sơ mới hiện lưới 7 × 24, nhãn "Doanh số chuẩn hóa, không phải nhu cầu nhân sự". Các số sau đo với `train.parquet`, cửa hàng 18 (với `doanh_so_mau.csv` số liệu khác): cao điểm 8 người. Mở **Giả định và phương pháp**: `source` ghi `uploaded sales file, sha256 6706832d…`, trùng mã kiểm của file gốc đã ghim; 164 sản phẩm, 2024-03-28 đến 2024-06-25, 90.159 ô hết hàng đã thay.
 - **Lưu ý:** đây là tuần trung bình của quá khứ, không phải mô hình dự báo tuần tới.
 
 ### Bước 3. Nhân viên và mẫu ca (1 phút)
@@ -280,6 +283,24 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
   - Khung **Tuân thủ** báo đúng 1 vi phạm, nhóm **Điều 110 · nghỉ giữa hai ca dưới 12 giờ**.
   - Lượt mới bị đánh dấu thất bại vì có vi phạm cứng. Khung báo thất bại có một câu tiếng Anh từ backend ("validator found 1 hard-constraint violations"). Cột chi tiết của vi phạm cũng là tiếng Anh. Nói trước: "Thông báo kỹ thuật từ backend giữ tiếng Anh."
 - **Làm tiếp:** bấm **Tất cả lượt**, mở lại lượt gốc: vẫn **0 vi phạm cứng**.
+
+### Bước 7c (tùy chọn). Xếp lại khi có người báo nghỉ (2 phút)
+
+- **Làm:**
+  1. Mở lượt gốc (lượt `OPTIMAL`). Trong khung **Tuân thủ**, bấm **Xếp lại**.
+  2. **Xếp lại từ ngày** = Thứ Tư. Thứ Hai và Thứ Ba bị khóa.
+  3. Bấm **Thêm người vắng**, chọn một nhân viên có ca vào Thứ Năm, tick **Thứ Năm**.
+  4. Tùy chọn: tick một ca trong **Ca giữ nguyên (ghim)**.
+  5. Bấm **Xếp lại**.
+- **Nói:** "Thứ Tư có người báo ốm ngày mai. Lịch đã công bố cho Thứ Hai, Thứ Ba không được đổi. Solver giải lại phần còn lại: vẫn ưu tiên ít thiếu người nhất, rồi đổi càng ít ca càng tốt, rồi mới tới chi phí. Trước khi giải, hệ thống kiểm phần bị khóa bằng validator, nên không bao giờ nhận đầu vào vô nghiệm."
+- **Ý nghĩa:** nghiệp vụ hằng ngày của quản lý; lịch gốc vẫn bất biến.
+- **Mong đợi:** lượt mới, tiêu đề ghi "sửa từ lượt …". Cột Thứ Hai, Thứ Ba có nhãn "khóa" và giữ nguyên. Ô khác lịch gốc có chữ "đổi". Dải KPI có **Ca thay đổi**. **0 vi phạm cứng**. Thời gian chưa đo qua giao diện.
+
+### Bước 7d (tùy chọn). Gợi ý người thay (1 phút)
+
+- **Làm:** ở lượt gốc, khung **Gợi ý người thay**, chọn một ca trong ô chọn. Bấm **Áp dụng** ở dòng đầu.
+- **Nói:** "Không cần giải lại cả lịch: hệ thống thử từng người còn trống ngày đó, giữ người nào nhận ca mà không vi phạm luật, xếp theo chi phí thêm và số giờ trong tuần. Áp dụng thì tạo lượt sửa tay mới, validator kiểm lại."
+- **Mong đợi:** bảng tối đa 5 người; người có ca hôm trước kết thúc muộn bị loại (nghỉ dưới 12 giờ). Áp dụng tạo lượt mới với 0 vi phạm.
 
 ### Bước 8. Độ nhạy theo nhu cầu (3 phút)
 
@@ -346,6 +367,7 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 | Dữ liệu có phải nhu cầu nhân sự thật không? | Không. Đó là doanh số chuẩn hóa của kho thương mại điện tử. Số người suy ra từ giả định của nhóm. |
 | Shadow price của mô hình là gì? | Mô hình nguyên không có shadow price hợp lệ. Chi phí biên được tính bằng giải lại; dual LP chỉ là xấp xỉ và luôn có nhãn. |
 | Chạy lại có ra kết quả khác không? | Với 1 worker và cùng seed thì ra cùng kết quả; có test tự động kiểm tra điều này. |
+| Có người báo ốm giữa tuần thì sao? | **Xếp lại**: khóa các ngày đã qua, đánh dấu người vắng, solver đổi ít ca nhất có thể; hoặc **Gợi ý người thay** cho từng ca. Cả hai tạo lượt mới, lịch gốc không đổi. |
 
 ---
 
@@ -357,7 +379,7 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 | Dòng Nhân viên không ghi "Tất cả 30 nhân viên" | DB chưa sạch (mục B1). Không demo Optimize trên DB này; dùng ảnh dự phòng |
 | Optimize chạy quá lâu | Đợi hết time limit; kết quả sẽ là FEASIBLE kèm gap. Dùng đó để giải thích nguyên tắc "không tự nhận tối ưu" |
 | Sweep What-if chậm | Nói trong lúc chờ (bước 8); nếu quá lâu, chuyển sang bước 11 và quay lại sau |
-| Mọi thứ hỏng | Mở ảnh trong `docs/acceptance/`: `schedule_run.png` (kết quả lịch), `schedule_violation.png` (cảnh báo Đ.110 sau khi sửa tay), các ảnh trang Nhu cầu, Nhân viên, Mẫu ca, Độ nhạy (giao diện tiếng Việt, chụp 2026-11-07) |
+| Mọi thứ hỏng | Chạy lại stack Compose trên DB sạch (mục B1). Nếu hết giờ, bỏ bước 8–10 và nói rõ là đã bỏ |
 
 ---
 
@@ -366,5 +388,6 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 - Toàn bộ phần C chưa được bấm thử trên trình duyệt theo đúng thứ tự này. Nhãn nút lấy từ mã nguồn. Phải chạy thử trước buổi.
 - Kết quả bước 4–5 (OPTIMAL, 12–20 giây) dựa trên lần đo bằng script với cùng dữ liệu, chưa đo qua giao diện.
 - Thời gian bước 8, 9, 10 qua giao diện chưa đo.
-- Ảnh trong `docs/acceptance/` chụp tự động ngày 2026-11-07, chưa qua duyệt tay. Ảnh `what_if.png` có kết quả quét nhu cầu, quét p và chi phí biên.
+- Ảnh chụp tự động ngày 2026-11-07 đã bỏ khỏi repo và chưa qua duyệt tay. Chụp lại trước buổi demo.
 - Nội dung điều luật chưa đối chiếu nguyên văn (`docs/đặc tả.md` mục 4).
+- Bước 7c, 7d (xếp lại, gợi ý người thay) mới thêm ngày 2026-11-08: có test engine và unit backend, nhưng chưa chạy integration trên MySQL và chưa bấm thử trên trình duyệt. Chưa có ảnh dự phòng.

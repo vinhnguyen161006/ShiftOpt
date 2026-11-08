@@ -3,7 +3,7 @@ from typing import Any
 from shiftopt.models.roster_cpsat import solve_roster
 from shiftopt.solvers.base import SolveParams
 
-from src.schedules.snapshot import Snapshot, instance_from_snapshot, reroster_inputs
+from src.schedules.snapshot import Snapshot, instance_from_snapshot, repair_from_snapshot
 
 
 def to_solve_params(params: dict[str, float]) -> SolveParams:
@@ -19,7 +19,7 @@ def solve_snapshot(snapshot: Snapshot, params: dict[str, float]) -> dict[str, An
     outcome = solve_roster(
         instance_from_snapshot(snapshot),
         to_solve_params(params),
-        reroster=reroster_inputs(snapshot),
+        repair=repair_from_snapshot(snapshot),
     )
     result = outcome.result
     return {

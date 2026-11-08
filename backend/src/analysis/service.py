@@ -1,7 +1,5 @@
-import asyncio
 import logging
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
@@ -16,8 +14,6 @@ from src.analysis.schemas import (
 )
 from src.analysis.worker import run_analysis
 from src.config import get_settings
-from src.demand.dataset_loader import load_hourly_load
-from src.demand.models import DemandSource
 from src.demand.service import get_profile
 from src.exceptions import InvalidInputError, NotFoundError
 from src.jobs import JOB_GRACE_SECONDS, JobContext, ensure_job_capacity, run_in_child
@@ -60,18 +56,16 @@ async def create_run(
 
 async def _staffing_inputs(session: AsyncSession, request: StaffingSweepRequest) -> dict[str, Any]:
     profile = await get_profile(session, request.solve.demand_profile_id)
-    if profile.source is not DemandSource.FRESHRETAILNET:
-        raise InvalidInputError("staffing sweep needs a FreshRetailNet demand profile")
-    store_id = profile.source_metadata.get("store_id", "")
-    if not store_id.isdigit():
-        raise InvalidInputError("demand profile has no store id to re-derive demand from")
-    store = await asyncio.to_thread(
-        load_hourly_load, Path(get_settings().dataset_dir), int(store_id)
-    )
+    if profile.sales_load is None:
+        raise InvalidInputError(
+            "staffing sweep needs a demand profile built from a sales file; "
+            "create the profile again by ingesting the file"
+        )
     return {
         "assumption": request.assumption,
         "values": request.values,
-        "load": list(store.load),
+        "load": list(profile.sales_load),
+        "night_from_sales": profile.source_metadata.get("night_from_sales") == "True",
         "base": {field: profile.conversion_params[field] for field in STAFFING_FIELDS},
     }
 

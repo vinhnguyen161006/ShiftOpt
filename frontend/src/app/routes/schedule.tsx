@@ -6,11 +6,10 @@ import { PageHeader, Panel } from "../../components/ui/Layout";
 import { Modal } from "../../components/ui/Modal";
 import { useCompliance } from "../../features/compliance/api/compliance";
 import { ManualEditor } from "../../features/compliance/components/ManualEditor";
+import { ReplacementList } from "../../features/compliance/components/ReplacementList";
 import { ViolationList } from "../../features/compliance/components/ViolationList";
 import { useDemandProfiles } from "../../features/demand/api/demand";
 import { useEmployees } from "../../features/employees/api/employees";
-import { ChangesSummary } from "../../features/reroster/components/ChangesSummary";
-import { RerosterForm } from "../../features/reroster/components/RerosterForm";
 import {
   isActive,
   useScheduleKpi,
@@ -19,6 +18,7 @@ import {
 } from "../../features/schedule/api/schedules";
 import { CostSummary } from "../../features/schedule/components/CostSummary";
 import { NewRunForm } from "../../features/schedule/components/NewRunForm";
+import { RepairForm } from "../../features/schedule/components/RepairForm";
 import { ExportLinks, ScheduleKpis } from "../../features/schedule/components/RunResults";
 import { RunsTable } from "../../features/schedule/components/RunsTable";
 import { RunWorkspace } from "../../features/schedule/components/RunWorkspace";
@@ -26,7 +26,6 @@ import { SolveDetails, SolveNotice } from "../../features/schedule/components/So
 import { useShiftTemplates } from "../../features/shift-templates/api/shift-templates";
 import { errorMessage } from "../../lib/api-client";
 import { useLaborRules } from "../../lib/labor-rules";
-import { DAY_NAMES } from "../../lib/time";
 import { vi } from "../../locales/vi";
 
 function Prerequisites({ missing }: { missing: { label: string; to: string }[] }) {
@@ -111,7 +110,7 @@ function RunView({ runId }: { runId: number }) {
   const kpi = useScheduleKpi(runId, hasSchedule);
   const compliance = useCompliance(runId, hasSchedule);
   const [editing, setEditing] = useState(false);
-  const [rerostering, setRerostering] = useState(false);
+  const [repairing, setRepairing] = useState(false);
 
   if (run.isPending) {
     return <Loading label={vi.schedule.loadingRun(runId)} />;
@@ -130,16 +129,7 @@ function RunView({ runId }: { runId: number }) {
   return (
     <div className="page">
       <PageHeader
-        eyebrow={
-          data.reroster
-            ? vi.schedule.reroster.eyebrow(
-                data.id,
-                data.parent_run_id,
-                data.reroster.employee_code,
-                data.reroster.absent_days.map((day) => DAY_NAMES[day]).join(", "),
-              )
-            : vi.schedule.runEyebrow(data.id, data.parent_run_id)
-        }
+        eyebrow={vi.schedule.runEyebrow(data.id, data.parent_run_id)}
         title={vi.schedule.resultTitle}
         lead={vi.schedule.resultLead(
           new Date(data.created_at).toLocaleString("vi-VN"),
@@ -162,11 +152,9 @@ function RunView({ runId }: { runId: number }) {
           labelledBy="compliance-title"
           aside={
             <span className="run-header-actions">
-              {data.status === "succeeded" && (
-                <Button size="sm" onClick={() => setRerostering(true)}>
-                  {vi.schedule.reroster.button}
-                </Button>
-              )}
+              <Button size="sm" onClick={() => setRepairing(true)}>
+                {vi.schedule.repairButton}
+              </Button>
               <Button size="sm" onClick={() => setEditing(true)}>
                 {vi.schedule.editByHand}
               </Button>
@@ -178,9 +166,12 @@ function RunView({ runId }: { runId: number }) {
           {compliance.data && <ViolationList compliance={compliance.data} />}
         </Panel>
       )}
-      {hasSchedule && data.parent_run_id !== null && !isActive(data.status) && (
-        <Panel title={vi.schedule.reroster.changesTitle} labelledBy="changes-title">
-          <ChangesSummary runId={data.id} parentId={data.parent_run_id} />
+      {hasSchedule && (
+        <Panel title={vi.schedule.replacementsPanel} labelledBy="replacements-title">
+          <ReplacementList
+            run={data}
+            onCreated={(createdId) => navigate(`/schedule/${createdId}`)}
+          />
         </Panel>
       )}
       {!isActive(data.status) && (
@@ -197,16 +188,16 @@ function RunView({ runId }: { runId: number }) {
             {kpi.data && <CostSummary kpi={kpi.data} />}
           </Panel>
           <Modal
-            title={vi.schedule.reroster.modalTitle(data.id)}
-            open={rerostering}
-            onClose={() => setRerostering(false)}
+            title={vi.schedule.repairTitle(data.id)}
+            open={repairing}
+            onClose={() => setRepairing(false)}
             wide
           >
-            <RerosterForm
+            <RepairForm
               run={data}
-              onCreated={(createdId) => {
-                setRerostering(false);
-                navigate(`/schedule/${createdId}`);
+              onCreated={(jobId) => {
+                setRepairing(false);
+                navigate(`/schedule/${jobId}`);
               }}
             />
           </Modal>

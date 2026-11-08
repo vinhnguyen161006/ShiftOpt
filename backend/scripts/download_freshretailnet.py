@@ -3,9 +3,8 @@ import shutil
 import urllib.request
 from pathlib import Path
 
-from src.demand.dataset_loader import HF_REVISION
-
 REPO = "Dingdong-Inc/FreshRetailNet-50K"
+HF_REVISION = "c374e85975c82816c495acfa904cc55ab14a47d3"
 BASE_URL = f"https://huggingface.co/datasets/{REPO}/resolve/{HF_REVISION}/"
 SHA256_BY_FILE = {
     "data/train.parquet": "6706832db892bbae4969c19d87e07975d2543d2ba7d7d4756360654785de5a3d",

@@ -1,6 +1,6 @@
 # Kiến trúc hệ thống ShiftOpt
 
-Cập nhật: 2026-11-07. Tài liệu này mô tả hệ thống theo từng tầng, kèm thuật toán và cách xử lý ở mỗi tầng, viết bằng ngôn ngữ tự nhiên. Công thức đầy đủ nằm ở [model.md](model.md).
+Cập nhật: 2026-11-08. Tài liệu này mô tả hệ thống theo từng tầng, kèm thuật toán và cách xử lý ở mỗi tầng, viết bằng ngôn ngữ tự nhiên. Công thức đầy đủ nằm ở [model.md](model.md).
 
 ## 1. Hệ thống làm gì
 
@@ -35,7 +35,7 @@ Sau đó hệ thống cho biết chi phí thay đổi ra sao khi nhu cầu hoặ
 ┌───────────────▼──────────────┐ ┌─────────────▼───────────────┐
 │ Tầng 4. Lưu trữ              │ │ Tầng 3. Xử lý nền            │
 │   MySQL: hồ sơ, lượt giải    │ │   tiến trình con, giới hạn   │
-│   File: tải tuần đã xử lý    │ │   thời gian, giới hạn số job │
+│   File: dữ liệu mẫu demo     │ │   thời gian, giới hạn số job │
 └──────────────────────────────┘ └─────────────┬───────────────┘
                                                │ gọi hàm thuần
 ┌──────────────────────────────────────────────▼───────────────┐
@@ -61,10 +61,10 @@ Quy tắc giữa các tầng:
 
 | Màn hình | Người dùng làm gì |
 |---|---|
-| Nhu cầu | Tạo hồ sơ nhu cầu theo một trong ba cách: lưới 7 × 24 nhập tay, nhập file CSV, hoặc ingest file doanh số FreshRetailNet kèm các giả định quy đổi |
+| Nhu cầu | Tạo hồ sơ nhu cầu theo một trong ba cách: lưới 7 × 24 nhập tay, nhập file CSV, hoặc ingest file doanh số (CSV hoặc parquet): người dùng chọn cột ngày, giờ, doanh số, và các giả định quy đổi |
 | Nhân viên | Thêm, sửa nhân viên: lương theo giờ, giờ tối đa mỗi tuần, ngày không làm được, ngày muốn nghỉ |
 | Mẫu ca | Khai báo ca: tên, giờ bắt đầu, độ dài |
-| Xếp lịch | Chọn hồ sơ nhu cầu và mẫu ca, chỉnh thiết lập solver, bấm **Tối ưu**. Xem lịch, biểu đồ phủ, chi phí, cảnh báo luật. Sửa lịch bằng tay. Xuất CSV |
+| Xếp lịch | Chọn hồ sơ nhu cầu và mẫu ca, chỉnh thiết lập solver, bấm **Tối ưu**. Xem lịch, biểu đồ phủ, chi phí, cảnh báo luật. Sửa lịch bằng tay. **Xếp lại** khi có người vắng (ngày khóa, ca ghim). **Gợi ý người thay** cho một ca. Xuất CSV |
 | Độ nhạy | Quét hệ số nhu cầu λ, quét giả định `alpha` / `p` / sàn, tính chi phí biên theo giờ, so sánh hai lượt giải |
 
 **Cách xử lý:**
@@ -98,11 +98,13 @@ Quy tắc giữa các tầng:
 3. **Việc nặng giao cho tầng 3.** Giải lịch và phân tích độ nhạy có thể mất hàng chục giây. API tạo một dòng job trong cơ sở dữ liệu, trả mã job ngay (`202 Accepted`), rồi giao việc cho tầng xử lý nền.
 4. **Chụp ảnh đầu vào (snapshot).** Trước khi giải, API chép toàn bộ đầu vào vào lượt giải: nhu cầu, nhân viên, mẫu ca, bộ luật (`LaborRules`), tham số solver. Sau này có sửa nhân viên thì lượt giải cũ vẫn giữ nguyên dữ liệu lúc giải. Mỗi lượt giải không bao giờ bị sửa.
 
+5. **Xếp lại và gợi ý người thay.** `POST /api/schedules/{id}/repair` tạo lượt mới từ lịch của lượt `id` (chi tiết ở mục 7.2). Trước khi tạo job, API kiểm: ngày vắng không rơi vào ngày khóa, ca ghim không rơi vào ngày khóa, và tập ca bị khóa qua được validator; sai thì trả `422` kèm danh sách. `GET /api/schedules/{id}/replacements?employee_code=&day=&limit=` trả tối đa `limit` người thay, tính ngay vì chỉ gọi validator, không gọi solver.
+
 **Ingest file doanh số** (`POST /api/demand-profiles/ingest`):
 
-- Nhận file parquet (tối đa 200 MB), kèm mã store và các giả định quy đổi.
+- Nhận file CSV hoặc parquet (tối đa 200 MB), kèm mapping cột và các giả định quy đổi. Trước đó, `POST /api/demand-profiles/ingest/inspect` đọc tên cột để gợi ý mapping.
 - Tính mã kiểm SHA-256 của file để biết chính xác dữ liệu vào là file nào.
-- Gọi engine (tầng 5a) để xử lý, lưu kết quả thành file `data/processed/demand_store_<id>.parquet`, rồi tạo hồ sơ nhu cầu.
+- Gọi `derive_demand` (tầng 5a) để gộp doanh số thành tuần 168 giờ và quy đổi ra số người. Hồ sơ lưu tuần tải vào cột `sales_load`, còn SHA-256 của file và mapping cột vào metadata, nên quét giả định không cần file gốc nữa.
 
 ---
 
@@ -134,7 +136,7 @@ Bản đầu cố ý không dùng Redis, Celery hay WebSocket. Một bảng job 
 | `employees`, `shift_templates` | Nhân viên, mẫu ca |
 | `solve_runs` | Mỗi lượt giải: ảnh chụp đầu vào, tham số, solver và phiên bản, seed, trạng thái, mục tiêu, cận, gap, thời gian, log solver, lịch kết quả, số vi phạm |
 | `analysis_runs` | Mỗi lần phân tích độ nhạy: loại phân tích, tham số, kết quả |
-| File `data/processed/demand_store_<id>.parquet` | Tuần tải 168 giờ của một store sau khi ingest, kèm metadata (nguồn, SHA-256, phương pháp, số ô đã thay) |
+| Cột `sales_load` của `demand_profiles` | Tuần tải 168 giờ của hồ sơ ingest; metadata ghi SHA-256, mapping cột, phương pháp, số ô đã thay, `night_from_sales` |
 | File `data/demo/` | File dùng khi demo: `train.parquet` và CSV mẫu |
 
 Lưu đủ các thông tin trên để có thể chạy lại một lượt giải và nhận đúng kết quả cũ (tái lập). Schema cơ sở dữ liệu chỉ đổi qua migration của Alembic.
@@ -147,13 +149,9 @@ Engine là thư viện Python thuần, tên `shiftopt`. Hàm của engine là h�
 
 ### 7.1 Khối 5a: Từ doanh số tới số người cần
 
-Áp dụng khi nhu cầu đến từ file doanh số FreshRetailNet-50K. Lưu ý: dữ liệu này là **doanh số đã chuẩn hóa của kho thương mại điện tử**, không phải dữ liệu nhân sự.
+Áp dụng cho mọi file doanh số ingest, không riêng FreshRetailNet-50K. Doanh số không phải dữ liệu nhân sự: số người suy ra từ giả định của nhóm.
 
-**Bước 1. Lọc store.** Đọc file, chỉ lấy dòng của store được chọn. Hệ thống chỉ đọc 5 cột:
-
-- `store_id`, `product_id`, `dt` (ngày);
-- `hours_sale`: 24 số doanh số theo giờ;
-- `hours_stock_status`: 24 cờ hết hàng theo giờ.
+**Bước 1. Đọc và chọn cột.** File được đọc theo định dạng của nó: parquet, hoặc CSV với dấu phân cách tự nhận (`,`, `;`, tab). Chỉ các cột người dùng chỉ ra được dùng: ngày, giờ (nếu tách riêng), doanh số, hết hàng và sản phẩm (tùy chọn), cửa hàng (khi file có nhiều cửa hàng). Doanh số có thể là một dòng mỗi giờ, hoặc một dòng mỗi ngày-sản phẩm với 24 giá trị theo giờ. Các dòng trùng (cùng sản phẩm, ngày, giờ) được cộng lại.
 
 **Bước 2. Ước lượng nhu cầu ẩn cho giờ hết hàng.**
 
@@ -164,10 +162,7 @@ Engine là thư viện Python thuần, tên `shiftopt`. Hàm của engine là h�
 
 **Bước 3. Gộp thành một tuần điển hình.** Cộng doanh số mọi sản phẩm theo từng giờ, rồi lấy trung bình theo thứ trong tuần qua tất cả các tuần có trong dữ liệu. Kết quả là 168 con số gọi là "tải". Ví dụ, giờ 19h thứ Hai là trung bình tải lúc 19h của mọi thứ Hai.
 
-**Bước 4. Giờ đêm.** Kho không bán hàng ban đêm, vì hàng chỉ được bổ sung trong khung 6h–22h. Vì vậy số người giờ đêm không suy từ doanh số được:
-
-- Các giờ 22h–06h đặt tải bằng 0.
-- Số người giờ đêm lấy theo "sàn đêm", một tham số do người dùng nhập.
+**Bước 4. Giờ đêm.** Mặc định, giờ 22h–06h đặt tải bằng 0, vì doanh số ban đêm không mô tả nhu cầu nhân sự. Số người giờ đêm lấy theo "sàn đêm" do người dùng nhập. Nếu bật `night_from_sales` và dữ liệu có doanh số đêm thật, dùng doanh số đêm như các giờ khác.
 
 **Bước 5. Quy đổi ra số người.** Mỗi giờ:
 
@@ -236,6 +231,19 @@ Mỗi tầng không được làm xấu kết quả tầng trước. Thời gian
 
 **Phá đối xứng (tùy chọn, chưa bật trong API).** Hai nhân viên cùng lương và không có yêu cầu riêng thì hoán đổi được cho nhau. Engine có thể sắp xếp họ theo số ca để không phải xét các lịch chỉ khác nhau ở việc đổi tên người. Không áp cho người có yêu cầu riêng, vì có thể làm mất lời giải tốt nhất. Backend hiện gọi solver không bật tùy chọn này, và cũng không bật chế độ phân rã hai pha.
 
+#### Xếp lại từ lịch gốc (repair)
+
+Dùng khi lịch đã công bố và có biến động giữa tuần, ví dụ người báo ốm (đặc tả D20).
+
+- **Đầu vào:** lịch gốc (một lượt đã có lịch), ngày bắt đầu xếp lại `from_day`, danh sách người vắng theo ngày, các ca ghim. Có thể đổi hồ sơ nhu cầu.
+- **Khóa:** mọi ngày trước `from_day` giữ nguyên lịch gốc, kể cả giờ nghỉ giữa ca. Ca ghim bắt buộc có mặt. Ngày vắng được thêm vào ngày không làm được của người đó.
+- **Mục tiêu:** chèn một tầng mới ngay sau tầng thiếu người: tối thiểu **số ca thay đổi** so với lịch gốc, đếm theo bộ (nhân viên, ngày, ca); đổi giờ nghỉ trong cùng ca không tính. Thứ tự là thiếu người, thay đổi, chi phí, công bằng ca đêm, mong muốn nghỉ. Lịch gốc được dùng làm gợi ý khởi đầu.
+- **Luôn có lời giải.** Mọi luật cứng đều "đơn điệu": bỏ bớt ca không bao giờ tạo vi phạm mới. Vì vậy nếu riêng tập ca bị khóa qua được validator thì lịch "chỉ gồm các ca bị khóa" đã hợp lệ, và solver luôn tìm được lời giải. API kiểm tập này trước khi tạo job.
+- Không bật phá đối xứng hay phân rã khi repair, vì lịch gốc làm các nhân viên không còn hoán đổi được cho nhau.
+- Lượt repair lưu lịch gốc, `from_day` và ca ghim trong ảnh chụp đầu vào, nên chạy lại được. Giao diện đánh dấu ô khác lịch gốc bằng chữ "đổi" và ngày khóa bằng nhãn "khóa".
+
+**Gợi ý người thay.** Với một ca (người vắng, ngày), thử lần lượt từng nhân viên còn trống ngày đó, giao đúng ca đó với cùng giờ nghỉ, rồi chạy validator trên cả lịch. Chỉ giữ người không gây vi phạm. Xếp theo: người có đăng ký muốn nghỉ ngày đó xếp sau, rồi chi phí thêm thấp hơn, rồi số giờ trong tuần ít hơn. Bấm **Áp dụng** thì tạo lượt sửa tay mới, validator kiểm lại như mọi lượt sửa tay.
+
 #### Mô hình tổng hợp (phủ tập Dantzig), giải bằng PuLP + HiGHS
 
 Mô hình này không hỏi "ai làm ca nào" mà chỉ hỏi "mỗi ngày, mỗi loại ca cần **bao nhiêu người**".
@@ -268,7 +276,7 @@ Mô hình này nhỏ và giải rất nhanh, nên được dùng để:
    - không có ca nào vào ngày nhân viên đã báo không làm được.
 3. Trả về danh sách vi phạm. Mỗi vi phạm gồm loại, nhân viên và chi tiết. Giao diện gắn loại vi phạm với điều luật tương ứng (Đ.105, Đ.109, Đ.110, Đ.111) khi hiển thị.
 
-**Khi nào chạy:** sau mỗi lượt giải, và sau mỗi lần người dùng sửa lịch bằng tay.
+**Khi nào chạy:** sau mỗi lượt giải (kể cả repair), sau mỗi lần người dùng sửa lịch bằng tay, trên tập ca bị khóa trước khi tạo job repair, và với từng ứng viên khi gợi ý người thay.
 
 **Trạng thái khi có vi phạm.** Quy tắc giống nhau cho lượt do solver tạo và lượt sửa tay: có ít nhất một vi phạm cứng thì lượt đó có trạng thái `failed`, kèm thông điệp "validator found N hard-constraint violations". Ở đây `failed` nghĩa là **"đây không phải lịch hợp lệ để dùng"**, không phải lỗi hệ thống. Lượt vẫn được lưu đầy đủ: lịch, biểu đồ, KPI và danh sách vi phạm vẫn xem được. Khung **Tuân thủ** liệt kê từng vi phạm theo điều luật.
 
@@ -363,7 +371,7 @@ Docker Compose dựng năm dịch vụ:
 |---|---|
 | `db` | MySQL 8.4 |
 | `migrate` | Chạy migration một lần để tạo hoặc nâng cấp bảng |
-| `backend` | API FastAPI (uvicorn); đọc và ghi `data/processed` |
+| `backend` | API FastAPI (uvicorn) |
 | `seed` | Nạp 30 nhân viên và 3 mẫu ca demo khi bảng còn trống. Không nạp hồ sơ nhu cầu: nhu cầu được tạo bằng ingest trên web |
 | `frontend` | Giao diện đã build, phục vụ bằng nginx; chuyển `/api` sang backend; nhận file tải lên tới 200 MB |
 
@@ -371,7 +379,7 @@ Lệnh: `docker compose up -d --build`, rồi mở `http://localhost:3000`.
 
 ## 10. Giới hạn đã biết
 
-- Nhu cầu từ FreshRetailNet là tuần trung bình của quá khứ, chưa phải dự báo tuần tới. Chưa đo sai số dự báo.
+- Nhu cầu từ file doanh số là tuần trung bình của dữ liệu quá khứ, chưa phải dự báo tuần tới. Chưa đo sai số dự báo.
 - Giờ nghỉ giữa ca được làm tròn thành cả giờ.
 - Tái lập chỉ chắc chắn khi lượt giải kết thúc `OPTIMAL` trước time limit.
 - Giới hạn số job đếm trạng thái trong DB rồi mới thêm job, không khóa. Khi nhiều yêu cầu đến cùng lúc, số job thật có thể vượt nhẹ `max_pending_jobs`.
@@ -381,5 +389,8 @@ Lệnh: `docker compose up -d --build`, rồi mở `http://localhost:3000`.
   - Job quá hạn không bị dừng thật; tiến trình chạy tiếp tới khi tự xong.
   - Quét λ mở thêm một pool con để giải các điểm song song, nên số tiến trình thật có thể nhiều hơn `max_concurrent_jobs`.
 - Chỉ hỗ trợ một địa điểm, một loại kỹ năng, một tuần. Không hỗ trợ tổng đài (đặc tả D18).
+- Repair khóa theo ngày, không theo giờ. Tuần vẫn quấn vòng, nên ca của ngày bị khóa vẫn ràng buộc ca Chủ nhật qua luật nghỉ 12 giờ và 24 giờ.
+- Gợi ý người thay chỉ xét giao nguyên ca cho một người khác; không đổi chéo hai người, không đổi loại ca.
+- Repair và gợi ý người thay chưa chạy integration test trên MySQL và chưa duyệt trên trình duyệt.
 - Nội dung điều luật chưa được đối chiếu với nguyên văn văn bản luật ([đặc tả.md](đặc%20tả.md) mục 4).
 - Mọi số liệu hiệu năng chỉ đúng cho các trường hợp đã đo ([benchmarks.md](benchmarks.md)).
