@@ -1,4 +1,3 @@
-from dataclasses import replace
 from importlib.metadata import version
 
 from ortools.sat.python import cp_model
@@ -19,10 +18,6 @@ _STATUS_MAP = {
     cp_model.INFEASIBLE: SolveStatus.INFEASIBLE,
     cp_model.UNKNOWN: SolveStatus.UNKNOWN,
 }
-
-
-def with_time_share(params: SolveParams, share: int) -> SolveParams:
-    return replace(params, time_limit_seconds=params.time_limit_seconds / share)
 
 
 def run_cp_model(
