@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.schedules.models import RunStatus
 
@@ -49,6 +49,25 @@ class ManualEditRequest(BaseModel):
 class AbsenceWrite(BaseModel):
     employee_code: str = Field(min_length=1, max_length=32)
     days: list[WeekDay] = Field(min_length=1, max_length=7)
+
+
+class RerosterRequest(BaseModel):
+    employee_code: str = Field(min_length=1, max_length=32)
+    absent_days: list[WeekDay] = Field(min_length=1, max_length=7)
+    from_day: WeekDay | None = None
+
+    @field_validator("absent_days")
+    @classmethod
+    def _distinct_days(cls, days: list[int]) -> list[int]:
+        if len(set(days)) != len(days):
+            raise ValueError("absent_days must not repeat a day")
+        return sorted(days)
+
+
+class ScheduleChangesRead(BaseModel):
+    kept: list[AssignmentRead]
+    added: list[AssignmentRead]
+    removed: list[AssignmentRead]
 
 
 class RepairRequest(SolveSettings):
