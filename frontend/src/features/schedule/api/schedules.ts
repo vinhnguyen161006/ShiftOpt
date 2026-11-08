@@ -3,6 +3,7 @@ import { apiFetch, apiUrl, jsonInit } from "../../../lib/api-client";
 import type {
   JobAccepted,
   KpiRead,
+  RepairRequest,
   RunStatus,
   SolveRequest,
   SolveRunRead,
@@ -28,6 +29,15 @@ export function useCreateSchedule() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: SolveRequest) => apiFetch<JobAccepted>("/schedules", jsonInit("POST", body)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: RUNS_KEY }),
+  });
+}
+
+export function useCreateRepair(runId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RepairRequest) =>
+      apiFetch<JobAccepted>(`/schedules/${runId}/repair`, jsonInit("POST", body)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: RUNS_KEY }),
   });
 }

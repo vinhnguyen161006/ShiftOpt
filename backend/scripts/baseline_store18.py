@@ -9,9 +9,18 @@ from shiftopt.models.roster_cpsat import solve_roster
 from shiftopt.solvers.base import SolveParams
 from shiftopt.validation import validate
 
-from src.config import get_settings
-from src.demand.dataset_loader import dataset_required_staff
-from src.demand.schemas import ConversionParams
+from src.demand.sales_ingest import derive_demand
+from src.demand.schemas import ConversionParams, SalesMapping
+
+ROOT = Path(__file__).resolve().parents[2]
+TRAIN_FILE = ROOT / "data" / "demo" / "train.parquet"
+FRESHRETAILNET_MAPPING = {
+    "date_column": "dt",
+    "sales_column": "hours_sale",
+    "stockout_column": "hours_stock_status",
+    "product_column": "product_id",
+    "store_column": "store_id",
+}
 
 SHIFTS = (ShiftType("night", 0), ShiftType("day", 8), ShiftType("evening", 16))
 ALPHA = 1.0
@@ -22,15 +31,16 @@ NIGHT_MIN_STAFF = 1
 
 def baseline_instance(store_id: int, employee_count: int, productivity: float) -> Instance:
     """Store demand under the team's assumed conversion (alpha, p and staff floors from the
-    constants above), with night hours set to the night floor by dataset_required_staff."""
+    constants above), with night hours set to the night floor."""
+    mapping = SalesMapping(**FRESHRETAILNET_MAPPING, store=str(store_id))
     conversion = ConversionParams(
         alpha=ALPHA,
         productivity=productivity,
         min_staff=MIN_STAFF,
         night_min_staff=NIGHT_MIN_STAFF,
     )
-    demand = dataset_required_staff(
-        Path(get_settings().dataset_dir), store_id, conversion, LaborRules()
+    demand = derive_demand(
+        TRAIN_FILE.read_bytes(), mapping, conversion, LaborRules(), sha256="baseline"
     )
     employees = tuple(Employee(f"e{index:02d}", 100) for index in range(employee_count))
     return Instance(

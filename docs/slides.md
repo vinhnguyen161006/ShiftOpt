@@ -1,6 +1,6 @@
 # Nội dung 10 slide bảo vệ ShiftOpt
 
-Cập nhật: 2026-11-07. Số liệu lấy từ [báo cáo.md](báo%20cáo.md), [benchmarks.md](benchmarks.md), [acceptance.md](acceptance.md) và [đặc tả.md](đặc%20tả.md). Không thêm số nào ngoài các file đó. Kịch bản thao tác demo chi tiết ở [demo.md](demo.md).
+Cập nhật: 2026-11-07. Số liệu lấy từ [báo cáo.md](báo%20cáo.md), [benchmarks.md](benchmarks.md), [đặc tả.md](đặc%20tả.md). Không thêm số nào ngoài các file đó. Kịch bản thao tác demo chi tiết ở [demo.md](demo.md).
 
 Mỗi slide có ba phần:
 - **Trên slide:** chữ đặt lên slide. Giữ ngắn, mỗi slide tối đa 5–6 ý.
@@ -21,9 +21,9 @@ Tổng thời lượng dự kiến khoảng 15 phút, chưa tính demo trực ti
 - Giảng viên hướng dẫn: *[tên]*
 - Ngày bảo vệ: *[ngày]*
 
-**Hình:** logo ShiftOpt hoặc ảnh trang chủ (`docs/acceptance/home.png`).
+**Hình:** logo ShiftOpt hoặc ảnh trang chủ (ảnh chụp `home.png`).
 
-**Lời nói:** Giới thiệu nhóm và đề tài trong một câu: cửa hàng hoặc tổng đài mở 24/7 cần biết mỗi giờ cần bao nhiêu người, rồi xếp ca cho từng nhân viên sao cho đủ người, chi phí thấp và đúng luật lao động.
+**Lời nói:** Giới thiệu nhóm và đề tài trong một câu: cửa hàng hoặc kho mở 24/7 cần biết mỗi giờ cần bao nhiêu người, rồi xếp ca cho từng nhân viên sao cho đủ người, chi phí thấp và đúng luật lao động.
 
 ---
 
@@ -50,9 +50,9 @@ Tổng thời lượng dự kiến khoảng 15 phút, chưa tính demo trực ti
 - Giờ hết hàng: thay bằng nhu cầu ẩn (trung bình cùng giờ, cùng thứ, ngày không hết hàng)
 - Quy đổi: **r = max(sàn, ⌈α · D / p⌉)**, với α = 1, p = 4, sàn = 1
 - Giờ đêm 22h–06h dùng mức tối thiểu cố định, không suy từ doanh số
-- Chế độ tổng đài: lưu lượng giả lập có seed, quy đổi bằng Erlang A/C
+- Nguồn khác: ingest bất kỳ file doanh số theo giờ (CSV hoặc parquet), chọn cột trên form (đặc tả D19). Chế độ tổng đài đã bỏ (D18)
 
-**Hình:** lưới 7 × 24 số người cần của store 18 trong `docs/acceptance/demand.png`, giờ đỉnh cần 8 người, kèm nhãn "doanh số chuẩn hóa, không phải nhu cầu nhân sự".
+**Hình:** lưới 7 × 24 số người cần của store 18 trong ảnh chụp `demand.png`, giờ đỉnh cần 8 người, kèm nhãn "doanh số chuẩn hóa, không phải nhu cầu nhân sự".
 
 **Lời nói:** Nhấn mạnh tính trung thực về dữ liệu. Doanh số giờ đêm gần bằng 0 vì kho không nhập hàng ban đêm, nên giờ đêm dùng mức tối thiểu cố định. Store 18 có 90.159 ô hết hàng đã được thay bằng nhu cầu ẩn. α và p là giả định, luôn hiện trên giao diện và có thể quét độ nhạy (slide 8).
 
@@ -88,7 +88,7 @@ Tổng thời lượng dự kiến khoảng 15 phút, chưa tính demo trực ti
 - **Solver đề xuất, validator phán xét:** mọi lịch được một chương trình độc lập kiểm lại, kể cả khi solver báo OPTIMAL
 - Ví dụ bị chặn: ca 14h–22h rồi 06h–14h hôm sau (chỉ nghỉ 8 giờ)
 
-**Hình:** khung "Tuân thủ" trong `docs/acceptance/schedule_violation.png` (sửa tay gây vi phạm Đ.110).
+**Hình:** khung "Tuân thủ" trong ảnh chụp `schedule_violation.png` (sửa tay gây vi phạm Đ.110).
 
 **Lời nói:** Nêu "bẫy" Đ.111: ngày nghỉ trên lịch chưa chắc là 24 giờ nghỉ liên tục khi có ca qua đêm, nên validator tính khoảng nghỉ trên trục giờ. Validator không dùng chung code với mô hình, nên một lỗi trong mô hình không thể tự che giấu. Lưu ý trung thực: nội dung các điều luật đang dựa trên nguồn thứ cấp, chưa đối chiếu nguyên văn văn bản 45/2019/QH14.
 
@@ -112,13 +112,14 @@ Tổng thời lượng dự kiến khoảng 15 phút, chưa tính demo trực ti
 ## Slide 7. Giao diện và demo
 
 **Trên slide:**
-1. **Nhu cầu:** lưới 7 × 24, nhập CSV, tạo từ FreshRetailNet hoặc tổng đài
+1. **Nhu cầu:** lưới 7 × 24, nhập CSV, ingest file doanh số (CSV hoặc parquet)
 2. **Nhân viên và mẫu ca:** giờ tối đa riêng, ngày không làm được, ngày muốn nghỉ
 3. **Tối ưu:** trạng thái solver, gap, thời gian giải
 4. **Kết quả:** lịch nhân viên × ngày, biểu đồ phủ nhu cầu (giờ thiếu có sọc chéo), chi phí, cảnh báo luật, xuất CSV
 5. **What-if:** thanh trượt λ, heatmap chi phí biên theo giờ, so sánh kịch bản
+6. **Xếp lại:** người vắng đột xuất, ngày khóa, ca ghim; gợi ý người thay (đặc tả D20)
 
-**Hình:** ghép 2–3 ảnh `docs/acceptance/demand.png`, `schedule_run.png`, `what_if.png` (giao diện tiếng Việt, chụp 2026-11-07). Ảnh chụp cả trang, nên cắt lấy phần cần dùng.
+**Hình:** ghép 2–3 ảnh ảnh chụp `demand.png`, `schedule_run.png`, `what_if.png` (giao diện tiếng Việt, chụp 2026-11-07). Ảnh chụp cả trang, nên cắt lấy phần cần dùng.
 
 **Lời nói:** Chuyển sang demo trực tiếp theo [demo.md](demo.md) phần C, hoặc dùng ảnh nếu máy chiếu có sự cố. Điểm cần cho thấy: thiếu và thừa người phân biệt được bằng hình dạng chứ không chỉ bằng màu; trạng thái FEASIBLE luôn kèm gap.
 
@@ -153,7 +154,7 @@ Tổng thời lượng dự kiến khoảng 15 phút, chưa tính demo trực ti
 - **Quét giả định quy đổi** α, p, sàn: thấy lịch thay đổi khi giả định thay đổi
 - Điểm giải lại không OPTIMAL được đánh dấu "chưa chứng minh"
 
-**Hình:** đường cong z(λ), bảng quét p và heatmap chi phí biên trong `docs/acceptance/what_if.png` (store 18, 30 nhân viên, mọi điểm OPTIMAL). Quét p trên ảnh: p = 3, 4, 5 cho chi phí tuần 115.200, 88.920, 71.660, đều 0 giờ thiếu. Các số này chỉ là ảnh chụp một lần chạy, chưa được đưa vào `benchmarks.md`.
+**Hình:** đường cong z(λ), bảng quét p và heatmap chi phí biên trong ảnh chụp `what_if.png` (store 18, 30 nhân viên, mọi điểm OPTIMAL). Quét p trên ảnh: p = 3, 4, 5 cho chi phí tuần 115.200, 88.920, 71.660, đều 0 giờ thiếu. Các số này chỉ là ảnh chụp một lần chạy, chưa được đưa vào `benchmarks.md`.
 
 **Lời nói:** Mô hình nguyên không có "giá bóng" (shadow price) hợp lệ, nên nhóm tính chi phí biên bằng cách giải lại thật. Dual LP chỉ dùng để thấy khoảng cách với bài toán nguyên, và luôn ghi rõ là xấp xỉ. Ví dụ kiểm tay: 3 ca, nhu cầu 1 người mỗi giờ, chi phí biên ở giờ 3 bằng 100 × 980, khớp với tính tay.
 
@@ -179,5 +180,5 @@ Tổng thời lượng dự kiến khoảng 15 phút, chưa tính demo trực ti
 ## Việc cần làm trước buổi bảo vệ
 
 - Điền tên thành viên, giảng viên, ngày bảo vệ (slide 1).
-- Cắt các ảnh trong `docs/acceptance/` (chụp cả trang ngày 2026-11-07) lấy phần cần cho slide 3, 5, 7, 9.
+- Chụp lại các màn hình cần dùng (chụp cả trang ngày 2026-11-07) lấy phần cần cho slide 3, 5, 7, 9.
 - Nếu nhóm đổi α, p hoặc kịch bản cơ sở (đặc tả D7–D9, D13), cập nhật số ở slide 3 và 8.

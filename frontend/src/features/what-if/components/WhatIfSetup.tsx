@@ -83,7 +83,7 @@ export function WhatIfSetup({
   const [assumption, setAssumption] = useState<StaffingField>("alpha");
   const [valuesText, setValuesText] = useState("0.8, 1.0, 1.2");
   const selectedProfile = profiles.find((profile) => String(profile.id) === draft.demandProfileId);
-  const canSweepAssumption = selectedProfile?.source === "freshretailnet";
+  const canSweepAssumption = selectedProfile?.has_sales_load === true;
   const error = sweep.error ?? marginal.error ?? staffing.error;
   const general = generalError(error);
 
@@ -153,7 +153,7 @@ export function WhatIfSetup({
           )}
         </Field>
       </div>
-      {!canSweepAssumption && <p className="muted">{vi.whatIf.form.onlyFreshRetailNet}</p>}
+      {!canSweepAssumption && <p className="muted">{vi.whatIf.form.onlySales}</p>}
       {general && <Notice kind="error" title={general} />}
       <div className="whatif-actions">
         <Button

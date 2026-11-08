@@ -1,6 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, jsonInit } from "../../../lib/api-client";
-import type { ComplianceRead, ManualEditRequest, SolveRunRead } from "../../../types/models";
+import type {
+  ComplianceRead,
+  ManualEditRequest,
+  ReplacementRead,
+  SolveRunRead,
+} from "../../../types/models";
+
+export function useReplacements(runId: number, employeeCode: string, day: number | null) {
+  return useQuery({
+    queryKey: ["schedules", runId, "replacements", employeeCode, day],
+    queryFn: () => {
+      const query = new URLSearchParams({
+        employee_code: employeeCode,
+        day: String(day),
+        limit: "5",
+      });
+      return apiFetch<ReplacementRead[]>(`/schedules/${runId}/replacements?${query}`);
+    },
+    enabled: employeeCode !== "" && day !== null,
+  });
+}
 
 export function useCompliance(runId: number, enabled: boolean) {
   return useQuery({

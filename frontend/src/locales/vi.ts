@@ -109,7 +109,7 @@ export const vi = {
       items: {
         demand: {
           title: "Lập kế hoạch nhu cầu",
-          body: "Sửa số người cần theo giờ trên lưới 7 × 24, nhập CSV, hoặc suy ra hồ sơ nhu cầu minh họa từ FreshRetailNet-50K.",
+          body: "Sửa số người cần theo giờ trên lưới 7 × 24, nhập CSV, hoặc ingest file doanh số theo giờ để suy ra nhu cầu.",
         },
         employees: {
           title: "Quản lý nhân viên",
@@ -179,8 +179,7 @@ export const vi = {
     scenario: {
       title: "Nhu cầu và nhân sự",
       tag: "Minh họa",
-      caption:
-        "Store 1284, nhu cầu suy từ doanh số theo giờ của FreshRetailNet-50K (alpha 1,0, p 42, r_min 3).",
+      caption: "Store 1284, nhu cầu suy từ doanh số theo giờ (alpha 1,0, p 42, r_min 3).",
       lambda: "Hệ số nhu cầu lambda",
       curve: "Đường chi phí z(lambda)",
       curveAria: "Chi phí tuần minh họa theo hệ số nhu cầu",
@@ -262,25 +261,25 @@ export const vi = {
   demand: {
     eyebrow: "Nhu cầu",
     title: "Nhu cầu nhân sự theo giờ",
-    lead: "Hồ sơ nhu cầu là số người cần ở từng giờ trong 168 giờ của tuần. Nhập tay, nhập CSV, hoặc suy ra từ doanh số FreshRetailNet với giả định hiển thị rõ.",
+    lead: "Hồ sơ nhu cầu là số người cần ở từng giờ trong 168 giờ của tuần. Nhập tay, nhập CSV, hoặc ingest file doanh số theo giờ với giả định hiển thị rõ.",
     newProfile: "Tạo hồ sơ nhu cầu",
     loading: "Đang tải hồ sơ nhu cầu",
     loadError: "Không tải được hồ sơ nhu cầu",
     emptyTitle: "Bắt đầu với một hồ sơ nhu cầu",
     emptyBody:
-      "Tối ưu cần số người yêu cầu cho mọi giờ trong tuần. Tạo từ lưới, file CSV hoặc một store FreshRetailNet.",
+      "Tối ưu cần số người yêu cầu cho mọi giờ trong tuần. Tạo từ lưới, file CSV hoặc file doanh số.",
     listCaption: "Hồ sơ nhu cầu",
     profile: "Hồ sơ",
     peak: "Cao điểm",
     sources: {
       manual: "Nhập tay",
       csv: "CSV",
-      freshretailnet: "FreshRetailNet-50K",
+      sales: "Doanh số",
     } as Record<string, string>,
     modeLinear: "Tuyến tính",
     salesTitle: "Doanh số chuẩn hóa, không phải nhu cầu nhân sự",
     salesBody:
-      "Đây là doanh số chuẩn hóa của kho thương mại điện tử, không phải nhu cầu nhân sự. Số người bên dưới suy ra từ giả định của nhóm: alpha, p và hai mức sàn, liệt kê kèm hồ sơ.",
+      "Đây là doanh số chuẩn hóa, không phải nhu cầu nhân sự. Số người bên dưới suy ra từ giả định của nhóm: alpha, p và hai mức sàn, liệt kê kèm hồ sơ.",
     assumptions: "Giả định và phương pháp",
     stats: (total: string, peak: number) => `${total} giờ-người mỗi tuần · cao điểm ${peak} người`,
     profileName: "Tên hồ sơ",
@@ -310,7 +309,7 @@ export const vi = {
       sources: {
         manual: "Lưới nhập tay",
         csv: "Nhập CSV",
-        freshretailnet: "FreshRetailNet",
+        sales: "Ingest doanh số",
       },
       creating: "Đang tạo...",
       createProfile: "Tạo hồ sơ",
@@ -323,13 +322,23 @@ export const vi = {
       csvContent: "Nội dung CSV",
       csvContentHint: "Lấy từ file ở trên, hoặc dán vào đây.",
       derive: "Tạo từ dữ liệu",
-      datasetBody:
-        "FreshRetailNet-50K là doanh số chuẩn hóa theo giờ của các kho thương mại điện tử, không phải dữ liệu nhân sự và không phải cửa hàng 24/7. Số người suy ra từ giả định của nhóm bên dưới: r = max(sàn, ceil(alpha · D / p)). Giờ hết hàng dùng nhu cầu ẩn ước lượng.",
-      storeId: "Mã store",
-      storeIdHint: "Mã store cần lấy trong file doanh số, ví dụ 18.",
-      salesFile: "File doanh số (train.parquet)",
+      salesBody:
+        "Doanh số chuẩn hóa theo giờ, không phải dữ liệu nhân sự. Số người suy ra từ giả định của nhóm bên dưới: r = max(sàn, ceil(alpha · D / p)). Giờ hết hàng dùng nhu cầu ẩn ước lượng khi file có cột hết hàng.",
+      storeId: "Cửa hàng",
+      storeIdHint: "Chọn khi file có nhiều cửa hàng; danh sách lấy từ file.",
+      salesFile: "File doanh số (CSV hoặc parquet)",
       salesFileHint:
-        "Ingest: hệ thống đọc file, lọc store, thay giờ hết hàng rồi suy ra số người theo giờ. Để trống thì dùng dữ liệu store đã xử lý trước đó.",
+        "Sau khi chọn file, hệ thống đọc tên cột để bạn chỉ ra cột ngày, giờ và doanh số.",
+      inspecting: "Đang đọc cột của file...",
+      inspected: (format: string, rows: number) => `Định dạng ${format}, ${rows} dòng.`,
+      noColumn: "(không có)",
+      columnDate: "Cột ngày (hoặc ngày giờ)",
+      columnHour: "Cột giờ 0–23 (bỏ trống nếu cột ngày đã có giờ)",
+      columnSales: "Cột doanh số",
+      columnStockout: "Cột hết hàng 0/1 (tùy chọn)",
+      columnProduct: "Cột sản phẩm (tùy chọn)",
+      columnStore: "Cột cửa hàng (tùy chọn)",
+      nightFromSales: "Dùng doanh số giờ đêm (chỉ bật khi file có doanh số đêm thật)",
       ingesting: "Đang xử lý file doanh số...",
     },
     conversion: {
@@ -492,6 +501,29 @@ export const vi = {
     allRuns: "Tất cả lượt",
     compliance: "Tuân thủ",
     editByHand: "Sửa lịch bằng tay",
+    repairButton: "Xếp lại",
+    repairTitle: (id: number) => `Xếp lại từ lượt ${id}`,
+    replacementsPanel: "Gợi ý người thay",
+    repair: {
+      intro: (id: number) =>
+        `Xếp lại từ lượt ${id}. Các ngày trước ngày bắt đầu xếp lại giữ nguyên lịch gốc (khóa); ca được ghim luôn có mặt; ngày nghỉ đột xuất không xếp ca. Kết quả là lượt mới và được validator kiểm lại.`,
+      fromDay: "Xếp lại từ ngày",
+      fromDayHint: "Các ngày trước ngày này bị khóa, giữ nguyên lịch gốc.",
+      absences: "Nghỉ đột xuất",
+      absenceEmployee: "Nhân viên vắng",
+      absenceDays: "Ngày vắng",
+      addAbsence: "Thêm người vắng",
+      removeAbsence: "Bỏ dòng",
+      absenceRow: (index: number) => `người vắng ${index}`,
+      pinned: "Ca giữ nguyên (ghim)",
+      pinnedEmpty: "Không có ca nào từ ngày xếp lại trở đi để ghim.",
+      pinnedItem: (code: string, day: string, shift: string) => `${code} · ${day} · ${shift}`,
+      timeLimit: "Giới hạn thời gian (giây)",
+      timeLimitHint:
+        "Giới hạn cho một lần giải. Cùng seed và cùng đầu vào cho cùng kết quả khi chạy một worker.",
+      submit: "Xếp lại",
+      submitting: "Đang gửi...",
+    },
     checking: "Đang kiểm tra ràng buộc",
     runDetails: "Chi tiết lượt giải",
     laborCost: "Chi phí lao động",
@@ -538,6 +570,10 @@ export const vi = {
       runMeta: (solver: string, time: string, seed: string, workers: string) =>
         `${solver} · ${time} · seed ${seed} · ${workers} worker`,
       seconds: (value: string) => `${value} giây`,
+      changes: "Ca thay đổi",
+      changesSub: "thêm hoặc bỏ so với lượt gốc",
+      repairTag: "Xếp lại",
+      repairMeta: (base: number) => `xếp lại từ lượt ${base}`,
     },
     verdict: {
       manualValue: "SỬA TAY",
@@ -573,6 +609,10 @@ export const vi = {
       off: "Nghỉ",
       offTitle: (day: string) => `${day}: nghỉ`,
       breakAt: (hour: string) => `, nghỉ giữa ca lúc ${hour}`,
+      changed: "đổi so với lịch gốc",
+      changedMark: "đổi",
+      locked: "khóa",
+      lockedTitle: (day: string) => `${day}: khóa theo lịch gốc`,
     },
     coverage: {
       title: "Độ phủ nhân sự",
@@ -674,6 +714,27 @@ export const vi = {
       checking: "Đang kiểm tra...",
       submit: "Lưu thành lượt mới và kiểm tra lại",
     },
+    replacement: {
+      intro:
+        "Chọn người vắng và ngày. Danh sách chỉ gồm người có thể nhận đúng ca đó mà không vi phạm luật cứng. Áp dụng sẽ tạo lượt mới.",
+      employee: "Nhân viên vắng",
+      day: "Ngày",
+      noShift: "Người này không có ca trong tuần",
+      caption: (employee: string, day: string) =>
+        `Người có thể thay ca của ${employee} ngày ${day}`,
+      candidate: "Nhân viên",
+      shift: "Ca",
+      breakAt: "Nghỉ lúc",
+      extraCost: "Chi phí thêm",
+      weeklyHours: "Giờ tuần sau khi thay",
+      prefersOff: "muốn nghỉ ngày này",
+      apply: "Áp dụng",
+      applying: "Đang lưu...",
+      empty: "Không có ai thay được ca này với luật hiện tại.",
+      loading: "Đang tìm người thay",
+      option: (code: string, day: string, shift: string) => `${code} · ${day} · ${shift}`,
+      breakOffset: (offset: number) => ` · +${offset}h`,
+    },
   },
   whatIf: {
     eyebrow: "Độ nhạy",
@@ -700,7 +761,7 @@ export const vi = {
     staffingPanel: "Quét giả định quy đổi",
     noStaffingTitle: "Chưa quét giả định",
     noStaffingBody:
-      "Chọn hồ sơ FreshRetailNet và một giả định quy đổi ở trên để xem số người và chi phí thay đổi.",
+      "Chọn hồ sơ tạo từ file doanh số và một giả định quy đổi ở trên để xem số người và chi phí thay đổi.",
     staffingActive: (id: number) => `Đang giải lại ở từng giá trị (phân tích ${id})`,
     marginalPanel: "Chi phí biên theo giờ",
     noMarginalTitle: "Chưa tính chi phí biên",
@@ -719,7 +780,7 @@ export const vi = {
         `Quét nhu cầu giải lại toàn bộ lịch ở lambda ${multipliers}, mỗi lần với giới hạn thời gian ở trên, nên mất tối đa ${count} lần giới hạn đó. Chi phí biên giải lại mô hình tổng hợp 169 lần.`,
       assumption: "Giả định quy đổi cần thay đổi",
       assumptionHint:
-        "Tính lại số người từ tải FreshRetailNet với từng giá trị. Cần hồ sơ FreshRetailNet. Công thức chỉ dùng tỷ số alpha / p, nên quét alpha hay quét p cho cùng thông tin.",
+        "Tính lại số người từ tải của hồ sơ với từng giá trị. Cần hồ sơ tạo từ file doanh số. Công thức chỉ dùng tỷ số alpha / p, nên quét alpha hay quét p cho cùng thông tin.",
       options: {
         alpha: "alpha",
         productivity: "p (năng suất)",
@@ -729,7 +790,7 @@ export const vi = {
       values: "Các giá trị thử",
       valuesHint:
         "Cách nhau bằng dấu phẩy, số thập phân dùng dấu chấm (ví dụ 0.8). Tối đa 20. Sàn phải là số nguyên.",
-      onlyFreshRetailNet: "Quét giả định chỉ dùng được với hồ sơ FreshRetailNet.",
+      onlySales: "Quét giả định chỉ dùng được với hồ sơ tạo từ file doanh số.",
       runMarginal: "Tính chi phí biên theo giờ",
       runSweep: "Chạy quét nhu cầu",
       runStaffing: "Chạy quét giả định",
@@ -776,7 +837,7 @@ export const vi = {
       },
       label: "Giả định quy đổi của nhóm, không phải dữ liệu nhân sự",
       caption:
-        "Mỗi dòng tính lại số người cần từ tải FreshRetailNet với giá trị đó, rồi giải lại lịch với cùng giới hạn thời gian và seed.",
+        "Mỗi dòng tính lại số người cần từ tải của hồ sơ với giá trị đó, rồi giải lại lịch với cùng giới hạn thời gian và seed.",
       tableCaption: "Các điểm quét giả định",
       value: "Giá trị",
     },

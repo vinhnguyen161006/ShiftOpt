@@ -1,8 +1,5 @@
 from datetime import date, timedelta
-from pathlib import Path
 
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pytest
 from httpx import AsyncClient
 
@@ -98,59 +95,62 @@ async def test_demand_from_csv_accepts_grid_and_rejects_short_grid(client: Async
     assert short.status_code == 422
 
 
-async def test_demand_from_dataset_missing_store_is_404(client: AsyncClient) -> None:
-    response = await client.post(
-        "/api/demand-profiles/from-dataset", json={"name": "store", "store_id": 999999}
-    )
-    assert response.status_code == 404
-
-
-def _sales_file(path: Path) -> bytes:
+def _hourly_csv(store: str = "7") -> bytes:
     rows = [
-        {
-            "store_id": 7,
-            "product_id": 1,
-            "dt": (date(2024, 6, 3) + timedelta(days=day)).isoformat(),
-            "hours_sale": [8.0] * 24,
-            "hours_stock_status": [0] * 24,
-        }
+        f"{store},{(date(2024, 6, 3) + timedelta(days=day)).isoformat()} {hour:02d}:00:00,8.0"
         for day in range(7)
+        for hour in range(24)
     ]
-    pq.write_table(pa.Table.from_pylist(rows), path)
-    return path.read_bytes()
+    return "\n".join(["cua_hang,thoi_diem,doanh_thu", *rows]).encode()
 
 
-async def test_demand_from_uploaded_sales(
-    client: AsyncClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    monkeypatch.setenv("SHIFTOPT_DATASET_DIR", str(tmp_path / "processed"))
-    get_settings.cache_clear()
-    params: dict[str, str | int] = {
+async def test_ingest_sales_file_derives_profile(client: AsyncClient) -> None:
+    params: dict[str, str | int | float] = {
         "name": "uploaded",
-        "store_id": 7,
+        "date_column": "thoi_diem",
+        "sales_column": "doanh_thu",
+        "store_column": "cua_hang",
+        "store": "7",
         "productivity": 4,
         "night_min_staff": 2,
     }
     response = await client.post(
         "/api/demand-profiles/ingest",
         params=params,
-        content=_sales_file(tmp_path / "train.parquet"),
+        content=_hourly_csv(),
         headers={"Content-Type": "application/octet-stream"},
     )
     assert response.status_code == 201
     body = response.json()
+    assert body["source"] == "sales"
+    assert body["has_sales_load"] is True
     assert body["required_staff"][12] == 2
     assert body["required_staff"][0] == 2
-    assert body["source_metadata"]["store_id"] == "7"
-    assert body["source_metadata"]["source"].startswith("uploaded sales file, sha256 ")
+    assert body["source_metadata"]["store"] == "7"
+    assert len(body["source_metadata"]["sha256"]) == 64
     assert body["conversion_params"]["productivity"] == 4
 
 
-async def test_demand_upload_rejects_non_parquet(client: AsyncClient) -> None:
+async def test_inspect_sales_file_guesses_mapping(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/demand-profiles/ingest/inspect",
+        content=_hourly_csv(),
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["format"] == "csv"
+    assert body["rows"] == 168
+    assert body["guess"]["date_column"] == "thoi_diem"
+    assert body["guess"]["sales_column"] == "doanh_thu"
+    assert body["stores"] == ["7"]
+
+
+async def test_ingest_rejects_unreadable_file(client: AsyncClient) -> None:
     response = await client.post(
         "/api/demand-profiles/ingest",
-        params={"name": "bad", "store_id": 7},
-        content=b"date,hour,sales",
+        params={"name": "bad", "date_column": "x", "sales_column": "y"},
+        content=b"",
         headers={"Content-Type": "application/octet-stream"},
     )
     assert response.status_code == 422

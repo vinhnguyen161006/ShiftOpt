@@ -38,7 +38,9 @@ def run_analysis(kind: str, request: dict[str, Any]) -> dict[str, Any]:
 def _staffing_sweep(
     instance: Instance, request: dict[str, Any], params: SolveParams
 ) -> dict[str, Any]:
-    load, _ = zero_night_load(request["load"], instance.rules)
+    load = tuple(request["load"])
+    if not request["night_from_sales"]:
+        load, _ = zero_night_load(load, instance.rules)
     base = StaffingAssumption(**request["base"])
     points = sweep_staffing_assumption(
         instance,

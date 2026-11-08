@@ -1,6 +1,33 @@
 {
   "components": {
     "schemas": {
+      "AbsenceWrite": {
+        "properties": {
+          "days": {
+            "items": {
+              "maximum": 6.0,
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "maxItems": 7,
+            "minItems": 1,
+            "title": "Days",
+            "type": "array"
+          },
+          "employee_code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Employee Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "employee_code",
+          "days"
+        ],
+        "title": "AbsenceWrite",
+        "type": "object"
+      },
       "AnalysisAccepted": {
         "properties": {
           "job_id": {
@@ -252,29 +279,6 @@
         "title": "CsvDemandRequest",
         "type": "object"
       },
-      "DatasetDemandRequest": {
-        "properties": {
-          "conversion_params": {
-            "$ref": "#/components/schemas/ConversionParams"
-          },
-          "name": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "store_id": {
-            "title": "Store Id",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "name",
-          "store_id"
-        ],
-        "title": "DatasetDemandRequest",
-        "type": "object"
-      },
       "DemandProfileCreate": {
         "properties": {
           "conversion_params": {
@@ -327,6 +331,10 @@
             "title": "Created At",
             "type": "string"
           },
+          "has_sales_load": {
+            "title": "Has Sales Load",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -364,6 +372,7 @@
           "required_staff",
           "conversion_params",
           "source_metadata",
+          "has_sales_load",
           "created_at"
         ],
         "title": "DemandProfileRead",
@@ -411,7 +420,7 @@
         "enum": [
           "manual",
           "csv",
-          "freshretailnet"
+          "sales"
         ],
         "title": "DemandSource",
         "type": "string"
@@ -977,6 +986,117 @@
         "title": "MarginalCostResult",
         "type": "object"
       },
+      "RepairRequest": {
+        "properties": {
+          "absences": {
+            "items": {
+              "$ref": "#/components/schemas/AbsenceWrite"
+            },
+            "maxItems": 500,
+            "title": "Absences",
+            "type": "array"
+          },
+          "demand_profile_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demand Profile Id"
+          },
+          "from_day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "From Day",
+            "type": "integer"
+          },
+          "num_workers": {
+            "default": 8,
+            "minimum": 1.0,
+            "title": "Num Workers",
+            "type": "integer"
+          },
+          "pinned": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentWrite"
+            },
+            "maxItems": 2000,
+            "title": "Pinned",
+            "type": "array"
+          },
+          "random_seed": {
+            "default": 0,
+            "title": "Random Seed",
+            "type": "integer"
+          },
+          "relative_gap_limit": {
+            "default": 0.01,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Relative Gap Limit",
+            "type": "number"
+          },
+          "time_limit_seconds": {
+            "default": 60.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Time Limit Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "from_day"
+        ],
+        "title": "RepairRequest",
+        "type": "object"
+      },
+      "ReplacementRead": {
+        "properties": {
+          "break_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Break Offset"
+          },
+          "employee_code": {
+            "title": "Employee Code",
+            "type": "string"
+          },
+          "extra_cost": {
+            "title": "Extra Cost",
+            "type": "integer"
+          },
+          "prefers_off": {
+            "title": "Prefers Off",
+            "type": "boolean"
+          },
+          "shift_name": {
+            "title": "Shift Name",
+            "type": "string"
+          },
+          "weekly_hours": {
+            "title": "Weekly Hours",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "employee_code",
+          "shift_name",
+          "break_offset",
+          "extra_cost",
+          "weekly_hours",
+          "prefers_off"
+        ],
+        "title": "ReplacementRead",
+        "type": "object"
+      },
       "RunStatus": {
         "enum": [
           "queued",
@@ -986,6 +1106,55 @@
         ],
         "title": "RunStatus",
         "type": "string"
+      },
+      "SalesInspection": {
+        "properties": {
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          },
+          "guess": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Guess",
+            "type": "object"
+          },
+          "rows": {
+            "title": "Rows",
+            "type": "integer"
+          },
+          "stores": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Stores",
+            "type": "array"
+          }
+        },
+        "required": [
+          "format",
+          "rows",
+          "columns",
+          "guess",
+          "stores"
+        ],
+        "title": "SalesInspection",
+        "type": "object"
       },
       "ShiftTemplateCreate": {
         "properties": {
@@ -1204,6 +1373,20 @@
             ],
             "title": "Assignments"
           },
+          "baseline_assignments": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Assignments"
+          },
           "best_bound": {
             "anyOf": [
               {
@@ -1214,6 +1397,17 @@
               }
             ],
             "title": "Best Bound"
+          },
+          "changes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changes"
           },
           "created_at": {
             "format": "date-time",
@@ -1316,6 +1510,17 @@
             ],
             "title": "Parent Run Id"
           },
+          "repair_from_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair From Day"
+          },
           "shift_types": {
             "items": {
               "$ref": "#/components/schemas/ShiftTypeRead"
@@ -1387,6 +1592,9 @@
           "solve_status",
           "params",
           "assignments",
+          "repair_from_day",
+          "baseline_assignments",
+          "changes",
           "objective",
           "best_bound",
           "gap",
@@ -2019,51 +2227,127 @@
         ]
       }
     },
-    "/api/demand-profiles/from-dataset": {
-      "post": {
-        "operationId": "create_profile_from_dataset_api_demand_profiles_from_dataset_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DatasetDemandRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DemandProfileRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Profile From Dataset",
-        "tags": [
-          "demand"
-        ]
-      }
-    },
     "/api/demand-profiles/ingest": {
       "post": {
         "operationId": "ingest_sales_api_demand_profiles_ingest_post",
         "parameters": [
+          {
+            "in": "query",
+            "name": "date_column",
+            "required": true,
+            "schema": {
+              "maxLength": 120,
+              "minLength": 1,
+              "title": "Date Column",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sales_column",
+            "required": true,
+            "schema": {
+              "maxLength": 120,
+              "minLength": 1,
+              "title": "Sales Column",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hour_column",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hour Column"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stockout_column",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stockout Column"
+            }
+          },
+          {
+            "in": "query",
+            "name": "product_column",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Product Column"
+            }
+          },
+          {
+            "in": "query",
+            "name": "store_column",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Store Column"
+            }
+          },
+          {
+            "in": "query",
+            "name": "store",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Store"
+            }
+          },
+          {
+            "in": "query",
+            "name": "night_from_sales",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Night From Sales",
+              "type": "boolean"
+            }
+          },
           {
             "in": "query",
             "name": "alpha",
@@ -2118,15 +2402,6 @@
               "title": "Name",
               "type": "string"
             }
-          },
-          {
-            "in": "query",
-            "name": "store_id",
-            "required": true,
-            "schema": {
-              "title": "Store Id",
-              "type": "integer"
-            }
           }
         ],
         "requestBody": {
@@ -2163,6 +2438,38 @@
           }
         },
         "summary": "Ingest Sales",
+        "tags": [
+          "demand"
+        ]
+      }
+    },
+    "/api/demand-profiles/ingest/inspect": {
+      "post": {
+        "operationId": "inspect_sales_upload_api_demand_profiles_ingest_inspect_post",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesInspection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Inspect Sales Upload",
         "tags": [
           "demand"
         ]
@@ -2860,6 +3167,138 @@
           }
         },
         "summary": "Get Kpi Csv",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/repair": {
+      "post": {
+        "operationId": "create_repair_api_schedules__run_id__repair_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepairRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Repair",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/replacements": {
+      "get": {
+        "operationId": "get_replacements_api_schedules__run_id__replacements_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "employee_code",
+            "required": true,
+            "schema": {
+              "maxLength": 32,
+              "minLength": 1,
+              "title": "Employee Code",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "maximum": 6,
+              "minimum": 0,
+              "title": "Day",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReplacementRead"
+                  },
+                  "title": "Response Get Replacements Api Schedules  Run Id  Replacements Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Replacements",
         "tags": [
           "schedules"
         ]

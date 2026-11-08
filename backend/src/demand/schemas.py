@@ -54,21 +54,51 @@ class DemandProfileRead(BaseModel):
     required_staff: list[int]
     conversion_params: dict[str, float]
     source_metadata: dict[str, str]
+    has_sales_load: bool
     created_at: datetime
 
 
-class DatasetDemandRequest(BaseModel):
+OPTIONAL_COLUMN_FIELDS = (
+    "hour_column",
+    "stockout_column",
+    "product_column",
+    "store_column",
+    "store",
+)
+
+
+class SalesMapping(BaseModel):
+    """Which columns of an uploaded sales file hold what. Column names are taken from the file
+    as they are; empty optional fields mean the file does not have that information."""
+
+    date_column: str = Field(min_length=1, max_length=120)
+    sales_column: str = Field(min_length=1, max_length=120)
+    hour_column: str | None = Field(default=None, max_length=120)
+    stockout_column: str | None = Field(default=None, max_length=120)
+    product_column: str | None = Field(default=None, max_length=120)
+    store_column: str | None = Field(default=None, max_length=120)
+    store: str | None = Field(default=None, max_length=64)
+    night_from_sales: bool = False
+
+    @field_validator(*OPTIONAL_COLUMN_FIELDS, mode="before")
+    @classmethod
+    def empty_is_none(cls, value: object) -> object:
+        return None if value == "" else value
+
+
+class SalesIngestQuery(ConversionParams, SalesMapping):
+    """Query of a sales upload: the profile name, the mapping of its columns and the conversion
+    assumptions, flat so they travel as query parameters next to the binary body."""
+
     name: str = Field(min_length=1, max_length=120)
-    store_id: int
-    conversion_params: ConversionParams = Field(default_factory=ConversionParams)
 
 
-class SalesIngestQuery(ConversionParams):
-    """Query of a sales upload: the profile name, the store to extract and the conversion
-    assumptions, which are flat so they travel as query parameters next to the binary body."""
-
-    name: str = Field(min_length=1, max_length=120)
-    store_id: int
+class SalesInspection(BaseModel):
+    format: str
+    rows: int
+    columns: list[str]
+    guess: dict[str, str | None]
+    stores: list[str]
 
 
 class CsvDemandRequest(BaseModel):

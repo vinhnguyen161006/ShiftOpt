@@ -119,3 +119,24 @@ class Assignment:
 @dataclass(frozen=True)
 class Solution:
     assignments: tuple[Assignment, ...]
+
+
+@dataclass(frozen=True)
+class RepairSpec:
+    """Re-solve from a published roster. Baseline shifts before from_day are fixed, pinned shifts
+    are mandatory, and every other day is free. The locked set is checked by validation before the
+    solve: each hard constraint is monotone (removing a shift never creates a violation), so the
+    roster that keeps only the locked set is always feasible and the repair model cannot be
+    infeasible."""
+
+    baseline: Solution
+    from_day: int = 0
+    pinned: tuple[Assignment, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.from_day <= DAYS_PER_WEEK:
+            raise ValueError(f"from_day must be in [0, {DAYS_PER_WEEK}]")
+
+    def locked(self) -> tuple[Assignment, ...]:
+        kept = tuple(item for item in self.baseline.assignments if item.day < self.from_day)
+        return kept + self.pinned

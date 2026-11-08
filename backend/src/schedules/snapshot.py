@@ -1,14 +1,16 @@
+import copy
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from typing import Any
 
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.domain import Assignment, Employee, Instance, ShiftType, Solution
+from shiftopt.domain import Assignment, Employee, Instance, RepairSpec, ShiftType, Solution
 
 from src.employees.models import EmployeeRecord
 from src.shifts.models import ShiftTemplate
 
 Snapshot = dict[str, Any]
+REPAIR_KEY = "repair"
 
 
 def build_snapshot(
@@ -76,3 +78,50 @@ def solution_from_rows(rows: Sequence[Mapping[str, Any]]) -> Solution:
             for row in rows
         )
     )
+
+
+def repair_snapshot(
+    base: Snapshot,
+    *,
+    from_day: int,
+    baseline_rows: Sequence[Mapping[str, Any]],
+    pinned_rows: Sequence[Mapping[str, Any]],
+    absences: Mapping[str, Sequence[int]],
+    demand: Sequence[int] | None,
+) -> Snapshot:
+    """Copy of the base problem with absences added to unavailable_days, an optional new demand
+    profile, and the baseline roster and pinned shifts stored under the repair key."""
+    snapshot = copy.deepcopy(base)
+    if demand is not None:
+        snapshot["demand"] = list(demand)
+    for row in snapshot["employees"]:
+        row["unavailable_days"] = sorted(
+            set(row["unavailable_days"]) | set(absences.get(row["id"], ()))
+        )
+    snapshot[REPAIR_KEY] = {
+        "from_day": from_day,
+        "baseline": [dict(row) for row in baseline_rows],
+        "pinned": [dict(row) for row in pinned_rows],
+    }
+    return snapshot
+
+
+def repair_from_snapshot(snapshot: Snapshot) -> RepairSpec | None:
+    repair = snapshot.get(REPAIR_KEY)
+    if repair is None:
+        return None
+    return RepairSpec(
+        baseline=solution_from_rows(repair["baseline"]),
+        from_day=int(repair["from_day"]),
+        pinned=solution_from_rows(repair["pinned"]).assignments,
+    )
+
+
+def assignment_changes(
+    baseline_rows: Sequence[Mapping[str, Any]], rows: Sequence[Mapping[str, Any]]
+) -> int:
+    """Shifts added or removed relative to the baseline, counted per (employee, day, shift). Moving
+    a break inside the same shift does not count."""
+    before = {(row["employee_code"], row["day"], row["shift_name"]) for row in baseline_rows}
+    after = {(row["employee_code"], row["day"], row["shift_name"]) for row in rows}
+    return len(before ^ after)

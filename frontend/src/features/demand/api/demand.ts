@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, jsonInit } from "../../../lib/api-client";
 import type {
   CsvDemandRequest,
-  DatasetDemandRequest,
   DemandProfileCreate,
   DemandProfileRead,
   DemandProfileUpdate,
   SalesIngestQuery,
+  SalesInspection,
 } from "../../../types/models";
 
 const PROFILES_KEY = ["demand-profiles"];
@@ -44,23 +44,31 @@ export function useDeleteDemandProfile() {
   );
 }
 
-export function useCreateDemandProfileFromDataset() {
-  return useProfileMutation((body: DatasetDemandRequest) =>
-    apiFetch<DemandProfileRead>("/demand-profiles/from-dataset", jsonInit("POST", body)),
-  );
-}
-
 export function useCreateDemandProfileFromCsv() {
   return useProfileMutation((body: CsvDemandRequest) =>
     apiFetch<DemandProfileRead>("/demand-profiles/from-csv", jsonInit("POST", body)),
   );
 }
 
+export function useInspectSales() {
+  return useMutation({
+    mutationFn: (file: File) =>
+      apiFetch<SalesInspection>("/demand-profiles/ingest/inspect", {
+        method: "POST",
+        body: file,
+        headers: { "Content-Type": "application/octet-stream" },
+      }),
+  });
+}
+
 export function useIngestSales() {
   return useProfileMutation(({ file, query }: { file: File; query: SalesIngestQuery }) => {
-    const search = new URLSearchParams(
-      Object.entries(query).map(([key, value]) => [key, String(value)]),
-    );
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && value !== "") {
+        search.set(key, String(value));
+      }
+    }
     return apiFetch<DemandProfileRead>(`/demand-profiles/ingest?${search}`, {
       method: "POST",
       body: file,

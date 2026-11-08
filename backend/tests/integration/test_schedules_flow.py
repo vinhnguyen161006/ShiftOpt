@@ -116,3 +116,67 @@ async def test_limits_reject_oversized_requests(
     too_long = {**solve_body(seeded), "time_limit_seconds": 999999}
     assert (await client.post("/api/schedules", json=too_many_workers)).status_code == 422
     assert (await client.post("/api/schedules", json=too_long)).status_code == 422
+
+
+async def test_repair_keeps_locked_days_and_counts_changes(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    accepted = await client.post("/api/schedules", json=solve_body(seeded))
+    original = await poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+    assert original["status"] == "succeeded", original["error"]
+
+    repair = await client.post(
+        f"/api/schedules/{original['id']}/repair",
+        json={
+            "from_day": 2,
+            "absences": [{"employee_code": "E1", "days": [3]}],
+            "time_limit_seconds": 20.0,
+            "num_workers": 1,
+            "random_seed": 0,
+        },
+    )
+    assert repair.status_code == 202
+    repaired = await poll(client, f"/api/schedules/{repair.json()['job_id']}")
+
+    assert repaired["status"] == "succeeded", repaired["error"]
+    assert repaired["parent_run_id"] == original["id"]
+    assert repaired["repair_from_day"] == 2
+    assert repaired["hard_violations"] == 0
+    assert repaired["changes"] is not None
+    locked_before = [row for row in original["assignments"] if row["day"] < 2]
+    locked_after = [row for row in repaired["assignments"] if row["day"] < 2]
+    assert sorted(map(str, locked_after)) == sorted(map(str, locked_before))
+
+
+async def test_repair_rejects_absence_on_locked_day(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    accepted = await client.post("/api/schedules", json=solve_body(seeded))
+    original = await poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+
+    response = await client.post(
+        f"/api/schedules/{original['id']}/repair",
+        json={"from_day": 2, "absences": [{"employee_code": "E1", "days": [0]}]},
+    )
+
+    assert response.status_code == 422
+    assert "locked day" in response.text
+
+
+async def test_replacements_exclude_the_absent_employee(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    accepted = await client.post("/api/schedules", json=solve_body(seeded))
+    run = await poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+    shift = run["assignments"][0]
+
+    response = await client.get(
+        f"/api/schedules/{run['id']}/replacements",
+        params={"employee_code": shift["employee_code"], "day": shift["day"], "limit": 3},
+    )
+
+    assert response.status_code == 200
+    candidates = response.json()
+    assert len(candidates) <= 3
+    assert all(item["employee_code"] != shift["employee_code"] for item in candidates)
+    assert all(item["shift_name"] == shift["shift_name"] for item in candidates)
