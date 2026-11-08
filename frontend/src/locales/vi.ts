@@ -493,8 +493,10 @@ export const vi = {
     loadingRun: (id: number) => `Đang tải lượt ${id}`,
     runLoadError: (id: number) => `Không tải được lượt ${id}`,
     backToRuns: "Về danh sách lượt",
-    runEyebrow: (id: number, parent: number | null) =>
-      parent === null ? `Lượt ${id}` : `Lượt ${id}, sửa từ lượt ${parent}`,
+    runEyebrow: (id: number, parent: number | null, repair: boolean) =>
+      parent === null
+        ? `Lượt ${id}`
+        : `Lượt ${id}, ${repair ? "xếp lại" : "sửa"} từ lượt ${parent}`,
     resultTitle: "Kết quả xếp lịch",
     resultLead: (date: string, employees: number, shifts: number) =>
       `Tạo lúc ${date} cho ${employees} nhân viên và ${shifts} loại ca.`,
@@ -563,8 +565,9 @@ export const vi = {
       gap: "Gap",
       short: "Giờ thiếu",
       violations: "Vi phạm cứng",
-      editedFrom: "Sửa từ",
+      editedFrom: "Từ lượt",
       manualEdit: "sửa tay",
+      repairTag: "xếp lại",
     },
     runStatus: {
       queued: "đang chờ",
@@ -599,7 +602,6 @@ export const vi = {
       changes: "Ca thay đổi",
       changesSub: "thêm hoặc bỏ so với lượt gốc",
       repairTag: "Xếp lại",
-      repairMeta: (base: number) => `xếp lại từ lượt ${base}`,
     },
     verdict: {
       manualValue: "SỬA TAY",

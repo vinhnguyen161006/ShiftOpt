@@ -167,6 +167,17 @@ Volume DB của Compose tên là `mysql_data`. Hai volume cũ `shiftopt_db_data`
 
 Làm hết phần C một lần. Mỗi lần chạy thử tạo thêm lượt giải và phân tích; điều này không ảnh hưởng buổi demo.
 
+Kiểm API end-to-end trên stack riêng (không chạy trên stack demo, vì smoke thêm 25 nhân viên kiểm thử):
+
+```
+docker compose -p shiftopt-e2e up -d --build
+make smoke          # lần 1: in "smoke flow passed"
+make smoke          # lần 2: phải pass như lần 1
+docker compose -p shiftopt-e2e down -v
+```
+
+Smoke gồm: tối ưu, sửa tay gây vi phạm, xếp lại, từ chối ngày khóa, gợi ý người thay (áp dụng), báo nghỉ, quét nhu cầu.
+
 ### B6. Chuẩn bị máy chiếu
 
 - Mở sẵn trình duyệt ở `http://localhost:3000`, zoom 100%.
@@ -294,7 +305,8 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
   5. Bấm **Xếp lại**.
 - **Nói:** "Thứ Tư có người báo ốm ngày mai. Lịch đã công bố cho Thứ Hai, Thứ Ba không được đổi. Solver giải lại phần còn lại: vẫn ưu tiên ít thiếu người nhất, rồi đổi càng ít ca càng tốt, rồi mới tới chi phí. Trước khi giải, hệ thống kiểm phần bị khóa bằng validator, nên không bao giờ nhận đầu vào vô nghiệm."
 - **Ý nghĩa:** nghiệp vụ hằng ngày của quản lý; lịch gốc vẫn bất biến.
-- **Mong đợi:** lượt mới, tiêu đề ghi "sửa từ lượt …". Cột Thứ Hai, Thứ Ba có nhãn "khóa" và giữ nguyên. Ô khác lịch gốc có chữ "đổi". Dải KPI có **Ca thay đổi**. **0 vi phạm cứng**. Thời gian chưa đo qua giao diện.
+- **Cách khác:** nút **Báo nghỉ đột xuất** làm cùng việc cho một người và một ngày vắng, không cần chọn ngày khóa; `from_day` lấy ngày vắng đầu tiên.
+- **Mong đợi:** lượt mới, tiêu đề ghi "xếp lại từ lượt …". Cột Thứ Hai, Thứ Ba có nhãn "khóa" và giữ nguyên. Ô khác lịch gốc có chữ "đổi". Dải KPI có **Ca thay đổi**. **0 vi phạm cứng**. Thời gian chưa đo qua giao diện.
 
 ### Bước 7d (tùy chọn). Gợi ý người thay (1 phút)
 

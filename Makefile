@@ -1,4 +1,4 @@
-.PHONY: install conventions lint typecheck test openapi up down
+.PHONY: install conventions lint typecheck test openapi up down smoke
 
 install:
 	cd engine && uv sync --locked
@@ -31,3 +31,6 @@ up:
 
 down:
 	docker compose down
+
+smoke:
+	cd backend && uv run --locked python -m scripts.smoke_flow --base-url http://localhost:3000
