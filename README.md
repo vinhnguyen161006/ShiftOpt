@@ -290,7 +290,7 @@ Mọi kết luận về hiệu năng chỉ áp dụng cho các instance và time
 
 | Tài liệu | Nội dung |
 |---|---|
-| [docs/đặc tả.md](docs/đặc%20tả.md) | Yêu cầu, quyết định D1–D24 (đã duyệt 2026-11-08) |
+| [docs/đặc tả.md](docs/đặc%20tả.md) | Yêu cầu, quyết định D1–D18 (bản nháp, chờ nhóm duyệt) |
 | [docs/kiến trúc.md](docs/kiến%20trúc.md) | Các tầng hệ thống và thuật toán, viết bằng ngôn ngữ tự nhiên |
 | [docs/model.md](docs/model.md) | Công thức mô hình toán học |
 | [docs/benchmarks.md](docs/benchmarks.md) | Kết quả benchmark và điều kiện đo |
