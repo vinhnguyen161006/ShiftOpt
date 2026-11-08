@@ -64,7 +64,7 @@ Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần c
 
 "Ràng buộc cứng" nghĩa là solver **không bao giờ** được vi phạm, kể cả khi thiếu người. Khi thiếu người, lịch vẫn được tạo nhưng báo rõ giờ nào thiếu.
 
-Lưu ý khi trình bày: nội dung các điều luật chưa được đối chiếu với nguyên văn văn bản luật (xem `docs/đặc tả.md` mục 4).
+Lưu ý khi trình bày: các điều luật đã đối chiếu với VBHN 125/VBHN-VPQH (2025), xem `docs/đặc tả.md` mục 4. Nghị định 145/2020 chưa đối chiếu văn bản gốc.
 
 ### A5. Ba điểm khác biệt cần nhấn mạnh
 
@@ -389,5 +389,5 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 - Kết quả bước 4–5 (OPTIMAL, 12–20 giây) dựa trên lần đo bằng script với cùng dữ liệu, chưa đo qua giao diện.
 - Thời gian bước 8, 9, 10 qua giao diện chưa đo.
 - Ảnh chụp tự động ngày 2026-11-07 đã bỏ khỏi repo và chưa qua duyệt tay. Chụp lại trước buổi demo.
-- Nội dung điều luật chưa đối chiếu nguyên văn (`docs/đặc tả.md` mục 4).
+- Nghị định 145/2020 chưa đối chiếu văn bản gốc (`docs/đặc tả.md` mục 4).
 - Bước 7c, 7d (xếp lại, gợi ý người thay) mới thêm ngày 2026-11-08: có test engine và unit backend, nhưng chưa chạy integration trên MySQL và chưa bấm thử trên trình duyệt. Chưa có ảnh dự phòng.
