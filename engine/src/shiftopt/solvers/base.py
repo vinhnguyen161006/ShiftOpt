@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 
@@ -41,6 +41,35 @@ class SolveResult:
 
 def relative_gap(objective: float, bound: float) -> float:
     return abs(objective - bound) / max(1.0, abs(objective))
+
+
+def with_time_share(params: SolveParams, share: int) -> SolveParams:
+    return replace(params, time_limit_seconds=params.time_limit_seconds / share)
+
+
+def combine_tiers(results: tuple[SolveResult, ...], stage_count: int) -> SolveResult:
+    """Combine the per-tier results of a lexicographic solve. OPTIMAL only when every tier proves
+    optimality; otherwise FEASIBLE with the objective, bound and gap of the last tier that returned
+    a solution. Wall time is the sum over tiers."""
+    last = next((result for result in reversed(results) if result.objective is not None), None)
+    if last is None:
+        status = SolveStatus.UNKNOWN
+    elif len(results) == stage_count and all(
+        result.status is SolveStatus.OPTIMAL for result in results
+    ):
+        status = SolveStatus.OPTIMAL
+    else:
+        status = SolveStatus.FEASIBLE
+    return SolveResult(
+        status=status,
+        objective=last.objective if last else None,
+        bound=last.bound if last else None,
+        gap=last.gap if last else None,
+        wall_time_seconds=sum(result.wall_time_seconds for result in results),
+        solver=results[0].solver,
+        solver_version=results[0].solver_version,
+        log="\n".join(result.log for result in results),
+    )
 
 
 DEFAULT_PARAMS = SolveParams()

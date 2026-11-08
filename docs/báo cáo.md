@@ -19,6 +19,23 @@ Chọn lexicographic thay vì trọng số phạt `M` tùy ý (quyết định D
 
 Validator độc lập (`validation.py`) kiểm lại mọi nghiệm trên trục giờ quấn vòng, không import `models/` hay `solvers/`. Mọi lượt giải đi qua validator trước khi lưu; vi phạm cứng > 0 thì lượt đánh dấu `failed`.
 
+### Công thức ILP theo nhân viên
+
+Mô hình theo nhân viên được viết thành quy hoạch nguyên đầy đủ và giải theo hai cách: CP-SAT (lõi sản phẩm) và HiGHS qua PuLP (`roster_mip.py`, để so sánh). Hai bản dùng cùng tám nhóm ràng buộc; chi tiết và ánh xạ sang hàm trong code ở [model.md](model.md) mục 2a.
+
+| Ký hiệu | Ràng buộc | Điều luật |
+|---|---|---|
+| C1 | Tối đa một ca mỗi ngày | mô hình |
+| C2 | Giờ tuần không quá giới hạn | Điều 105 |
+| C3 | Nghỉ ít nhất 12 giờ giữa hai ca | Điều 110 |
+| C4 | Không quá K ngày làm liên tiếp | đề bài |
+| C5 | Nghỉ liên tục ít nhất 24 giờ mỗi tuần, viết theo cặp | Điều 111 |
+| C6 | Mỗi ca cần nghỉ có đúng một giờ nghỉ | Điều 109 |
+| C7 | Phủ nhu cầu theo giờ, thiếu người là biến mềm `u_h` | đề bài |
+| C8 | Chênh lệch ca đêm giữa các nhân viên | công bằng |
+
+Mục tiêu giải theo tầng: thiếu người, rồi (khi sửa lịch) số ca thay đổi, rồi chi phí lương có phụ cấp đêm, rồi chênh lệch ca đêm, rồi sở thích. Mỗi tầng là một lần giải và được khóa bằng tối ưu của tầng trước.
+
 ## 3. Ràng buộc pháp lý
 
 Các hằng nằm trong `LaborRules`: giờ/ngày 8, giờ/tuần 48, nghỉ 12 giờ giữa ca, nghỉ 24 giờ hằng tuần, khung đêm 22h–06h, phụ cấp đêm 30%, nghỉ giữa giờ 30 phút (45 phút ban đêm), `K = 6` ngày liên tiếp.
@@ -49,7 +66,23 @@ Mọi số ở đây chạy lại được; máy và phiên bản ở [benchmark
 
 ## 6. So sánh solver
 
-Trên mô hình tổng hợp có nghỉ ngầm, 3 instance (đều, đỉnh, đỉnh có ca cách đều): HiGHS và CP-SAT cùng `OPTIMAL` và cùng objective ở 10 và 60 giây, đều dưới 0,1 giây ([benchmarks.md](benchmarks.md) mục 2). Instance quá nhỏ để phân biệt hiệu năng. Không suy ra cho mô hình theo nhân viên, vì mô hình đó chỉ có CP-SAT (D12). Không trích số Mittelmann.
+Trên mô hình tổng hợp có nghỉ ngầm, 3 instance (đều, đỉnh, đỉnh có ca cách đều): HiGHS và CP-SAT cùng `OPTIMAL` và cùng objective ở 10 và 60 giây, đều dưới 0,1 giây ([benchmarks.md](benchmarks.md) mục 2). Instance quá nhỏ để phân biệt hiệu năng. Không suy ra cho mô hình theo nhân viên (đoạn sau). Không trích số Mittelmann.
+
+Trên mô hình theo nhân viên (10, 20, 30 nhân viên; 3 seed; 60 giây; 1 worker), HiGHS đối chiếu với CP-SAT ([benchmarks.md](benchmarks.md) mục 2b):
+
+- Ở 20 và 30 nhân viên, cả hai chứng minh tầng thiếu người và tầng chi phí, cùng kết quả, thời gian 17–28 giây.
+- Ở 10 nhân viên, nhu cầu vượt sức chứa nên khó hơn. CP-SAT không chứng minh được trong 60 giây; HiGHS chứng minh được 2 trên 3 seed.
+- Khi cả hai có lời giải, thiếu người và chi phí khớp nhau.
+
+Lõi sản phẩm vẫn là CP-SAT. Số ràng buộc của HiGHS lớn hơn đáng kể vì viết từng cặp nghỉ 24 giờ ([benchmarks.md](benchmarks.md) mục 2c).
+
+### Integrality gap
+
+Gap giữa nghiệm nới lỏng và nghiệm nguyên ([benchmarks.md](benchmarks.md) mục 5). Mô hình tổng hợp: 40% ở instance đều, 21% ở instance đỉnh, 0% ở instance ca cách đều. Mô hình theo nhân viên: tầng chi phí dưới 0,4%, tầng thiếu người 6–15%. Dual LP của mô hình tổng hợp vì vậy chỉ là xấp xỉ, đúng như nhãn trên giao diện.
+
+### Mục tiêu có trọng số và lexicographic
+
+Trọng số thiếu người đặt thấp hơn ngưỡng sẽ không xếp ai, vì một giờ-người phục vụ thêm không bù được chi phí một ca (khoảng 10 000 mỗi giờ). Với 12 nhân viên, trọng số 10⁵ đổi 9 giờ thiếu lấy tiết kiệm 4,5% chi phí ([benchmarks.md](benchmarks.md) mục 6). Lexicographic không cần chọn trọng số, nên không có nguy cơ mất độ phủ âm thầm, nhưng mỗi tầng phải giải riêng và chia thời gian.
 
 ## 7. Độ nhạy
 
