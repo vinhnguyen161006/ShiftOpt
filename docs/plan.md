@@ -1,6 +1,6 @@
 # Kế hoạch hoàn thiện ShiftOpt
 
-Cập nhật: 2026-11-08. Viết từ trạng thái nhánh `feat/phase-9-10` (commit `f17f67c` cộng thay đổi chưa commit), [benchmarks.md](benchmarks.md), [đặc tả.md](đặc%20tả.md) và kế hoạch nhóm đề xuất ngày 2026-11-08. File này thay cho các kế hoạch rời trước đó; WORKLOG.md giữ vai trò nhật ký.
+Cập nhật: 2026-11-08, sau merge `feat/phase-9-10` vào `main` (`256e94a`), [benchmarks.md](benchmarks.md), [đặc tả.md](đặc%20tả.md) và kế hoạch nhóm đề xuất ngày 2026-11-08. File này thay cho các kế hoạch rời trước đó.
 
 **Nhóm điền trước khi dùng:**
 
@@ -54,8 +54,7 @@ Kiểm tra ngày 2026-11-08: engine 162 test pass, coverage 98,36%; backend 101 
 | Phạm vi dữ liệu | Mọi kết quả chỉ trên store 18 | C2 |
 | Nhận xét quản lý | Có số đo, chưa có nhận xét | J2 |
 | Đặc tả | Bản nháp D1–D20; điều luật chưa đối chiếu nguyên văn | A3, A4 |
-| Repair, gợi ý người thay | Chưa chạy integration trên MySQL, chưa duyệt trên trình duyệt; nguồn UI thứ hai (Deputy) chỉ đọc được qua snippet | A5, A6 |
-| Nhánh | Thay đổi của nhánh này chưa commit. Commit `bbff7c2` (báo nghỉ, FR-9) và `76251fe` của nhánh `tulee` **không có** trong HEAD và trùng chức năng với repair | A0 |
+| Repair, gợi ý người thay | Chưa duyệt trên trình duyệt; nguồn UI thứ hai (Deputy) chỉ đọc được qua snippet | A5 |
 
 ## 3. Lộ trình
 
@@ -86,13 +85,13 @@ Chia việc cho hai người: một người làm B và C (engine, thực nghi�
 
 | # | Việc | Xong khi |
 |---|---|---|
-| A0 | Commit thay đổi của `feat/phase-9-10`. Fetch nhánh `tulee`, so FR-9 (`bbff7c2`) với repair (D20). Chọn **một** đường API và **một** giao diện cho báo nghỉ, bỏ bản còn lại | Một PR duy nhất chứa ingest D19, giao diện tối, báo nghỉ đã hợp nhất; không còn hai endpoint cùng việc |
-| A1 | Merge PR vào `main` | CI trên `main` xanh |
+| A0 | **Xong 2026-11-08**: giữ repair, bỏ FR-9, merge vào `main`. Gốc: commit thay đổi của `feat/phase-9-10`. Fetch nhánh `tulee`, so FR-9 (`bbff7c2`) với repair (D20). Chọn **một** đường API và **một** giao diện cho báo nghỉ, bỏ bản còn lại | Một PR duy nhất chứa ingest D19, giao diện tối, báo nghỉ đã hợp nhất; không còn hai endpoint cùng việc |
+| A1 | Merge PR vào `main` | CI trên `main` xanh. **Xong 2026-11-08**: `main` = `256e94a`, run `42484777634` |
 | A2 | Đồng bộ tài liệu với D18 | Đã làm 2026-11-08: `grep -n -i "tổng đài\|erlang" CLAUDE.md docs/*.md` chỉ còn câu ghi D18 và giới hạn |
-| A3 | Nhóm duyệt đặc tả D1–D20 và "Việc cần nhóm quyết" (mục 5 của file này) | Đặc tả bỏ nhãn "bản nháp"; CLAUDE.md ghi ngày và người duyệt vào CLAUDE.md mục 13 |
+| A3 | Nhóm duyệt đặc tả D1–D20 và "Việc cần nhóm quyết" (mục 5 của file này) | Đặc tả bỏ nhãn "bản nháp"; ghi ngày và người duyệt ở đầu `đặc tả.md` |
 | A4 | Đối chiếu nguyên văn Đ.98, 105, 106, 109, 110, 111 và NĐ 145/2020 với văn bản 45/2019/QH14 | Đặc tả mục 4 trích nguyên văn, ghi nguồn chính thức |
 | A5 | Nguồn UI thứ hai cho màn xếp lại và gợi ý người thay: mở được trang, ghi ngày xem | phụ lục nguồn UI trong `báo cáo.md` R15 có nguồn đã mở (thay snippet Deputy) |
-| A6 | Chạy integration test backend trên MySQL 8.4 (gồm 3 test repair mới), `alembic check` | `pytest` 0 skip; ghi ngày chạy vào CLAUDE.md mục 13 |
+| A6 | Chạy integration test backend trên MySQL 8.4 (gồm 3 test repair mới), `alembic check` | **Xong 2026-11-08** qua CI run `42484777634`: 128 passed, 0 skip, `alembic check` sạch |
 
 ### B. Mô hình ILP và phân tích mô hình (P0)
 
@@ -190,7 +189,7 @@ CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; m
 
 ## 5. Việc cần nhóm quyết
 
-1. Nhánh nộp, và giữ FR-9 (`tulee`) hay repair D20 cho báo nghỉ (A0).
+1. **Đã chốt 2026-11-08:** giữ repair D20, bỏ FR-9 (`tulee`); nộp từ `main`.
 2. Duyệt đặc tả D1–D20, gồm D20 (repair: tầng "số ca thay đổi" đứng **trước** chi phí).
 3. Chấp nhận sai lệch CLAUDE §13 dòng 4 nếu B3 không xong.
 4. Xác nhận kịch bản cơ sở D13 (store 18, 30 nhân viên).
@@ -246,7 +245,6 @@ Một việc chỉ tính là xong khi:
 | Rủi ro | Cách giảm |
 |---|---|
 | Thiếu thời gian | Làm đủ P0 trước; E–I vào "Hướng phát triển" |
-| Hợp nhất `tulee` với nhánh này xung đột (FR-9 và repair cùng sửa `schedules/`, `vi.ts`, `types/api.ts`) | Làm A0 trước mọi việc khác; sinh lại `api.ts` bằng `make openapi` sau khi merge |
 | MIP theo nhân viên (B2) chậm | Chỉ so trên instance nhỏ; báo cáo đúng phạm vi |
 | Store mới (C2) có dữ liệu bất thường | Ghi tiêu chí chọn và loại trừ trong `mô tả dữ liệu.md` |
 | H làm hỏng test cũ | Giữ cyclic mặc định, chạy toàn bộ test trước mỗi commit |
