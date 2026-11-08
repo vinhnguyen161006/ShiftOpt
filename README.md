@@ -282,7 +282,7 @@ Mọi kết luận về hiệu năng chỉ áp dụng cho các instance và time
 - Chỉ hỗ trợ một địa điểm, một loại kỹ năng, một tuần. Không hỗ trợ tổng đài (đặc tả D18).
 - Job quá hạn không bị dừng thật, và thời gian chờ trong hàng đợi cũng bị tính vào hạn chót ([docs/kiến trúc.md](docs/kiến%20trúc.md) mục 10).
 - Không xác thực, không phân quyền. Chỉ triển khai cục bộ hoặc trong mạng tin cậy.
-- Nội dung điều luật chưa được đối chiếu với nguyên văn văn bản 45/2019/QH14 ([docs/đặc tả.md](docs/đặc%20tả.md) mục 4).
+- Điều 98, 105, 106, 109, 110, 111 của Bộ luật Lao động 2019 đã đối chiếu với bản hợp nhất VBHN 125/VBHN-VPQH (2025). Nghị định 145/2020 chưa đối chiếu văn bản gốc ([docs/đặc tả.md](docs/đặc%20tả.md) mục 4).
 
 ---
 
