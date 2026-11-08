@@ -37,7 +37,7 @@ ShiftOpt nhận **nhu cầu theo giờ, danh sách nhân viên, mẫu ca và tha
 2. **Kiểm tra lại toàn bộ luật** bằng một validator viết riêng, độc lập với solver. Hệ thống không tin trạng thái của solver.
 3. **Phân tích độ nhạy bằng giải lại thật**: chi phí thay đổi ra sao khi nhu cầu tăng giảm, khi giả định quy đổi thay đổi, và khi một giờ cần thêm một người.
 
-Nhu cầu có thể nhập tay, nhập CSV, hoặc **ingest file doanh số** FreshRetailNet-50K để hệ thống tự suy ra số người cần mỗi giờ. Mọi giả định quy đổi đều hiện trên giao diện.
+Nhu cầu có thể nhập tay, nhập CSV, hoặc **ingest file doanh số** (CSV hoặc parquet) để hệ thống tự suy ra số người cần mỗi giờ. FreshRetailNet-50K là bộ dữ liệu mẫu cho demo. Mọi giả định quy đổi đều hiện trên giao diện.
 
 ---
 
@@ -95,7 +95,7 @@ Mô tả chi tiết từng tầng và thuật toán: [docs/kiến trúc.md](docs
 
 ### 3. Ingest doanh số và quy đổi ra nhu cầu nhân sự
 
-- Tải file `train.parquet` của FreshRetailNet-50K (tối đa 200 MB) ngay trên web, chọn store, hệ thống tự xử lý.
+- Ingest file doanh số (CSV hoặc parquet, tối đa 200 MB) ngay trên web. Hệ thống đọc tên cột, gợi ý cách ghép cột, người dùng xác nhận rồi suy ra nhu cầu. Dữ liệu khác FreshRetailNet vẫn dùng được.
 - **Nhu cầu ẩn:** giờ hết hàng được thay bằng trung bình doanh số cùng sản phẩm, cùng thứ, cùng giờ ở các ngày còn hàng.
 - **Quy đổi:** `số người = max(sàn, ceil(alpha × tải / p))`. Giờ đêm dùng sàn đêm cố định.
 - Lưu SHA-256 của file vào metadata để biết chính xác dữ liệu đầu vào là file nào.
@@ -177,7 +177,7 @@ Dừng hệ thống: `docker compose down`. Dữ liệu vẫn được giữ tro
 
 ### 4. Chạy thử luồng chính
 
-1. **Nhu cầu** → **Tạo hồ sơ nhu cầu** → **FreshRetailNet** → chọn `data/demo/train.parquet`, store `18`, `p = 4` → **Tạo từ dữ liệu**.
+1. **Nhu cầu** → **Tạo hồ sơ nhu cầu** → **Ingest doanh số** → chọn `data/demo/doanh_so_mau.csv` (hoặc `data/demo/train.parquet` với cửa hàng `18`), `p = 4` → **Tạo từ dữ liệu**.
 2. **Xếp lịch** → chọn hồ sơ vừa tạo → đặt **Số worker của solver** = 1 → **Tối ưu**.
 3. Xem lịch, biểu đồ phủ, chi phí và khung **Tuân thủ**. Sau đó vào **Độ nhạy** để chạy quét λ.
 
@@ -270,14 +270,14 @@ Mọi kết luận về hiệu năng chỉ áp dụng cho các instance và time
 
 ## Dữ liệu
 
-- **FreshRetailNet-50K** (Hugging Face `Dingdong-Inc/FreshRetailNet-50K`, CC BY 4.0, arXiv:2505.16319). Đây là doanh số đã chuẩn hóa của kho tiền phương thương mại điện tử, **không phải dữ liệu nhân sự** và không phải cửa hàng 24/7. `alpha`, `p` và các mức sàn là **giả định của nhóm**, luôn hiện trên giao diện.
+- **Dữ liệu mẫu: FreshRetailNet-50K** (Hugging Face `Dingdong-Inc/FreshRetailNet-50K`, CC BY 4.0, arXiv:2505.16319). Đây là doanh số đã chuẩn hóa của kho tiền phương thương mại điện tử, **không phải dữ liệu nhân sự** và không phải cửa hàng 24/7. Hệ thống không phụ thuộc nguồn này: mọi file doanh số ingest đều xử lý theo cùng cách. `alpha`, `p` và các mức sàn là **giả định của nhóm**, luôn hiện trên giao diện.
 - **Curtois & Qu (2014)**, benchmark xếp ca. Tải về `data/benchmarks/curtois_qu/` bằng script có kiểm SHA-256. Không commit, vì trang nguồn không ghi giấy phép.
 
 ---
 
 ## Giới hạn đã biết
 
-- Nhu cầu từ FreshRetailNet là tuần trung bình của dữ liệu quá khứ, chưa phải dự báo tuần tới.
+- Nhu cầu từ file doanh số là tuần trung bình của dữ liệu quá khứ, chưa phải dự báo tuần tới.
 - Chi phí biên và dual LP tính trên mô hình tổng hợp: không giới hạn số người, một mức lương chung, không có luật theo từng người. Kết quả không phải chi phí thêm một người cho đội hiện tại.
 - Chỉ hỗ trợ một địa điểm, một loại kỹ năng, một tuần. Không hỗ trợ tổng đài (đặc tả D18).
 - Job quá hạn không bị dừng thật, và thời gian chờ trong hàng đợi cũng bị tính vào hạn chót ([docs/kiến trúc.md](docs/kiến%20trúc.md) mục 10).
@@ -294,7 +294,5 @@ Mọi kết luận về hiệu năng chỉ áp dụng cho các instance và time
 | [docs/kiến trúc.md](docs/kiến%20trúc.md) | Các tầng hệ thống và thuật toán, viết bằng ngôn ngữ tự nhiên |
 | [docs/model.md](docs/model.md) | Công thức mô hình toán học |
 | [docs/benchmarks.md](docs/benchmarks.md) | Kết quả benchmark và điều kiện đo |
-| [docs/acceptance.md](docs/acceptance.md) | Đối chiếu tiêu chí nghiệm thu |
 | [docs/demo.md](docs/demo.md) | Kịch bản demo từng bước |
-| [docs/adr/](docs/adr/) | Quyết định kiến trúc: chọn solver, thư viện biểu đồ |
 | [CLAUDE.md](CLAUDE.md) | Nguyên tắc bất biến và quy ước phát triển |

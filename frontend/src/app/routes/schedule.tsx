@@ -6,6 +6,7 @@ import { PageHeader, Panel } from "../../components/ui/Layout";
 import { Modal } from "../../components/ui/Modal";
 import { useCompliance } from "../../features/compliance/api/compliance";
 import { ManualEditor } from "../../features/compliance/components/ManualEditor";
+import { ReplacementList } from "../../features/compliance/components/ReplacementList";
 import { ViolationList } from "../../features/compliance/components/ViolationList";
 import { useDemandProfiles } from "../../features/demand/api/demand";
 import { useEmployees } from "../../features/employees/api/employees";
@@ -17,6 +18,7 @@ import {
 } from "../../features/schedule/api/schedules";
 import { CostSummary } from "../../features/schedule/components/CostSummary";
 import { NewRunForm } from "../../features/schedule/components/NewRunForm";
+import { RepairForm } from "../../features/schedule/components/RepairForm";
 import { ExportLinks, ScheduleKpis } from "../../features/schedule/components/RunResults";
 import { RunsTable } from "../../features/schedule/components/RunsTable";
 import { RunWorkspace } from "../../features/schedule/components/RunWorkspace";
@@ -108,6 +110,7 @@ function RunView({ runId }: { runId: number }) {
   const kpi = useScheduleKpi(runId, hasSchedule);
   const compliance = useCompliance(runId, hasSchedule);
   const [editing, setEditing] = useState(false);
+  const [repairing, setRepairing] = useState(false);
 
   if (run.isPending) {
     return <Loading label={vi.schedule.loadingRun(runId)} />;
@@ -148,14 +151,27 @@ function RunView({ runId }: { runId: number }) {
           title={vi.schedule.compliance}
           labelledBy="compliance-title"
           aside={
-            <Button size="sm" onClick={() => setEditing(true)}>
-              {vi.schedule.editByHand}
-            </Button>
+            <span className="run-header-actions">
+              <Button size="sm" onClick={() => setRepairing(true)}>
+                {vi.schedule.repairButton}
+              </Button>
+              <Button size="sm" onClick={() => setEditing(true)}>
+                {vi.schedule.editByHand}
+              </Button>
+            </span>
           }
         >
           {compliance.isPending && <Loading label={vi.schedule.checking} />}
           {compliance.isError && <Notice kind="error" title={errorMessage(compliance.error)} />}
           {compliance.data && <ViolationList compliance={compliance.data} />}
+        </Panel>
+      )}
+      {hasSchedule && (
+        <Panel title={vi.schedule.replacementsPanel} labelledBy="replacements-title">
+          <ReplacementList
+            run={data}
+            onCreated={(createdId) => navigate(`/schedule/${createdId}`)}
+          />
         </Panel>
       )}
       {!isActive(data.status) && (
@@ -171,6 +187,20 @@ function RunView({ runId }: { runId: number }) {
           <Panel title={vi.schedule.laborCost} labelledBy="cost-title">
             {kpi.data && <CostSummary kpi={kpi.data} />}
           </Panel>
+          <Modal
+            title={vi.schedule.repairTitle(data.id)}
+            open={repairing}
+            onClose={() => setRepairing(false)}
+            wide
+          >
+            <RepairForm
+              run={data}
+              onCreated={(jobId) => {
+                setRepairing(false);
+                navigate(`/schedule/${jobId}`);
+              }}
+            />
+          </Modal>
           <Modal
             title={vi.schedule.editTitle(data.id)}
             open={editing}

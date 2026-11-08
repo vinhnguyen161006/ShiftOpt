@@ -6,6 +6,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base, enum_column
+from src.schedules.snapshot import REPAIR_KEY, assignment_changes
 
 
 class RunStatus(StrEnum):
@@ -56,3 +57,23 @@ class SolveRun(Base):
     def shift_types(self) -> list[dict[str, Any]]:
         """Shift types of the solved instance, in snapshot order."""
         return cast("list[dict[str, Any]]", self.instance_snapshot["shift_types"])
+
+    def _repair(self) -> dict[str, Any] | None:
+        return cast("dict[str, Any] | None", self.instance_snapshot.get(REPAIR_KEY))
+
+    @property
+    def repair_from_day(self) -> int | None:
+        repair = self._repair()
+        return None if repair is None else int(repair["from_day"])
+
+    @property
+    def baseline_assignments(self) -> list[dict[str, Any]] | None:
+        repair = self._repair()
+        return None if repair is None else cast("list[dict[str, Any]]", repair["baseline"])
+
+    @property
+    def changes(self) -> int | None:
+        baseline = self.baseline_assignments
+        if baseline is None or self.assignments is None:
+            return None
+        return assignment_changes(baseline, self.assignments)

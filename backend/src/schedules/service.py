@@ -7,6 +7,7 @@ from typing import Any
 from shiftopt import kpi
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.domain import Instance, Solution
+from shiftopt.replacement import suggest_replacements
 from shiftopt.solvers.base import ModelInvalidError
 from shiftopt.validation import LEGAL_BASIS, validate
 from sqlalchemy import select
@@ -22,13 +23,18 @@ from src.schedules.schemas import (
     ComplianceRead,
     KpiRead,
     ManualEditRequest,
+    RepairRequest,
+    ReplacementRead,
     SolveRequest,
+    SolveSettings,
     ViolationRead,
 )
 from src.schedules.snapshot import (
     Snapshot,
     build_snapshot,
     instance_from_snapshot,
+    repair_from_snapshot,
+    repair_snapshot,
     solution_from_rows,
 )
 from src.schedules.worker import solve_snapshot
@@ -52,7 +58,7 @@ def _utc_now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def solve_params(payload: SolveRequest) -> dict[str, float]:
+def solve_params(payload: SolveSettings) -> dict[str, float]:
     return {
         "time_limit_seconds": payload.time_limit_seconds,
         "relative_gap_limit": payload.relative_gap_limit,
@@ -88,7 +94,7 @@ async def _employees(session: AsyncSession, ids: list[int] | None) -> list[Emplo
     return found
 
 
-def check_limits(payload: SolveRequest) -> None:
+def check_limits(payload: SolveSettings) -> None:
     settings = get_settings()
     if payload.time_limit_seconds > settings.max_solve_seconds:
         raise InstanceTooLargeError(
@@ -339,6 +345,107 @@ async def create_manual_edit(
     await session.commit()
     await session.refresh(run)
     return run
+
+
+def _absences(payload: RepairRequest, employee_codes: set[str]) -> dict[str, list[int]]:
+    absences: dict[str, list[int]] = {}
+    for item in payload.absences:
+        if item.employee_code not in employee_codes:
+            raise InvalidInputError(f"unknown employee {item.employee_code}")
+        for day in item.days:
+            if day < payload.from_day:
+                raise InvalidInputError(
+                    f"absence of {item.employee_code} on day {day} falls on a locked day"
+                )
+        absences.setdefault(item.employee_code, []).extend(item.days)
+    return absences
+
+
+def _pinned_rows(payload: RepairRequest, instance: Instance) -> list[dict[str, Any]]:
+    employee_codes = {employee.id for employee in instance.employees}
+    shift_names = {shift.name for shift in instance.shift_types}
+    rows: list[dict[str, Any]] = []
+    for item in payload.pinned:
+        if item.employee_code not in employee_codes:
+            raise InvalidInputError(f"unknown employee {item.employee_code}")
+        if item.shift_name not in shift_names:
+            raise InvalidInputError(f"unknown shift {item.shift_name}")
+        if item.day < payload.from_day:
+            raise InvalidInputError(
+                f"pinned shift of {item.employee_code} on day {item.day} is a locked day"
+            )
+        rows.append(item.model_dump())
+    return rows
+
+
+def _check_locked(snapshot: Snapshot) -> None:
+    spec = repair_from_snapshot(snapshot)
+    if spec is None:
+        return
+    instance = instance_from_snapshot(snapshot)
+    violations = validate(instance, Solution(spec.locked()))
+    if violations:
+        details = "; ".join(f"{item.employee_id}: {item.detail}" for item in violations[:5])
+        raise InvalidInputError(f"locked shifts break hard constraints: {details}")
+
+
+async def create_repair_run(
+    session: AsyncSession, base: SolveRun, payload: RepairRequest
+) -> SolveRun:
+    if base.assignments is None:
+        raise ConflictError(f"solve run {base.id} has no schedule to repair")
+    check_limits(payload)
+    await ensure_job_capacity(session)
+    instance = instance_from_snapshot(base.instance_snapshot)
+    absences = _absences(payload, {employee.id for employee in instance.employees})
+    pinned = _pinned_rows(payload, instance)
+    demand_profile_id = base.demand_profile_id
+    demand = None
+    if payload.demand_profile_id is not None:
+        profile = await get_profile(session, payload.demand_profile_id)
+        demand = profile.required_staff
+        demand_profile_id = profile.id
+    snapshot = repair_snapshot(
+        base.instance_snapshot,
+        from_day=payload.from_day,
+        baseline_rows=base.assignments,
+        pinned_rows=pinned,
+        absences=absences,
+        demand=demand,
+    )
+    _check_locked(snapshot)
+    run = SolveRun(
+        demand_profile_id=demand_profile_id,
+        parent_run_id=base.id,
+        status=RunStatus.QUEUED,
+        params=solve_params(payload),
+        instance_snapshot=snapshot,
+    )
+    session.add(run)
+    await session.commit()
+    await session.refresh(run)
+    return run
+
+
+def get_replacements(
+    run: SolveRun, employee_code: str, day: int, limit: int
+) -> list[ReplacementRead]:
+    instance, solution = _schedule(run)
+    try:
+        candidates = suggest_replacements(instance, solution, employee_code, day, limit)
+    except ValueError as error:
+        raise InvalidInputError(str(error)) from error
+    return [
+        ReplacementRead(
+            employee_code=item.employee_id,
+            shift_name=item.shift_name,
+            break_offset=item.break_offset,
+            extra_cost=item.extra_cost,
+            weekly_hours=item.weekly_hours,
+            prefers_off=item.prefers_off,
+        )
+        for item in candidates
+    ]
 
 
 async def recover_stale_runs(session: AsyncSession) -> int:

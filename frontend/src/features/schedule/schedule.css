@@ -89,6 +89,28 @@
   border: 1px dashed var(--color-divider);
 }
 
+.roster-cell-changed {
+  outline: 2px dashed var(--color-accent-900);
+  outline-offset: -2px;
+  position: relative;
+}
+
+.roster-changed-mark {
+  float: right;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.roster-lock {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
 .roster-legend {
   margin-top: 10px;
 }

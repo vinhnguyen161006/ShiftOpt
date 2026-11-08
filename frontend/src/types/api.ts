@@ -124,23 +124,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/demand-profiles/from-dataset": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Profile From Dataset */
-        post: operations["create_profile_from_dataset_api_demand_profiles_from_dataset_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/demand-profiles/ingest": {
         parameters: {
             query?: never;
@@ -152,6 +135,23 @@ export interface paths {
         put?: never;
         /** Ingest Sales */
         post: operations["ingest_sales_api_demand_profiles_ingest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demand-profiles/ingest/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inspect Sales Upload */
+        post: operations["inspect_sales_upload_api_demand_profiles_ingest_inspect_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -368,6 +368,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/{run_id}/repair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Repair */
+        post: operations["create_repair_api_schedules__run_id__repair_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/schedules/{run_id}/replacements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Replacements */
+        get: operations["get_replacements_api_schedules__run_id__replacements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shift-templates": {
         parameters: {
             query?: never;
@@ -426,6 +460,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AbsenceWrite */
+        AbsenceWrite: {
+            /** Days */
+            days: number[];
+            /** Employee Code */
+            employee_code: string;
+        };
         /** AnalysisAccepted */
         AnalysisAccepted: {
             /** Job Id */
@@ -514,14 +555,6 @@ export interface components {
             /** Name */
             name: string;
         };
-        /** DatasetDemandRequest */
-        DatasetDemandRequest: {
-            conversion_params?: components["schemas"]["ConversionParams"];
-            /** Name */
-            name: string;
-            /** Store Id */
-            store_id: number;
-        };
         /** DemandProfileCreate */
         DemandProfileCreate: {
             conversion_params?: components["schemas"]["ConversionParams"];
@@ -545,6 +578,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Has Sales Load */
+            has_sales_load: boolean;
             /** Id */
             id: number;
             mode: components["schemas"]["StaffingMode"];
@@ -574,7 +609,7 @@ export interface components {
          * DemandSource
          * @enum {string}
          */
-        DemandSource: "manual" | "csv" | "freshretailnet";
+        DemandSource: "manual" | "csv" | "sales";
         /** DemandSweepRequest */
         DemandSweepRequest: {
             /** Multipliers */
@@ -764,11 +799,72 @@ export interface components {
             /** Proven By Hour */
             proven_by_hour: boolean[];
         };
+        /** RepairRequest */
+        RepairRequest: {
+            /** Absences */
+            absences?: components["schemas"]["AbsenceWrite"][];
+            /** Demand Profile Id */
+            demand_profile_id?: number | null;
+            /** From Day */
+            from_day: number;
+            /**
+             * Num Workers
+             * @default 8
+             */
+            num_workers: number;
+            /** Pinned */
+            pinned?: components["schemas"]["AssignmentWrite"][];
+            /**
+             * Random Seed
+             * @default 0
+             */
+            random_seed: number;
+            /**
+             * Relative Gap Limit
+             * @default 0.01
+             */
+            relative_gap_limit: number;
+            /**
+             * Time Limit Seconds
+             * @default 60
+             */
+            time_limit_seconds: number;
+        };
+        /** ReplacementRead */
+        ReplacementRead: {
+            /** Break Offset */
+            break_offset: number | null;
+            /** Employee Code */
+            employee_code: string;
+            /** Extra Cost */
+            extra_cost: number;
+            /** Prefers Off */
+            prefers_off: boolean;
+            /** Shift Name */
+            shift_name: string;
+            /** Weekly Hours */
+            weekly_hours: number;
+        };
         /**
          * RunStatus
          * @enum {string}
          */
         RunStatus: "queued" | "running" | "succeeded" | "failed";
+        /** SalesInspection */
+        SalesInspection: {
+            /** Columns */
+            columns: string[];
+            /** Format */
+            format: string;
+            /** Guess */
+            guess: {
+                [key: string]: string | null;
+            };
+            /** Rows */
+            rows: number;
+            /** Stores */
+            stores: string[];
+        };
         /** ShiftTemplateCreate */
         ShiftTemplateCreate: {
             /**
@@ -865,8 +961,12 @@ export interface components {
         SolveRunRead: {
             /** Assignments */
             assignments: components["schemas"]["AssignmentRead"][] | null;
+            /** Baseline Assignments */
+            baseline_assignments: components["schemas"]["AssignmentRead"][] | null;
             /** Best Bound */
             best_bound: number | null;
+            /** Changes */
+            changes: number | null;
             /**
              * Created At
              * Format: date-time
@@ -894,6 +994,8 @@ export interface components {
             };
             /** Parent Run Id */
             parent_run_id: number | null;
+            /** Repair From Day */
+            repair_from_day: number | null;
             /** Shift Types */
             shift_types: components["schemas"]["ShiftTypeRead"][];
             /** Solve Status */
@@ -1257,48 +1359,22 @@ export interface operations {
             };
         };
     };
-    create_profile_from_dataset_api_demand_profiles_from_dataset_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DatasetDemandRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DemandProfileRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     ingest_sales_api_demand_profiles_ingest_post: {
         parameters: {
             query: {
+                date_column: string;
+                sales_column: string;
+                hour_column?: string | null;
+                stockout_column?: string | null;
+                product_column?: string | null;
+                store_column?: string | null;
+                store?: string | null;
+                night_from_sales?: boolean;
                 alpha?: number;
                 productivity?: number;
                 min_staff?: number;
                 night_min_staff?: number;
                 name: string;
-                store_id: number;
             };
             header?: never;
             path?: never;
@@ -1326,6 +1402,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspect_sales_upload_api_demand_profiles_ingest_inspect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesInspection"];
                 };
             };
         };
@@ -1854,6 +1954,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_repair_api_schedules__run_id__repair_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepairRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_replacements_api_schedules__run_id__replacements_get: {
+        parameters: {
+            query: {
+                employee_code: string;
+                day: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplacementRead"][];
                 };
             };
             /** @description Validation Error */

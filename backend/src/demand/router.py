@@ -8,11 +8,11 @@ from src.database import get_session
 from src.demand import service
 from src.demand.schemas import (
     CsvDemandRequest,
-    DatasetDemandRequest,
     DemandProfileCreate,
     DemandProfileRead,
     DemandProfileUpdate,
     SalesIngestQuery,
+    SalesInspection,
 )
 
 router = APIRouter(prefix="/demand-profiles", tags=["demand"])
@@ -30,21 +30,18 @@ async def create_profile(payload: DemandProfileCreate, session: SessionDep) -> D
     return DemandProfileRead.model_validate(await service.create_profile(session, payload))
 
 
-@router.post("/from-dataset", response_model=DemandProfileRead, status_code=status.HTTP_201_CREATED)
-async def create_profile_from_dataset(
-    payload: DatasetDemandRequest, session: SessionDep
-) -> DemandProfileRead:
-    return DemandProfileRead.model_validate(
-        await service.create_profile_from_dataset(session, payload)
-    )
-
-
 BINARY_BODY = {
     "requestBody": {
         "required": True,
         "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}},
     }
 }
+
+
+@router.post("/ingest/inspect", response_model=SalesInspection, openapi_extra=BINARY_BODY)
+async def inspect_sales_upload(request: Request) -> SalesInspection:
+    data = await service.read_upload(request.stream(), get_settings().max_upload_bytes)
+    return await service.inspect_upload(data)
 
 
 @router.post(

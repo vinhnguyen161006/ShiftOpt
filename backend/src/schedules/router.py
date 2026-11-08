@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Response, status
+from fastapi import APIRouter, BackgroundTasks, Query, Response, status
 
 from src.jobs import JobsDep
 from src.schedules import service
@@ -8,6 +8,8 @@ from src.schedules.schemas import (
     JobAccepted,
     KpiRead,
     ManualEditRequest,
+    RepairRequest,
+    ReplacementRead,
     SolveRequest,
     SolveRunRead,
 )
@@ -78,3 +80,26 @@ async def create_manual_edit(
 ) -> SolveRunRead:
     edited = await service.create_manual_edit(session, run, payload)
     return SolveRunRead.model_validate(edited)
+
+
+@router.post("/{run_id}/repair", response_model=JobAccepted, status_code=status.HTTP_202_ACCEPTED)
+async def create_repair(
+    run: ValidRun,
+    payload: RepairRequest,
+    session: SessionDep,
+    jobs: JobsDep,
+    background: BackgroundTasks,
+) -> JobAccepted:
+    repaired = await service.create_repair_run(session, run, payload)
+    background.add_task(service.execute_run, jobs, repaired.id)
+    return JobAccepted(job_id=repaired.id, status=repaired.status)
+
+
+@router.get("/{run_id}/replacements", response_model=list[ReplacementRead])
+async def get_replacements(
+    run: ValidRun,
+    employee_code: str = Query(min_length=1, max_length=32),
+    day: int = Query(ge=0, le=6),
+    limit: int = Query(default=5, ge=1, le=20),
+) -> list[ReplacementRead]:
+    return service.get_replacements(run, employee_code, day, limit)

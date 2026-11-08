@@ -5,20 +5,20 @@ import { Field } from "../../../components/ui/Field";
 import { errorsByPath, generalError, summaryErrors, toNumber } from "../../../lib/form";
 import { HOURS_PER_WEEK } from "../../../lib/time";
 import { vi } from "../../../locales/vi";
-import type { ConversionParams, DemandProfileRead } from "../../../types/models";
+import type { ConversionParams, DemandProfileRead, SalesInspection } from "../../../types/models";
 import {
   useCreateDemandProfile,
   useCreateDemandProfileFromCsv,
-  useCreateDemandProfileFromDataset,
   useIngestSales,
+  useInspectSales,
 } from "../api/demand";
 import { ConversionParamsForm, conversionFieldId } from "./ConversionParamsForm";
 
-type SourceChoice = "manual" | "csv" | "freshretailnet";
+type SourceChoice = "manual" | "csv" | "sales";
 
-const SOURCES: { value: SourceChoice; label: string }[] = (
-  ["manual", "csv", "freshretailnet"] as const
-).map((value) => ({ value, label: vi.demand.form.sources[value] }));
+const SOURCES: { value: SourceChoice; label: string }[] = (["manual", "csv", "sales"] as const).map(
+  (value) => ({ value, label: vi.demand.form.sources[value] }),
+);
 
 const DEFAULT_CONVERSION: Required<ConversionParams> = {
   alpha: 1,
@@ -179,35 +179,86 @@ function CsvForm({ onCreated }: { onCreated: CreatedHandler }) {
   );
 }
 
-function DatasetForm({ onCreated }: { onCreated: CreatedHandler }) {
-  const fromProcessed = useCreateDemandProfileFromDataset();
+const MAPPING_FIELDS = [
+  { key: "date_column", required: true },
+  { key: "sales_column", required: true },
+  { key: "hour_column", required: false },
+  { key: "stockout_column", required: false },
+  { key: "product_column", required: false },
+  { key: "store_column", required: false },
+] as const;
+
+type MappingKey = (typeof MAPPING_FIELDS)[number]["key"];
+type Mapping = Record<MappingKey, string>;
+
+const MAPPING_LABELS: Record<MappingKey, string> = {
+  date_column: vi.demand.form.columnDate,
+  sales_column: vi.demand.form.columnSales,
+  hour_column: vi.demand.form.columnHour,
+  stockout_column: vi.demand.form.columnStockout,
+  product_column: vi.demand.form.columnProduct,
+  store_column: vi.demand.form.columnStore,
+};
+
+function mappingFrom(guess: SalesInspection["guess"]): Mapping {
+  return Object.fromEntries(MAPPING_FIELDS.map(({ key }) => [key, guess[key] ?? ""])) as Mapping;
+}
+
+function SalesForm({ onCreated }: { onCreated: CreatedHandler }) {
+  const inspect = useInspectSales();
   const ingest = useIngestSales();
   const [name, setName] = useState("");
-  const [storeId, setStoreId] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [inspection, setInspection] = useState<SalesInspection | null>(null);
+  const [mapping, setMapping] = useState<Mapping>(mappingFrom({}));
+  const [store, setStore] = useState("");
+  const [nightFromSales, setNightFromSales] = useState(false);
   const [conversion, setConversion] = useState(DEFAULT_CONVERSION);
-  const create = file ? ingest : fromProcessed;
-  const errors = errorsByPath(create.error);
-  function submit() {
-    const store_id = toNumber(storeId);
-    if (file) {
-      ingest.mutate({ file, query: { name, store_id, ...conversion } }, { onSuccess: onCreated });
-    } else {
-      fromProcessed.mutate(
-        { name, store_id, conversion_params: conversion },
-        { onSuccess: onCreated },
-      );
+  const errors = errorsByPath(ingest.error);
+
+  function chooseFile(next: File | null) {
+    setFile(next);
+    setInspection(null);
+    if (!next) {
+      return;
     }
+    inspect.mutate(next, {
+      onSuccess: (result) => {
+        setInspection(result);
+        setMapping(mappingFrom(result.guess));
+        setStore(result.stores.length === 1 ? result.stores[0] : "");
+      },
+    });
   }
+
+  function submit() {
+    if (!file || !inspection) {
+      return;
+    }
+    ingest.mutate(
+      {
+        file,
+        query: {
+          name,
+          ...mapping,
+          store: mapping.store_column ? store.trim() || null : null,
+          night_from_sales: nightFromSales,
+          ...conversion,
+        },
+      },
+      { onSuccess: onCreated },
+    );
+  }
+
   return (
     <FormShell
-      error={create.error}
-      pending={create.isPending}
+      error={ingest.error}
+      pending={ingest.isPending}
       submitLabel={vi.demand.form.derive}
       onSubmit={submit}
     >
       <Notice kind="warning" title={vi.demand.salesTitle}>
-        {vi.demand.form.datasetBody}
+        {vi.demand.form.salesBody}
       </Notice>
       <NameField value={name} onChange={setName} errors={errors} />
       <Field
@@ -220,31 +271,76 @@ function DatasetForm({ onCreated }: { onCreated: CreatedHandler }) {
             {...control}
             className="input"
             type="file"
-            accept=".parquet"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            accept=".csv,.parquet,text/csv,application/octet-stream"
+            onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}
           />
         )}
       </Field>
-      <Field
-        id="new-store-id"
-        label={vi.demand.form.storeId}
-        hint={vi.demand.form.storeIdHint}
-        error={errors.get("store_id")}
-      >
-        {(control) => (
-          <input
-            {...control}
-            className="input"
-            type="number"
-            min={0}
-            step={1}
-            value={storeId}
-            onChange={(event) => setStoreId(event.target.value)}
-          />
-        )}
-      </Field>
-      <ConversionParamsForm value={conversion} onChange={setConversion} errors={errors} />
-      {ingest.isPending && <Notice kind="info" title={vi.demand.form.ingesting} />}
+      {inspect.isPending && <Notice kind="info" title={vi.demand.form.inspecting} />}
+      {inspect.error && <Notice kind="error" title={generalError(inspect.error) ?? ""} />}
+      {inspection && (
+        <>
+          <p className="muted">{vi.demand.form.inspected(inspection.format, inspection.rows)}</p>
+          <div className="form-grid">
+            {MAPPING_FIELDS.map(({ key, required }) => (
+              <Field
+                key={key}
+                id={`new-${key.replaceAll("_", "-")}`}
+                label={MAPPING_LABELS[key]}
+                error={errors.get(key)}
+              >
+                {(control) => (
+                  <select
+                    {...control}
+                    className="input"
+                    value={mapping[key]}
+                    onChange={(event) => setMapping({ ...mapping, [key]: event.target.value })}
+                  >
+                    {!required && <option value="">{vi.demand.form.noColumn}</option>}
+                    {inspection.columns.map((column) => (
+                      <option key={column} value={column}>
+                        {column}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+            ))}
+          </div>
+          {mapping.store_column && (
+            <Field
+              id="new-store"
+              label={vi.demand.form.storeId}
+              hint={vi.demand.form.storeIdHint}
+              error={errors.get("store")}
+            >
+              {(control) => (
+                <input
+                  {...control}
+                  className="input"
+                  list="new-store-options"
+                  value={store}
+                  onChange={(event) => setStore(event.target.value)}
+                />
+              )}
+            </Field>
+          )}
+          <datalist id="new-store-options">
+            {inspection.stores.map((value) => (
+              <option key={value} value={value} />
+            ))}
+          </datalist>
+          <label>
+            <input
+              type="checkbox"
+              checked={nightFromSales}
+              onChange={(event) => setNightFromSales(event.target.checked)}
+            />{" "}
+            {vi.demand.form.nightFromSales}
+          </label>
+          <ConversionParamsForm value={conversion} onChange={setConversion} errors={errors} />
+        </>
+      )}
     </FormShell>
   );
 }
@@ -272,7 +368,7 @@ export function NewProfileForm({ onCreated }: { onCreated: CreatedHandler }) {
       </fieldset>
       {source === "manual" && <ManualForm onCreated={onCreated} />}
       {source === "csv" && <CsvForm onCreated={onCreated} />}
-      {source === "freshretailnet" && <DatasetForm onCreated={onCreated} />}
+      {source === "sales" && <SalesForm onCreated={onCreated} />}
     </div>
   );
 }

@@ -41,12 +41,12 @@ Mỗi dòng là một (store, sản phẩm, ngày). 4.500.000 dòng tương đư
 
 ## 4. Dữ liệu store 18 đã xử lý
 
-File `data/processed/demand_store_18.parquet` do `backend/scripts/build_demand_store.py` tạo từ `train.parquet`.
+Tuần tải của store 18 tạo bằng ingest (`POST /api/demand-profiles/ingest`, hàm `derive_demand` trong `backend/src/demand/sales_ingest.py`) từ `train.parquet`, ô **Cửa hàng** = 18. Tuần tải lưu ở cột `demand_profiles.sales_load`, không ghi ra file.
 
-- **168 dòng** = 7 thứ × 24 giờ, cột `weekday` (0 = thứ Hai), `hour`, `load`.
+- **168 giá trị** = 7 thứ × 24 giờ, thứ Hai 00h đầu tiên.
 - Store 18 có 164 sản phẩm và 14.760 dòng gốc trong train.
 - **Thay giờ hết hàng:** 90.159 ô được thay bằng trung bình doanh số của cùng sản phẩm, cùng thứ, cùng giờ trên các ngày không hết hàng. 1.008 ô không có ngày nào đủ điều kiện nên giữ giá trị quan sát.
-- Metadata (đọc bằng `pyarrow`) ghi nguồn (revision Hugging Face `c374e85975c82816c495acfa904cc55ab14a47d3`), phương pháp, và nhãn "không phải nhu cầu nhân sự".
+- Metadata của hồ sơ ghi SHA-256 của file, mapping cột, phương pháp, số ô đã thay và nhãn "không phải nhu cầu nhân sự". `train.parquet` tải theo revision Hugging Face `c374e85975c82816c495acfa904cc55ab14a47d3`.
 
 Tải lượng theo giờ (một số thứ và giờ, đơn vị doanh số chuẩn hóa):
 
@@ -84,7 +84,7 @@ Chạy trong `backend/`:
 
 ```
 uv run --locked python -m scripts.download_freshretailnet
-uv run --locked python -m scripts.build_demand_store --store-id 18
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 --productivity 4
 ```
 
-Lệnh đầu tải hai file (bỏ qua nếu đã đúng SHA-256) và kiểm hash. Lệnh sau tạo `data/processed/demand_store_18.parquet`.
+Lệnh đầu tải hai file (bỏ qua nếu đã đúng SHA-256) và kiểm hash. Lệnh sau ingest store 18 bằng cùng hàm `derive_demand` rồi giải kịch bản cơ sở (số đo ở `benchmarks.md` mục 4). Trên web, tạo hồ sơ bằng ingest như `demo.md` bước 2. Store khác: đổi `--store`.

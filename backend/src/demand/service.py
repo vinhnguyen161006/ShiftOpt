@@ -1,25 +1,23 @@
 import asyncio
 import hashlib
 from collections.abc import AsyncIterator
-from pathlib import Path
 
-import pyarrow as pa
 from shiftopt.constraints.labor_law_vn import LaborRules
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import get_settings
 from src.database import commit_unique
 from src.demand.csv_import import parse_demand_csv
-from src.demand.dataset_loader import dataset_required_staff, ingest_store_sales
 from src.demand.models import DemandProfile, DemandSource, StaffingMode
+from src.demand.sales_ingest import derive_demand, inspect_sales
 from src.demand.schemas import (
     ConversionParams,
     CsvDemandRequest,
-    DatasetDemandRequest,
     DemandProfileCreate,
     DemandProfileUpdate,
     SalesIngestQuery,
+    SalesInspection,
+    SalesMapping,
 )
 from src.exceptions import InvalidInputError, NotFoundError, UploadTooLargeError
 
@@ -72,27 +70,6 @@ async def delete_profile(session: AsyncSession, profile_id: int) -> None:
     await session.commit()
 
 
-async def create_profile_from_dataset(
-    session: AsyncSession, payload: DatasetDemandRequest
-) -> DemandProfile:
-    demand = await asyncio.to_thread(
-        dataset_required_staff,
-        Path(get_settings().dataset_dir),
-        payload.store_id,
-        payload.conversion_params,
-        LaborRules(),
-    )
-    profile = DemandProfile(
-        name=payload.name,
-        source=DemandSource.FRESHRETAILNET,
-        mode=StaffingMode.LINEAR,
-        required_staff=list(demand.required_staff),
-        conversion_params=payload.conversion_params.model_dump(),
-        source_metadata=demand.metadata,
-    )
-    return await _persist(session, profile)
-
-
 async def read_upload(chunks: AsyncIterator[bytes], limit: int) -> bytearray:
     """Collect an uploaded body, refusing it as soon as it grows past limit bytes."""
     data = bytearray()
@@ -105,25 +82,32 @@ async def read_upload(chunks: AsyncIterator[bytes], limit: int) -> bytearray:
     return data
 
 
+async def inspect_upload(data: bytearray) -> SalesInspection:
+    return await asyncio.to_thread(inspect_sales, bytes(data))
+
+
 async def ingest_sales(
     session: AsyncSession, query: SalesIngestQuery, data: bytearray
 ) -> DemandProfile:
-    """Process an uploaded sales file into the weekly load of query.store_id, then derive the
-    profile with the same conversion as create_profile_from_dataset. The processed file of that
-    store is replaced; its metadata records the upload's SHA-256 so the input stays traceable."""
-    label = f"uploaded sales file, sha256 {hashlib.sha256(data).hexdigest()}"
-    await asyncio.to_thread(
-        ingest_store_sales,
-        pa.BufferReader(pa.py_buffer(data)),
-        Path(get_settings().dataset_dir),
-        query.store_id,
-        label,
+    """Derive a profile from an uploaded sales file. The stored profile keeps the weekly load, so
+    the staffing sweep can re-derive head counts later without the file. The SHA-256 of the file
+    and the mapping used are recorded in the metadata."""
+    mapping = SalesMapping.model_validate(query.model_dump())
+    conversion = ConversionParams.model_validate(query.model_dump())
+    digest = hashlib.sha256(data).hexdigest()
+    demand = await asyncio.to_thread(
+        derive_demand, bytes(data), mapping, conversion, LaborRules(), digest
     )
-    conversion = ConversionParams.model_validate(query.model_dump(exclude={"name", "store_id"}))
-    request = DatasetDemandRequest(
-        name=query.name, store_id=query.store_id, conversion_params=conversion
+    profile = DemandProfile(
+        name=query.name,
+        source=DemandSource.SALES,
+        mode=StaffingMode.LINEAR,
+        required_staff=list(demand.required_staff),
+        conversion_params=conversion.model_dump(),
+        source_metadata=demand.metadata,
+        sales_load=list(demand.load),
     )
-    return await create_profile_from_dataset(session, request)
+    return await _persist(session, profile)
 
 
 async def create_profile_from_csv(
