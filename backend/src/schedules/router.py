@@ -8,12 +8,15 @@ from src.schedules.schemas import (
     JobAccepted,
     KpiRead,
     ManualEditRequest,
+    PreviewWarningsRead,
     RepairRequest,
     ReplacementRead,
     RerosterRequest,
     ScheduleChangesRead,
+    ShortfallHourRead,
     SolveRequest,
     SolveRunRead,
+    StalenessRead,
 )
 
 router = APIRouter(prefix="/schedules", tags=["schedules"])
@@ -39,6 +42,11 @@ async def create_schedule(
     run = await service.create_run(session, payload)
     background.add_task(service.execute_run, jobs, run.id)
     return JobAccepted(job_id=run.id, status=run.status)
+
+
+@router.post("/preview-warnings", response_model=PreviewWarningsRead)
+async def preview_warnings(payload: SolveRequest, session: SessionDep) -> PreviewWarningsRead:
+    return await service.preview_warnings(session, payload)
 
 
 @router.get("", response_model=list[SolveRunRead])
@@ -105,6 +113,16 @@ async def get_replacements(
     limit: int = Query(default=5, ge=1, le=20),
 ) -> list[ReplacementRead]:
     return service.get_replacements(run, employee_code, day, limit)
+
+
+@router.get("/{run_id}/staleness", response_model=StalenessRead)
+async def get_staleness(run: ValidRun, session: SessionDep) -> StalenessRead:
+    return await service.get_staleness(session, run)
+
+
+@router.get("/{run_id}/shortfall", response_model=list[ShortfallHourRead])
+async def get_shortfall(run: ValidRun) -> list[ShortfallHourRead]:
+    return service.get_shortfall(run)
 
 
 @router.post("/{run_id}/reroster", response_model=JobAccepted, status_code=status.HTTP_202_ACCEPTED)

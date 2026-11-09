@@ -9,6 +9,7 @@ from src.analysis.models import AnalysisKind, AnalysisRun
 from src.analysis.schemas import (
     BaselineCompareRequest,
     DemandSweepRequest,
+    FairnessSweepRequest,
     LpDualsRequest,
     MarginalCostRequest,
     StaffingSweepRequest,
@@ -28,6 +29,7 @@ AnalysisRequest = (
     | MarginalCostRequest
     | LpDualsRequest
     | StaffingSweepRequest
+    | FairnessSweepRequest
     | BaselineCompareRequest
 )
 STAFFING_FIELDS = ("alpha", "productivity", "min_staff", "night_min_staff")
@@ -52,6 +54,8 @@ async def create_run(
         body["multipliers"] = request.multipliers
     elif isinstance(request, StaffingSweepRequest):
         body.update(await _staffing_inputs(session, request))
+    elif isinstance(request, FairnessSweepRequest):
+        body["tolerances"] = request.tolerances
     elif not isinstance(request, BaselineCompareRequest):
         body["hourly_wage"] = request.hourly_wage
     run = AnalysisRun(kind=kind, status=RunStatus.QUEUED, request=body)

@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analysis/fairness-sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fairness Sweep */
+        post: operations["fairness_sweep_api_analysis_fairness_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analysis/lp-duals": {
         parameters: {
             query?: never;
@@ -334,6 +351,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/preview-warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Warnings */
+        post: operations["preview_warnings_api_schedules_preview_warnings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schedules/{run_id}": {
         parameters: {
             query?: never;
@@ -521,6 +555,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/{run_id}/shortfall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Shortfall */
+        get: operations["get_shortfall_api_schedules__run_id__shortfall_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/schedules/{run_id}/staleness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Staleness */
+        get: operations["get_staleness_api_schedules__run_id__staleness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shift-templates": {
         parameters: {
             query?: never;
@@ -596,7 +664,7 @@ export interface components {
          * AnalysisKind
          * @enum {string}
          */
-        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals" | "staffing_sweep" | "baseline_compare";
+        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals" | "staffing_sweep" | "baseline_compare" | "fairness_sweep";
         /** AnalysisRunRead */
         AnalysisRunRead: {
             /**
@@ -612,7 +680,7 @@ export interface components {
             id: number;
             kind: components["schemas"]["AnalysisKind"];
             /** Result */
-            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | components["schemas"]["StaffingSweepResult"] | components["schemas"]["BaselineCompareResult"] | null;
+            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | components["schemas"]["StaffingSweepResult"] | components["schemas"]["BaselineCompareResult"] | components["schemas"]["FairnessSweepResult"] | null;
             status: components["schemas"]["RunStatus"];
         };
         /** AssignmentRead */
@@ -780,6 +848,8 @@ export interface components {
             hourly_wage: number;
             /** Max Weekly Hours */
             max_weekly_hours?: number | null;
+            /** Min Weekly Hours */
+            min_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -802,6 +872,8 @@ export interface components {
             id: number;
             /** Max Weekly Hours */
             max_weekly_hours: number | null;
+            /** Min Weekly Hours */
+            min_weekly_hours: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -817,12 +889,49 @@ export interface components {
             hourly_wage: number;
             /** Max Weekly Hours */
             max_weekly_hours?: number | null;
+            /** Min Weekly Hours */
+            min_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
             preferred_days_off?: number[];
             /** Unavailable Days */
             unavailable_days?: number[];
+        };
+        /** FairnessSweepPoint */
+        FairnessSweepPoint: {
+            /** Cost Increase Percent */
+            cost_increase_percent: number | null;
+            /** Hours Spread */
+            hours_spread: number | null;
+            /** Labor Cost */
+            labor_cost: number | null;
+            /** Night Spread */
+            night_spread: number | null;
+            /** Proven */
+            proven: boolean;
+            /** Solve Status */
+            solve_status: string;
+            /** Tolerance Percent */
+            tolerance_percent: number;
+            /** Understaffed Hours */
+            understaffed_hours: number | null;
+        };
+        /** FairnessSweepRequest */
+        FairnessSweepRequest: {
+            solve: components["schemas"]["SolveRequest"];
+            /** Tolerances */
+            tolerances?: number[];
+        };
+        /** FairnessSweepResult */
+        FairnessSweepResult: {
+            /**
+             * Label
+             * @default Each point is a full re-solve; a point not proven optimal is marked so
+             */
+            label: string;
+            /** Points */
+            points: components["schemas"]["FairnessSweepPoint"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -841,8 +950,12 @@ export interface components {
             coverage_ratio: number;
             /** Hard Violations */
             hard_violations: number;
+            /** Hours Spread */
+            hours_spread: number;
             /** Labor Cost */
             labor_cost: number;
+            /** Min Hours Shortfall */
+            min_hours_shortfall: number;
             /** Night Premium Cost */
             night_premium_cost: number;
             /** Night Shift Stddev */
@@ -957,6 +1070,19 @@ export interface components {
             /** Proven By Hour */
             proven_by_hour: boolean[];
         };
+        /** PreSolveWarningRead */
+        PreSolveWarningRead: {
+            /** Detail */
+            detail: string;
+            /** Employee Id */
+            employee_id: string | null;
+            kind: components["schemas"]["WarningKind"];
+        };
+        /** PreviewWarningsRead */
+        PreviewWarningsRead: {
+            /** Warnings */
+            warnings: components["schemas"]["PreSolveWarningRead"][];
+        };
         /** RegisterRequest */
         RegisterRequest: {
             /** Display Name */
@@ -970,6 +1096,11 @@ export interface components {
         RepairRequest: {
             /** Absences */
             absences?: components["schemas"]["AbsenceWrite"][];
+            /**
+             * Cost Tolerance Percent
+             * @default 0
+             */
+            cost_tolerance_percent: number;
             /** Demand Profile Id */
             demand_profile_id?: number | null;
             /** From Day */
@@ -1103,8 +1234,39 @@ export interface components {
             /** Start Hour */
             start_hour: number;
         };
+        /** ShortfallHourRead */
+        ShortfallHourRead: {
+            /** Day */
+            day: number;
+            /** Free Employee Codes */
+            free_employee_codes: string[];
+            /** Hour */
+            hour: number;
+            /** Hour Of Day */
+            hour_of_day: number;
+            /** Reasons */
+            reasons: components["schemas"]["ShortfallReasonRead"][];
+            /** Shortfall */
+            shortfall: number;
+            /** Uncoverable */
+            uncoverable: boolean;
+        };
+        /** ShortfallReasonRead */
+        ShortfallReasonRead: {
+            /** Employees */
+            employees: number;
+            /** Kind */
+            kind: string;
+            /** Legal Basis */
+            legal_basis: string;
+        };
         /** SolveRequest */
         SolveRequest: {
+            /**
+             * Cost Tolerance Percent
+             * @default 0
+             */
+            cost_tolerance_percent: number;
             /** Demand Profile Id */
             demand_profile_id: number;
             /** Employee Ids */
@@ -1141,6 +1303,8 @@ export interface components {
              * @default 60
              */
             time_limit_seconds: number;
+            /** Weekly Budget */
+            weekly_budget?: number | null;
         };
         /** SolveRunRead */
         SolveRunRead: {
@@ -1194,6 +1358,8 @@ export interface components {
             understaffed_hours: number | null;
             /** Wall Time Seconds */
             wall_time_seconds: number | null;
+            /** Weekly Budget */
+            weekly_budget: number | null;
         };
         /**
          * StaffingMode
@@ -1240,6 +1406,16 @@ export interface components {
             label: string;
             /** Points */
             points: components["schemas"]["StaffingSweepPoint"][];
+        };
+        /** StalenessRead */
+        StalenessRead: {
+            /** Reason */
+            reason: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "current" | "stale" | "unknown";
         };
         /** SweepPoint */
         SweepPoint: {
@@ -1294,12 +1470,17 @@ export interface components {
             /** Detail */
             detail: string;
             /** Employee Code */
-            employee_code: string;
+            employee_code: string | null;
             /** Kind */
             kind: string;
             /** Legal Basis */
             legal_basis: string;
         };
+        /**
+         * WarningKind
+         * @enum {string}
+         */
+        WarningKind: "no_available_days" | "capacity_below_demand" | "no_night_shift" | "min_hours_unreachable" | "budget_below_demand";
     };
     responses: never;
     parameters: never;
@@ -1356,6 +1537,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DemandSweepRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fairness_sweep_api_analysis_fairness_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FairnessSweepRequest"];
             };
         };
         responses: {
@@ -2193,6 +2409,41 @@ export interface operations {
             };
         };
     };
+    preview_warnings_api_schedules_preview_warnings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewWarningsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_schedule_api_schedules__run_id__get: {
         parameters: {
             query?: never;
@@ -2559,6 +2810,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_shortfall_api_schedules__run_id__shortfall_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortfallHourRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_staleness_api_schedules__run_id__staleness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StalenessRead"];
                 };
             };
             /** @description Validation Error */

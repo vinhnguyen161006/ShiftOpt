@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PreSolveWarnings } from "../../../components/solve/PreSolveWarnings";
 import {
   initialDraft,
   SOLVE_FIELD_IDS,
@@ -18,6 +19,7 @@ import type {
 import {
   useBaselineCompare,
   useDemandSweep,
+  useFairnessSweep,
   useMarginalCost,
   useStaffingSweep,
 } from "../api/analysis";
@@ -29,12 +31,16 @@ type WhatIfSetupProps = {
   templates: ShiftTemplateRead[];
   employeeCount: number;
   rules: LaborRulesRead;
-  onStarted: (kind: "sweep" | "marginal" | "staffing" | "baseline", runId: number) => void;
+  onStarted: (
+    kind: "sweep" | "marginal" | "staffing" | "baseline" | "fairness",
+    runId: number,
+  ) => void;
 };
 
 type StaffingField = StaffingSweepRequest["assumption"];
 
 const MULTIPLIERS = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
+const DEFAULT_TOLERANCES = "0, 1, 2, 5, 10";
 const PREFIX = "whatif-";
 
 function parseValues(text: string): number[] {
@@ -49,6 +55,9 @@ function fieldId(path: string): string | undefined {
   const [head, tail] = path.split(".");
   if (head === "hourly_wage") {
     return `${PREFIX}wage`;
+  }
+  if (head === "tolerances") {
+    return `${PREFIX}tolerances`;
   }
   if (head === "assumption" || head === "values") {
     return `${PREFIX}${head === "values" ? "staffing-values" : "assumption"}`;
@@ -78,6 +87,7 @@ export function WhatIfSetup({
   const marginal = useMarginalCost();
   const staffing = useStaffingSweep();
   const baseline = useBaselineCompare();
+  const fairness = useFairnessSweep();
   const [draft, setDraft] = useState(() => ({
     ...initialDraft(rules),
     demandProfileId: profiles[0] ? String(profiles[0].id) : "",
@@ -88,9 +98,10 @@ export function WhatIfSetup({
   const [wage, setWage] = useState("");
   const [assumption, setAssumption] = useState<StaffingField>("alpha");
   const [valuesText, setValuesText] = useState("0.8, 1.0, 1.2");
+  const [tolerancesText, setTolerancesText] = useState(DEFAULT_TOLERANCES);
   const selectedProfile = profiles.find((profile) => String(profile.id) === draft.demandProfileId);
   const canSweepAssumption = selectedProfile?.has_sales_load === true;
-  const error = sweep.error ?? marginal.error ?? staffing.error ?? baseline.error;
+  const error = sweep.error ?? marginal.error ?? staffing.error ?? baseline.error ?? fairness.error;
   const general = generalError(error);
 
   return (
@@ -159,7 +170,29 @@ export function WhatIfSetup({
           )}
         </Field>
       </div>
+      <Field
+        id={`${PREFIX}tolerances`}
+        label={vi.whatIf.form.tolerances}
+        hint={vi.whatIf.form.tolerancesHint}
+        error={errorsByPath(error).get("tolerances")}
+      >
+        {(control) => (
+          <input
+            {...control}
+            className="input"
+            value={tolerancesText}
+            onChange={(event) => setTolerancesText(event.target.value)}
+          />
+        )}
+      </Field>
       {!canSweepAssumption && <p className="muted">{vi.whatIf.form.onlySales}</p>}
+      <PreSolveWarnings
+        body={
+          draft.demandProfileId !== "" && draft.shiftTemplateIds.length > 0
+            ? toSolveRequest(draft)
+            : null
+        }
+      />
       {general && <Notice kind="error" title={general} />}
       <div className="whatif-actions">
         <Button
@@ -216,6 +249,17 @@ export function WhatIfSetup({
           }}
         >
           {baseline.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runBaseline}
+        </Button>
+        <Button
+          disabled={fairness.isPending}
+          onClick={() => {
+            fairness.mutate(
+              { solve: toSolveRequest(draft), tolerances: parseValues(tolerancesText) },
+              { onSuccess: (job) => onStarted("fairness", job.job_id) },
+            );
+          }}
+        >
+          {fairness.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runFairness}
         </Button>
       </div>
     </div>

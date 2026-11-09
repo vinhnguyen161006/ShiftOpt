@@ -7,6 +7,7 @@ import { Modal } from "../../components/ui/Modal";
 import { useCompliance } from "../../features/compliance/api/compliance";
 import { ManualEditor } from "../../features/compliance/components/ManualEditor";
 import { ReplacementList } from "../../features/compliance/components/ReplacementList";
+import { ShortfallExplanation } from "../../features/compliance/components/ShortfallExplanation";
 import { ViolationList } from "../../features/compliance/components/ViolationList";
 import { useDemandProfiles } from "../../features/demand/api/demand";
 import { useEmployees } from "../../features/employees/api/employees";
@@ -17,6 +18,7 @@ import {
   useScheduleKpi,
   useScheduleRun,
   useScheduleRuns,
+  useStaleness,
 } from "../../features/schedule/api/schedules";
 import { CostSummary } from "../../features/schedule/components/CostSummary";
 import { NewRunForm } from "../../features/schedule/components/NewRunForm";
@@ -106,6 +108,19 @@ function ScheduleHome() {
   );
 }
 
+function StaleNotice({ runId, enabled }: { runId: number; enabled: boolean }) {
+  const staleness = useStaleness(runId, enabled);
+  if (staleness.data?.state !== "stale") {
+    return null;
+  }
+  return (
+    <Notice kind="warning" title={vi.schedule.stale.title}>
+      {vi.schedule.stale.reasons[staleness.data.reason ?? ""] ?? vi.schedule.stale.fallback}{" "}
+      {vi.schedule.stale.hint}
+    </Notice>
+  );
+}
+
 function RunView({ runId }: { runId: number }) {
   const navigate = useNavigate();
   const run = useScheduleRun(runId);
@@ -148,6 +163,7 @@ function RunView({ runId }: { runId: number }) {
         }
       />
       <SolveNotice run={data} />
+      <StaleNotice runId={runId} enabled={hasSchedule} />
       {hasSchedule && kpi.isError && <Notice kind="error" title={errorMessage(kpi.error)} />}
       {hasSchedule && <RunWorkspace run={data} kpi={kpi.data} />}
       {hasSchedule && (
@@ -175,6 +191,11 @@ function RunView({ runId }: { runId: number }) {
           {compliance.data && <ViolationList compliance={compliance.data} />}
         </Panel>
       )}
+      {hasSchedule && (data.understaffed_hours ?? 0) > 0 && (
+        <Panel title={vi.schedule.shortfallPanel} labelledBy="shortfall-title">
+          <ShortfallExplanation run={data} />
+        </Panel>
+      )}
       {hasSchedule && (
         <Panel title={vi.schedule.replacementsPanel} labelledBy="replacements-title">
           <ReplacementList
@@ -199,7 +220,7 @@ function RunView({ runId }: { runId: number }) {
       {hasSchedule && (
         <>
           <Panel title={vi.schedule.laborCost} labelledBy="cost-title">
-            {kpi.data && <CostSummary kpi={kpi.data} />}
+            {kpi.data && <CostSummary kpi={kpi.data} weeklyBudget={data.weekly_budget} />}
           </Panel>
           <Modal
             title={vi.schedule.reroster.modalTitle(data.id)}

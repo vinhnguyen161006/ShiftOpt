@@ -9,6 +9,7 @@ import { vi } from "../../../locales/vi";
 
 type CostSummaryProps = {
   kpi: KpiRead;
+  weeklyBudget?: number | null;
 };
 
 const COST_SCALE = 100;
@@ -20,7 +21,7 @@ function money(hundredths: number): string {
   });
 }
 
-export function CostSummary({ kpi }: CostSummaryProps) {
+export function CostSummary({ kpi, weeklyBudget }: CostSummaryProps) {
   const [revenue, setRevenue] = useState("");
   const revenueValue = toNumber(revenue);
   const base = kpi.labor_cost - kpi.night_premium_cost;
@@ -42,6 +43,15 @@ export function CostSummary({ kpi }: CostSummaryProps) {
             sub: vi.schedule.cost.nightSub,
           },
           { label: vi.schedule.cost.share, value: share, sub: vi.schedule.cost.shareSub },
+          ...(weeklyBudget == null
+            ? []
+            : [
+                {
+                  label: vi.schedule.cost.budget,
+                  value: weeklyBudget.toLocaleString("vi-VN"),
+                  sub: vi.schedule.cost.budgetSub,
+                },
+              ]),
         ]}
       />
       <div className="form-grid cost-assumption">

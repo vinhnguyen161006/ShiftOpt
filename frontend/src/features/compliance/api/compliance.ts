@@ -4,6 +4,7 @@ import type {
   ComplianceRead,
   ManualEditRequest,
   ReplacementRead,
+  ShortfallHourRead,
   SolveRunRead,
 } from "../../../types/models";
 
@@ -19,6 +20,14 @@ export function useReplacements(runId: number, employeeCode: string, day: number
       return apiFetch<ReplacementRead[]>(`/schedules/${runId}/replacements?${query}`);
     },
     enabled: employeeCode !== "" && day !== null,
+  });
+}
+
+export function useShortfall(runId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ["schedules", runId, "shortfall"],
+    queryFn: () => apiFetch<ShortfallHourRead[]>(`/schedules/${runId}/shortfall`),
+    enabled,
   });
 }
 

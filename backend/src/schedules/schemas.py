@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from shiftopt.diagnostics import WarningKind
 
 from src.schedules.models import RunStatus
 
@@ -13,6 +14,7 @@ class SolveSettings(BaseModel):
     relative_gap_limit: float = Field(0.01, ge=0, le=1)
     num_workers: int = Field(8, ge=1)
     random_seed: int = 0
+    cost_tolerance_percent: float = Field(0.0, ge=0, le=10)
 
 
 class SolveRequest(SolveSettings):
@@ -21,11 +23,22 @@ class SolveRequest(SolveSettings):
     employee_ids: list[int] | None = Field(default=None, max_length=500)
     max_weekly_hours: int = Field(48, ge=1, le=168)
     max_consecutive_days: int = Field(6, ge=1, le=6)
+    weekly_budget: int | None = Field(None, ge=1, le=1_000_000_000)
 
 
 class JobAccepted(BaseModel):
     job_id: int
     status: RunStatus
+
+
+class PreSolveWarningRead(BaseModel):
+    kind: WarningKind
+    detail: str
+    employee_id: str | None
+
+
+class PreviewWarningsRead(BaseModel):
+    warnings: list[PreSolveWarningRead]
 
 
 class AssignmentRead(BaseModel):
@@ -77,6 +90,27 @@ class RepairRequest(SolveSettings):
     demand_profile_id: int | None = None
 
 
+class StalenessRead(BaseModel):
+    state: Literal["current", "stale", "unknown"]
+    reason: str | None
+
+
+class ShortfallReasonRead(BaseModel):
+    kind: str
+    legal_basis: str
+    employees: int
+
+
+class ShortfallHourRead(BaseModel):
+    hour: int = Field(ge=0, le=167)
+    day: int = Field(ge=0, le=6)
+    hour_of_day: int = Field(ge=0, le=23)
+    shortfall: int
+    uncoverable: bool
+    reasons: list[ShortfallReasonRead]
+    free_employee_codes: list[str]
+
+
 class ReplacementRead(BaseModel):
     employee_code: str
     shift_name: str
@@ -97,6 +131,7 @@ class SolveRunRead(BaseModel):
 
     id: int
     employee_codes: list[str]
+    weekly_budget: int | None
     shift_types: list[ShiftTypeRead]
     demand_profile_id: int | None
     parent_run_id: int | None
@@ -122,7 +157,7 @@ class SolveRunRead(BaseModel):
 
 class ViolationRead(BaseModel):
     kind: str
-    employee_code: str
+    employee_code: str | None
     detail: str
     day: int | None
     legal_basis: str
@@ -143,6 +178,8 @@ class KpiRead(BaseModel):
     night_premium_cost: int
     night_shift_stddev: float
     weekend_shift_stddev: float
+    hours_spread: int
+    min_hours_shortfall: int
     hard_violations: int
     staff_by_hour: list[int] = Field(min_length=168, max_length=168)
     required_by_hour: list[int] = Field(min_length=168, max_length=168)

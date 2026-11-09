@@ -1,2 +1,0 @@
-store,employees,productivity,seed,workers,mode,time_limit,status,objective,bound,gap,wall_s,understaffed,coverage,violations,capacity_ratio,shortfall_status,shortfall_bound,coverage_upper,approximate,solver
-18,8,4.0,0,8,exact,60.0,optimal,1.0,1.0,0.0,2.50,139,0.7030,0,0.8205,optimal,138.0,0.7051282051282051,False,ortools-cp-sat 9.15.6755

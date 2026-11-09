@@ -51,7 +51,8 @@
           "marginal_cost",
           "lp_duals",
           "staffing_sweep",
-          "baseline_compare"
+          "baseline_compare",
+          "fairness_sweep"
         ],
         "title": "AnalysisKind",
         "type": "string"
@@ -109,6 +110,9 @@
               },
               {
                 "$ref": "#/components/schemas/BaselineCompareResult"
+              },
+              {
+                "$ref": "#/components/schemas/FairnessSweepResult"
               },
               {
                 "type": "null"
@@ -590,6 +594,19 @@
             ],
             "title": "Max Weekly Hours"
           },
+          "min_weekly_hours": {
+            "anyOf": [
+              {
+                "maximum": 48.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Weekly Hours"
+          },
           "name": {
             "maxLength": 120,
             "minLength": 1,
@@ -655,6 +672,17 @@
             ],
             "title": "Max Weekly Hours"
           },
+          "min_weekly_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Weekly Hours"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -680,6 +708,7 @@
           "name",
           "hourly_wage",
           "max_weekly_hours",
+          "min_weekly_hours",
           "unavailable_days",
           "preferred_days_off",
           "created_at"
@@ -712,6 +741,19 @@
               }
             ],
             "title": "Max Weekly Hours"
+          },
+          "min_weekly_hours": {
+            "anyOf": [
+              {
+                "maximum": 48.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Weekly Hours"
           },
           "name": {
             "maxLength": 120,
@@ -746,6 +788,133 @@
           "hourly_wage"
         ],
         "title": "EmployeeUpdate",
+        "type": "object"
+      },
+      "FairnessSweepPoint": {
+        "properties": {
+          "cost_increase_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Increase Percent"
+          },
+          "hours_spread": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours Spread"
+          },
+          "labor_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labor Cost"
+          },
+          "night_spread": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Night Spread"
+          },
+          "proven": {
+            "title": "Proven",
+            "type": "boolean"
+          },
+          "solve_status": {
+            "title": "Solve Status",
+            "type": "string"
+          },
+          "tolerance_percent": {
+            "title": "Tolerance Percent",
+            "type": "number"
+          },
+          "understaffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understaffed Hours"
+          }
+        },
+        "required": [
+          "tolerance_percent",
+          "solve_status",
+          "proven",
+          "labor_cost",
+          "cost_increase_percent",
+          "night_spread",
+          "hours_spread",
+          "understaffed_hours"
+        ],
+        "title": "FairnessSweepPoint",
+        "type": "object"
+      },
+      "FairnessSweepRequest": {
+        "properties": {
+          "solve": {
+            "$ref": "#/components/schemas/SolveRequest"
+          },
+          "tolerances": {
+            "items": {
+              "maximum": 10.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Tolerances",
+            "type": "array"
+          }
+        },
+        "required": [
+          "solve"
+        ],
+        "title": "FairnessSweepRequest",
+        "type": "object"
+      },
+      "FairnessSweepResult": {
+        "properties": {
+          "label": {
+            "default": "Each point is a full re-solve; a point not proven optimal is marked so",
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/FairnessSweepPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "title": "FairnessSweepResult",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -788,8 +957,16 @@
             "title": "Hard Violations",
             "type": "integer"
           },
+          "hours_spread": {
+            "title": "Hours Spread",
+            "type": "integer"
+          },
           "labor_cost": {
             "title": "Labor Cost",
+            "type": "integer"
+          },
+          "min_hours_shortfall": {
+            "title": "Min Hours Shortfall",
             "type": "integer"
           },
           "night_premium_cost": {
@@ -849,6 +1026,8 @@
           "night_premium_cost",
           "night_shift_stddev",
           "weekend_shift_stddev",
+          "hours_spread",
+          "min_hours_shortfall",
           "hard_violations",
           "staff_by_hour",
           "required_by_hour"
@@ -1109,6 +1288,51 @@
         "title": "MarginalCostResult",
         "type": "object"
       },
+      "PreSolveWarningRead": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "employee_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WarningKind"
+          }
+        },
+        "required": [
+          "kind",
+          "detail",
+          "employee_id"
+        ],
+        "title": "PreSolveWarningRead",
+        "type": "object"
+      },
+      "PreviewWarningsRead": {
+        "properties": {
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/PreSolveWarningRead"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "warnings"
+        ],
+        "title": "PreviewWarningsRead",
+        "type": "object"
+      },
       "RegisterRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1148,6 +1372,13 @@
             "maxItems": 500,
             "title": "Absences",
             "type": "array"
+          },
+          "cost_tolerance_percent": {
+            "default": 0.0,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Cost Tolerance Percent",
+            "type": "number"
           },
           "demand_profile_id": {
             "anyOf": [
@@ -1506,8 +1737,93 @@
         "title": "ShiftTypeRead",
         "type": "object"
       },
+      "ShortfallHourRead": {
+        "properties": {
+          "day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "free_employee_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Free Employee Codes",
+            "type": "array"
+          },
+          "hour": {
+            "maximum": 167.0,
+            "minimum": 0.0,
+            "title": "Hour",
+            "type": "integer"
+          },
+          "hour_of_day": {
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Hour Of Day",
+            "type": "integer"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ShortfallReasonRead"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "shortfall": {
+            "title": "Shortfall",
+            "type": "integer"
+          },
+          "uncoverable": {
+            "title": "Uncoverable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hour",
+          "day",
+          "hour_of_day",
+          "shortfall",
+          "uncoverable",
+          "reasons",
+          "free_employee_codes"
+        ],
+        "title": "ShortfallHourRead",
+        "type": "object"
+      },
+      "ShortfallReasonRead": {
+        "properties": {
+          "employees": {
+            "title": "Employees",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "legal_basis": {
+            "title": "Legal Basis",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "legal_basis",
+          "employees"
+        ],
+        "title": "ShortfallReasonRead",
+        "type": "object"
+      },
       "SolveRequest": {
         "properties": {
+          "cost_tolerance_percent": {
+            "default": 0.0,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Cost Tolerance Percent",
+            "type": "number"
+          },
           "demand_profile_id": {
             "title": "Demand Profile Id",
             "type": "integer"
@@ -1573,6 +1889,19 @@
             "exclusiveMinimum": 0.0,
             "title": "Time Limit Seconds",
             "type": "number"
+          },
+          "weekly_budget": {
+            "anyOf": [
+              {
+                "maximum": 1000000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Budget"
           }
         },
         "required": [
@@ -1803,11 +2132,23 @@
               }
             ],
             "title": "Wall Time Seconds"
+          },
+          "weekly_budget": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Budget"
           }
         },
         "required": [
           "id",
           "employee_codes",
+          "weekly_budget",
           "shift_types",
           "demand_profile_id",
           "parent_run_id",
@@ -1964,6 +2305,36 @@
           "points"
         ],
         "title": "StaffingSweepResult",
+        "type": "object"
+      },
+      "StalenessRead": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "state": {
+            "enum": [
+              "current",
+              "stale",
+              "unknown"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reason"
+        ],
+        "title": "StalenessRead",
         "type": "object"
       },
       "SweepPoint": {
@@ -2140,8 +2511,15 @@
             "type": "string"
           },
           "employee_code": {
-            "title": "Employee Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Code"
           },
           "kind": {
             "title": "Kind",
@@ -2161,6 +2539,17 @@
         ],
         "title": "ViolationRead",
         "type": "object"
+      },
+      "WarningKind": {
+        "enum": [
+          "no_available_days",
+          "capacity_below_demand",
+          "no_night_shift",
+          "min_hours_unreachable",
+          "budget_below_demand"
+        ],
+        "title": "WarningKind",
+        "type": "string"
       }
     }
   },
@@ -2283,6 +2672,65 @@
           }
         },
         "summary": "Demand Sweep",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/api/analysis/fairness-sweep": {
+      "post": {
+        "operationId": "fairness_sweep_api_analysis_fairness_sweep_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FairnessSweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fairness Sweep",
         "tags": [
           "analysis"
         ]
@@ -3772,6 +4220,65 @@
         ]
       }
     },
+    "/api/schedules/preview-warnings": {
+      "post": {
+        "operationId": "preview_warnings_api_schedules_preview_warnings_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewWarningsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Warnings",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
     "/api/schedules/{run_id}": {
       "get": {
         "operationId": "get_schedule_api_schedules__run_id__get",
@@ -4467,6 +4974,126 @@
           }
         },
         "summary": "Create Reroster",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/shortfall": {
+      "get": {
+        "operationId": "get_shortfall_api_schedules__run_id__shortfall_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShortfallHourRead"
+                  },
+                  "title": "Response Get Shortfall Api Schedules  Run Id  Shortfall Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Shortfall",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/staleness": {
+      "get": {
+        "operationId": "get_staleness_api_schedules__run_id__staleness_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StalenessRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Staleness",
         "tags": [
           "schedules"
         ]

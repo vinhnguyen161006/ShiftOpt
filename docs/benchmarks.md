@@ -2,7 +2,7 @@
 
 Mọi số trong file này chạy lại được bằng lệnh ghi bên dưới. Kết luận chỉ áp cho instance, time limit, seed và số worker đã ghi (CLAUDE.md nguyên tắc 5). Không trích số của nhóm khác như số của ShiftOpt.
 
-Máy đo: Windows 10 (10.0.26200), 16 luồng CPU, Python 3.11.14, OR-Tools 9.15.6755, PuLP 3.3.2, ngày 2026-10-29.
+Máy đo: Windows 11 (10.0.26200), 16 luồng CPU, Python 3.11.14, OR-Tools 9.15.6755, PuLP 3.3.2. Mục 1–3 đo ngày 2026-10-29; mục 2b, 2c, 7, 8 đo ngày 2026-11-08; mục 4 ngày 2026-11-05; mục 5 ngày 2026-11-08; mục 6 ngày 2026-11-09. Các mục đo trước khi có giờ tối thiểu và ngân sách (G3) không dùng hai tính năng này, nên không bị ảnh hưởng.
 
 ## 1. Curtois & Qu (2014), Instance1–5
 
@@ -124,7 +124,7 @@ Kết luận trong phạm vi đã đo:
 
 Số biến của hai mô hình gần như bằng nhau và tăng tuyến tính theo số nhân viên. Số ràng buộc không so trực tiếp được: CP-SAT gộp mỗi cửa sổ 24 giờ nghỉ (C5) thành một ràng buộc có điều kiện cho mỗi `(e, t)`, còn HiGHS viết từng cặp `(x, v)`. Cách viết từng cặp làm số hàng của HiGHS gấp 2–3 lần. Theo lý thuyết, dạng từng cặp chặt hơn ở phép nới lỏng LP; chưa đo riêng ([model.md](model.md) mục 2a).
 
-## 3. Lịch tuần 7×24, 20–40 nhân viên (mục 9.4)
+## 3. Lịch tuần 7×24, 20–40 nhân viên (CLAUDE.md mục 13, tiêu chí hiệu năng)
 
 Máy và phiên bản như mục đầu. Nhu cầu: đỉnh 3–4 người ban ngày, nền 1–2 người ban đêm, sinh theo seed (`weekly_instance` trong `engine/benchmarks/run_roster_scale.py`). Phá đối xứng tắt (mặc định). `relative_gap_limit = 0.01`, time limit 60 giây.
 
@@ -174,13 +174,13 @@ uv run --locked python -u benchmarks/run_roster_scale.py --sizes 20 30 40 --seed
 
 ## 4. Kịch bản cơ sở: FreshRetailNet store 18 (CLAUDE §13 dòng 2)
 
-Nhu cầu: `derive_demand` trên `data/demo/train.parquet`, cửa hàng 18 (split train; ô hết hàng đã thay bằng nhu cầu ẩn; giờ 22h–06h đặt sàn đêm). Giả định của nhóm, chưa được duyệt (đặc tả D7–D9): `alpha = 1.0`, `p = 4.0` (chọn để giờ đỉnh cần 8 người), `min_staff = 1`, `night_min_staff = 1`. Ca: 0h, 8h, 16h, mỗi ca 8 giờ. 30 nhân viên, lương 100, không yêu cầu cá nhân. Luật: 48 giờ/tuần, `K = 6`. Time limit 60 giây, gap 0,01, 1 worker, không phá đối xứng.
+Nhu cầu: `derive_demand` trên `data/demo/train.parquet`, cửa hàng 18 (split train; ô hết hàng đã thay bằng nhu cầu ẩn; giờ 22h–06h đặt sàn đêm). Giả định của nhóm, đã duyệt 2026-11-08 (đặc tả D7–D9): `alpha = 1.0`, `p = 4.0` (chọn để giờ đỉnh cần 8 người), `min_staff = 1`, `night_min_staff = 1`. Ca: 0h, 8h, 16h, mỗi ca 8 giờ. 30 nhân viên, lương 100, không yêu cầu cá nhân. Luật: 48 giờ/tuần, `K = 6`. Time limit 60 giây, gap 0,01, 1 worker, không phá đối xứng.
 
 Lệnh:
 
 ```
 cd backend
-uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 --productivity 4 --time-limits 60 --workers 1 --seeds 0 1 2
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 --productivity 4 --time-limit 60 --workers 1 --seeds 0 1 2
 ```
 
 | Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng | Solver |
@@ -193,7 +193,7 @@ Kịch bản căng (8 nhân viên, cùng nhu cầu và giả định, sức ch�
 
 ```
 cd backend
-uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 --productivity 4 --time-limits 60 --workers 1 --seeds 0 1 2
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 --productivity 4 --time-limit 60 --workers 1 --seeds 0 1 2
 ```
 
 | Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng |
@@ -202,72 +202,14 @@ uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 -
 | 1 | feasible | 1,0 | 60,35 | 139 | 0,7030 | 0 |
 | 2 | feasible | 1,0 | 60,43 | 139 | 0,7030 | 0 |
 
-Kết quả: không chứng minh được tối ưu trong 60 giây (gap 1,0 ở tầng cuối). Lịch vẫn hợp lệ theo validator. Đây là giới hạn của solver với time limit này, không phải lỗi ràng buộc. Không hạ ràng buộc. Hướng xử lý nếu cần: tăng time limit, bật phân rã hai pha (4.4) để có nghiệm ban đầu, hoặc tăng nhân viên.
+Kết quả: không chứng minh được tối ưu trong 60 giây (gap 1,0 ở tầng cuối). Lịch vẫn hợp lệ theo validator. Đây là giới hạn của solver với time limit này, không phải lỗi ràng buộc. Không hạ ràng buộc. Hướng xử lý nếu cần: tăng time limit, bật phân rã hai pha (`decompose`, [model.md](model.md) mục 2) để có nghiệm ban đầu, hoặc tăng nhân viên.
 
 Kết luận trong phạm vi đã đo:
 - 3/3 `OPTIMAL`, coverage 1,0, 0 vi phạm cứng, mọi lần dưới 60 giây.
-- Kịch bản này dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người. Mục 4b đo kịch bản thiếu người.
-- Kết quả phụ thuộc `alpha`, `p`, các sàn. Đổi `p` đổi toàn bộ nhu cầu; xem độ nhạy theo giả định (`sweep_staffing_assumption`, mục 8.6).
+- Kịch bản 30 người dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người.
+- Kịch bản căng 8 người ở trên cho coverage 70,3% và chỉ `FEASIBLE`. Mức "vừa đủ" (khoảng 1,1 lần nhu cầu) chưa đo (plan E1).
+- Kết quả phụ thuộc `alpha`, `p`, các sàn. Đổi `p` đổi toàn bộ nhu cầu; xem độ nhạy theo giả định (`sweep_staffing_assumption`, [model.md](model.md) mục 5).
 - 1 store, 3 seed. Không suy ra cho store khác.
-
-### 4b. Coverage khi thiếu người (plan E1, E2)
-
-Cùng nhu cầu và giả định với mục 4, số nhân viên thay đổi. Tỉ lệ sức chứa = số người × 48 giờ / 468 giờ-người nhu cầu. Cận trên coverage = 1 − cận dưới giờ thiếu / 468: solver chứng minh coverage không thể vượt mức này, và chỉ tính khi tầng thiếu người đã được giải (kể cả khi chưa tối ưu).
-
-Lệnh (1 worker, seed 0–2, chế độ exact):
-
-```
-cd backend
-uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 9 10 11 12 13 14 15 16 17 18 --time-limits 60 120 --modes exact --workers 1 --seeds 0 1 2
-```
-
-Dữ liệu: `docs/experiments/coverage_capacity.csv` (8–14 người) và `docs/experiments/coverage_capacity_15_18.csv` (15–18 người). Bảng gộp theo số người và giới hạn thời gian:
-
-| Người | Giới hạn (s) | Tỉ lệ sức chứa | Coverage (3 seed) | Tầng thiếu người | Cận trên coverage | Thời gian (s) |
-|---|---|---|---|---|---|---|
-| 8 | 60 | 0,82 | 0,7009, 0,7030, 0,7051 | feasible | 0,7821 | 56,2–58,2 |
-| 8 | 120 | 0,82 | 0,7009, 0,7030, 0,7051 | feasible | 0,7821 | 113,3–115,0 |
-| 9 | 60 | 0,92 | 0,7692, 0,7756, 0,7778 | feasible | 0,8248 | 55,9–58,5 |
-| 9 | 120 | 0,92 | 0,7714, 0,7756, 0,7778 | feasible | 0,8248 | 112,0–114,3 |
-| 10 | 60 | 1,03 | 0,8291, 0,8312 | feasible | 0,8590 | 56,3–56,6 |
-| 10 | 120 | 1,03 | 0,8291, 0,8312 | feasible | 0,8590 | 112,0–115,4 |
-| 11 | 60 | 1,13 | 0,8697 | feasible | 0,8846 | 55,6–57,1 |
-| 11 | 120 | 1,13 | 0,8697 | feasible | 0,8846 | 113,8–115,4 |
-| 12 | 60 | 1,23 | 0,9081 | feasible | 0,9103 | 56,4–57,6 |
-| 12 | 120 | 1,23 | 0,9081 | feasible | 0,9103 | 110,7–114,1 |
-| 13 | 60 | 1,33 | 0,9359 | optimal | 0,9359 | 3,2–3,9 |
-| 13 | 120 | 1,33 | 0,9359 | optimal | 0,9359 | 3,2–3,9 |
-| 14 | 60 | 1,44 | 0,9615 | optimal | 0,9615 | 7,1–20,6 |
-| 14 | 120 | 1,44 | 0,9615 | optimal | 0,9615 | 6,9–40,5 |
-| 15 | 60 | 1,54 | 0,9744 | optimal | 0,9744 | 4,0–20,0 |
-| 15 | 120 | 1,54 | 0,9744 | optimal | 0,9744 | 4,1–39,5 |
-| 16 | 60 | 1,64 | 0,9872 | optimal | 0,9872 | 5,2–22,7 |
-| 16 | 120 | 1,64 | 0,9872 | optimal | 0,9872 | 5,0–23,4 |
-| 17 | 60 | 1,74 | 1,0000 | optimal | 1,0000 | 19,2–22,3 |
-| 17 | 120 | 1,74 | 1,0000 | optimal | 1,0000 | 39,2–39,7 |
-| 18 | 60 | 1,85 | 1,0000 | optimal | 1,0000 | 19,6–22,3 |
-| 18 | 120 | 1,85 | 1,0000 | optimal | 1,0000 | 39,6–39,8 |
-
-Kết luận trong phạm vi đã đo (1 store, 3 seed, 1 worker):
-- Số người nhỏ nhất đạt coverage ≥ 98% là **16** (tỉ lệ sức chứa 1,64, coverage 0,9872). Với 15 người coverage là 0,9744, chưa đạt.
-- Từ 13 người trở lên, tầng thiếu người được chứng minh tối ưu trong cả 60 và 120 giây. Từ 8 đến 12 người, tầng này chỉ `feasible`: cận trên coverage được chứng minh, nhưng coverage thực tế thấp hơn và không biết khoảng cách còn lại. Tăng time limit từ 60 lên 120 giây gần như không đổi coverage (chỉ 9 người seed 0 thay đổi nhỏ).
-- Ở 17 và 18 người, tầng thiếu người đạt 0 giờ thiếu và được chứng minh. Tầng chi phí (tầng sau) thì không chứng minh được trong 120 giây (gap 0,5–0,75), nên dòng đó chỉ là `feasible`. Phần này không ảnh hưởng kết luận về coverage.
-- Mỗi người thêm vào tăng coverage khoảng 0,01–0,03 (từ 12 đến 16 người); từ 17 người coverage đạt 1,0.
-
-Kịch bản căng 8 người, so sánh exact và decompose (`docs/experiments/coverage_tight.csv`, 1 worker, seed 0–2):
-
-| Chế độ | Giới hạn (s) | Coverage (3 seed) | Tầng thiếu người | Xấp xỉ | Thời gian (s) |
-|---|---|---|---|---|---|
-| exact | 60 | 0,7009, 0,7030, 0,7051 | feasible | không | 54,4–57,4 |
-| exact | 120 | 0,7009, 0,7030, 0,7051 | feasible | không | 109,5–112,8 |
-| decompose | 60 | 0,7009, 0,7009, 0,7051 | feasible | có, không bao giờ `OPTIMAL` | 27,0–27,7 |
-| decompose | 120 | 0,7030, 0,7030, 0,7051 | feasible | có, không bao giờ `OPTIMAL` | 53,9–57,7 |
-
-Kết luận: với 8 người, exact và decompose không chứng minh được gì thêm trong 120 giây. Decompose nhanh hơn một nửa nhưng nghiệm không tốt hơn và chỉ là xấp xỉ.
-
-Lượt 8 worker (seed 0, 60 giây, `docs/experiments/coverage_tight_workers8.csv`) cho `OPTIMAL` tầng thiếu người trong 2,5 giây với 139 giờ thiếu. Lần kiểm tra lại với cùng cấu hình cho 138 giờ thiếu (coverage 0,7051). Hai lần khác nhau vì chạy đa luồng không tái lập được. Vì vậy không dùng lượt 8 worker để kết luận, chỉ ghi nhận rằng nhiều worker có thể chứng minh nhanh hơn.
-
-Lưu ý về cột CSV: `objective`, `bound`, `gap` là của tầng chi phí (tầng cuối), không phải số giờ thiếu. Số giờ thiếu nằm ở `understaffed` (nghiệm cuối) và `shortfall_bound` (cận của tầng đầu).
 
 ## 5. Tối ưu so với baseline greedy (plan C5)
 
@@ -315,3 +257,86 @@ uv run --locked python -m scripts.run_experiments --summary
 ```
 
 Lần chạy đầy đủ mất khoảng 36 phút trên một máy.
+
+## 6. Đánh đổi chi phí và công bằng (plan F3)
+
+Lệnh: `cd engine && uv run --locked python -u -m benchmarks.cost_tolerance`. Lương lệch theo vòng 100, 120, 150. Mỗi dòng là một lần giải đầy đủ với `cost_tolerance_percent` tương ứng, 1 worker, seed 0, 60 giây, không ngưỡng gap. `cost_increase_percent` so với dòng 0 của cùng số nhân viên, tính bằng `kpi.labor_cost` trên lịch trả về.
+
+| Nhân viên | Dung sai (%) | Status | Chi phí lao động | Tăng (%) | Chênh ca đêm | Chênh giờ làm | Giờ thiếu |
+|---|---|---|---|---|---|---|---|
+| 12 | 0 | feasible | 7 531 200 | 0,00 | 6 | – | 2 |
+| 12 | 1 | feasible | 7 606 200 | 1,00 | 2 | 0 | 2 |
+| 12 | 2 | feasible | 7 611 600 | 1,07 | 5 | 0 | 2 |
+| 12 | 5 | feasible | 7 615 200 | 1,12 | 2 | 0 | 2 |
+| 12 | 10 | feasible | 7 632 000 | 1,34 | 2 | 0 | 2 |
+| 20 | 0 | feasible | 6 864 000 | 0,00 | 6 | – | 0 |
+| 20 | 1 | feasible | 6 864 000 | 0,00 | 6 | 48 | 0 |
+| 20 | 2 | feasible | 7 000 000 | 1,98 | 1 | 48 | 0 |
+| 20 | 5 | feasible | 7 203 800 | 4,95 | 1 | 32 | 0 |
+| 20 | 10 | feasible | 7 539 000 | 9,83 | 1 | 24 | 0 |
+
+Kết luận trong phạm vi đã đo:
+
+- **Mọi dòng đều `FEASIBLE`, không dòng nào `OPTIMAL` trong 60 giây.** Các số chỉ là nghiệm tìm được tới lúc dừng. Không được đọc chênh lệch 1–2 đơn vị như xu hướng đã chứng minh.
+- Với 20 nhân viên, dung sai 2–10% kéo chênh ca đêm từ 6 xuống 1 và chênh giờ làm từ 48 xuống 24, với chi phí tăng 2–10%. Đây là đánh đổi thực, đúng hướng mục tiêu F.
+- Với 12 nhân viên, dung sai 1% đã đưa chênh ca đêm từ 6 xuống 2. Các dòng sau không cải thiện thêm và dao động (2 → 5 → 2), phù hợp với việc giải không kết thúc.
+- Dòng 20 nhân viên, dung sai 1%: chi phí không đổi nhưng chênh giờ làm đã có giá trị 48. Tầng `hours_spread` chưa được chứng minh tối ưu nên giá trị này là giới hạn trên.
+- Chưa đo ở store 18 hay kịch bản 30 nhân viên. Muốn kết luận chắc hơn cần chạy lại với time limit dài hơn và có gap.
+
+## 7. Integrality gap: LP relaxation so với nghiệm nguyên
+
+Gap đo bằng cùng một công thức trên cả hai mô hình: `gap_pct = 100 (z_IP − z_LP) / max(1, z_IP)`. `z_LP` là tối ưu của bài toán nới lỏng (biến liên tục). Đây là nguồn gốc của nhãn "xấp xỉ" cho dual LP ([model.md](model.md) mục 5, [kiến trúc.md](kiến%20trúc.md) mục 7.5): dual lấy từ bài toán nới lỏng, nên sai lệch với chi phí biên thật tùy theo gap.
+
+Lệnh: `cd engine && uv run --locked python -u -m benchmarks.integrality_gap`
+
+Mô hình tổng hợp (có nghỉ ngầm, [model.md](model.md) mục 1b), chi phí lương:
+
+| Instance | z_LP | z_IP | gap (%) |
+|---|---|---|---|
+| uniform_3_shifts | 2 217 600 | 3 696 000 | 40,0 |
+| peaked_3_shifts | 3 371 200 | 4 256 000 | 20,8 |
+| peaked_spaced_8_shifts | 3 570 000 | 3 570 000 | 0,0 |
+
+Mô hình theo nhân viên, 10 nhân viên, seed 0, 1, 2 (HiGHS, 60 giây, tầng 1 và tầng 2):
+
+| Seed | Tầng | z_LP | z_IP | gap (%) |
+|---|---|---|---|---|
+| 0 | thiếu người | 26,2 | 28,0 | 6,4 |
+| 0 | chi phí | 5 131 600 | 5 148 000 | 0,32 |
+| 1 | thiếu người | 31,2 | 34,0 | 8,4 |
+| 1 | chi phí | 5 127 000 | 5 136 000 | 0,18 |
+| 2 | thiếu người | 28,9 | 34,0 | 15,0 |
+| 2 | chi phí | 5 101 000 | 5 106 000 | 0,10 |
+
+Kết luận trong phạm vi đã đo:
+
+- Gap của tổng hợp lớn ở instance đều (40%) và đỉnh (21%). Ở instance ca cách đều 8 ca, gap bằng 0. Dual LP của mô hình tổng hợp vì vậy chỉ có thể dùng làm xấp xỉ, không thể đọc như chi phí biên của giờ nguyên.
+- Mô hình theo nhân viên: gap của tầng chi phí rất nhỏ (dưới 0,4%), gap của tầng thiếu người lớn hơn nhiều (6–15%). Lý do: nhu cầu 3–4 người không chia được đều theo ca 8 giờ, nên nghiệm nới lỏng có phần giờ thiếu không nguyên.
+- Không đo ở store 18 trong lượt này: engine không dựng được nhu cầu store 18 mà không gọi backend. Kết quả chỉ áp dụng cho các instance trên.
+
+## 8. Lexicographic so với mục tiêu có trọng số
+
+Mục tiêu có trọng số: `min w · thiếu người + chi phí + 1 · (n_max − n_min)`, một lần giải CP-SAT. Mục tiêu lexicographic là lượt giải theo tầng của `solve_roster`. Cùng nhu cầu, 1 worker, seed 0, 60 giây.
+
+Lệnh: `cd engine && uv run --locked python -u -m benchmarks.weighted_vs_lexicographic`
+
+| Nhân viên | Phương án | w | Status | Giờ thiếu | Chi phí lương | F |
+|---|---|---|---|---|---|---|
+| 8 | lexicographic | – | feasible | 87 | 4 092 000 | 4 |
+| 8 | có trọng số | 1 | optimal | 414 | 0 | 0 |
+| 8 | có trọng số | 1 000 | optimal | 414 | 0 | 0 |
+| 8 | có trọng số | 100 000 | feasible | 88 | 4 092 000 | 2 |
+| 8 | có trọng số | 10 000 000 | feasible | 86 | 4 110 000 | 3 |
+| 12 | lexicographic | – | feasible | 2 | 6 168 000 | 2 |
+| 12 | có trọng số | 1 | optimal | 414 | 0 | 0 |
+| 12 | có trọng số | 1 000 | optimal | 414 | 0 | 0 |
+| 12 | có trọng số | 100 000 | feasible | 11 | 5 892 000 | 0 |
+| 12 | có trọng số | 10 000 000 | feasible | 2 | 6 168 000 | 2 |
+
+Kết luận trong phạm vi đã đo:
+
+- Với w = 1 và w = 1 000, không xếp ai: giờ thiếu bằng toàn bộ nhu cầu (414), chi phí bằng 0. Một giờ-người phục vụ thêm chỉ tiết kiệm w, trong khi một ca 8 giờ tốn khoảng 80 000 đơn vị chi phí, tức khoảng 10 000 mỗi giờ. Trọng số dưới ngưỡng này làm mất hết độ phủ mà không báo lỗi.
+- Với w = 100 000, mục tiêu có trọng số bắt đầu phủ nhu cầu: 12 nhân viên thiếu 11 giờ thay vì 2 giờ, đổi lại chi phí thấp hơn 276 000 (khoảng 4,5%). Ngưỡng nằm giữa 10 000 và 100 000 cho cấu hình này.
+- Trọng số lớn (10⁷) cho kết quả gần lexicographic ở 12 nhân viên (cùng 2 giờ thiếu và cùng chi phí).
+- Ở 8 nhân viên, lượt lexicographic không chứng minh được tầng 1 trong 60 giây; lượt có trọng số 10⁷ tìm được 86 giờ thiếu so với 87 của lexicographic. Đây là giới hạn thời gian, không phải kết quả về thứ tự ưu tiên. Không kết luận cái nào tốt hơn ở cấu hình này.
+- Kết luận cho báo cáo: lexicographic không cần chọn trọng số, nên không có nguy cơ mất độ phủ âm thầm như trên; đổi lại mỗi tầng phải được giải riêng và chia thời gian.

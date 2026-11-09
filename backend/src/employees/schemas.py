@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.time_grid import DAYS_PER_WEEK
 
@@ -20,6 +20,7 @@ class EmployeeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     hourly_wage: int = Field(gt=0)
     max_weekly_hours: WeeklyHours | None = None
+    min_weekly_hours: WeeklyHours | None = None
     unavailable_days: list[WeekDay] = Field(default_factory=list, max_length=DAYS_PER_WEEK)
     preferred_days_off: list[WeekDay] = Field(default_factory=list, max_length=DAYS_PER_WEEK)
 
@@ -27,6 +28,16 @@ class EmployeeCreate(BaseModel):
     @classmethod
     def check_days(cls, value: list[int]) -> list[int]:
         return _unique_days(value)
+
+    @model_validator(mode="after")
+    def check_minimum_not_above_maximum(self) -> "EmployeeCreate":
+        if (
+            self.min_weekly_hours is not None
+            and self.max_weekly_hours is not None
+            and self.min_weekly_hours > self.max_weekly_hours
+        ):
+            raise ValueError("min_weekly_hours must not exceed max_weekly_hours")
+        return self
 
 
 class EmployeeUpdate(EmployeeCreate):
@@ -41,6 +52,7 @@ class EmployeeRead(BaseModel):
     name: str
     hourly_wage: int
     max_weekly_hours: int | None
+    min_weekly_hours: int | None
     unavailable_days: list[int]
     preferred_days_off: list[int]
     created_at: datetime

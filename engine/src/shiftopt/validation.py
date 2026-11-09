@@ -19,6 +19,7 @@ class ViolationKind(StrEnum):
     MISSING_BREAK = "missing_break"
     BREAK_OUTSIDE_WINDOW = "break_outside_window"
     UNAVAILABLE_DAY = "unavailable_day"
+    OVER_BUDGET = "over_budget"
 
 
 LEGAL_BASIS: dict[ViolationKind, str] = {
@@ -33,13 +34,14 @@ LEGAL_BASIS: dict[ViolationKind, str] = {
     ViolationKind.MISSING_BREAK: "Article 109",
     ViolationKind.BREAK_OUTSIDE_WINDOW: "Article 109",
     ViolationKind.UNAVAILABLE_DAY: "Employee request",
+    ViolationKind.OVER_BUDGET: "Budget",
 }
 
 
 @dataclass(frozen=True)
 class Violation:
     kind: ViolationKind
-    employee_id: str
+    employee_id: str | None
     detail: str
     day: int | None = None
 
@@ -89,7 +91,32 @@ def validate(instance: Instance, solution: Solution) -> list[Violation]:
             rostered[assignment.employee_id].append(assignment)
     for employee in instance.employees:
         violations.extend(_check_employee(employee, rostered[employee.id], shifts, instance.rules))
+    violations.extend(_budget_violations(instance, rostered, shifts))
     return violations
+
+
+def _budget_violations(
+    instance: Instance,
+    rostered: dict[str, list[Assignment]],
+    shifts: dict[str, ShiftType],
+) -> list[Violation]:
+    if instance.weekly_budget is None:
+        return []
+    wages = {employee.id: employee.hourly_wage for employee in instance.employees}
+    cost = sum(
+        wages[employee_id] * shifts[item.shift_name].cost_per_wage_unit(instance.rules)
+        for employee_id, items in rostered.items()
+        for item in items
+    )
+    if cost <= instance.weekly_budget:
+        return []
+    return [
+        Violation(
+            ViolationKind.OVER_BUDGET,
+            None,
+            f"labour cost {cost} exceeds the weekly budget of {instance.weekly_budget}",
+        )
+    ]
 
 
 def _check_employee(

@@ -249,3 +249,77 @@ async def test_reroster_refuses_a_run_that_violates_the_law(
         json={"employee_code": "E1", "absent_days": [5]},
     )
     assert refused.status_code == 409
+
+
+async def test_preview_warnings_answers_without_creating_a_run(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    before = await client.get("/api/schedules")
+    response = await client.post("/api/schedules/preview-warnings", json=solve_body(seeded))
+
+    assert response.status_code == 200
+    assert isinstance(response.json()["warnings"], list)
+    assert (await client.get("/api/schedules")).json() == before.json()
+
+
+async def test_tight_budget_leaves_hours_short_but_run_still_succeeds(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    body = {**solve_body(seeded), "weekly_budget": 1}
+    accepted = await client.post("/api/schedules", json=body)
+    assert accepted.status_code == 202
+    run = await poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+
+    assert run["status"] == "succeeded", run["error"]
+    assert run["weekly_budget"] == 1
+    assert run["understaffed_hours"] > 0
+    assert run["hard_violations"] == 0
+
+
+async def _finished_run(client: AsyncClient, seeded: dict[str, Any]) -> dict[str, Any]:
+    accepted = await client.post("/api/schedules", json=solve_body(seeded))
+    return await poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+
+
+async def test_staleness_is_current_until_an_input_changes(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    run = await _finished_run(client, seeded)
+    url = f"/api/schedules/{run['id']}/staleness"
+
+    assert (await client.get(url)).json() == {"state": "current", "reason": None}
+
+    employee = (await client.get("/api/employees")).json()[0]
+    changed = {
+        "code": employee["code"],
+        "name": employee["name"],
+        "hourly_wage": employee["hourly_wage"] + 1,
+    }
+    assert (await client.put(f"/api/employees/{employee['id']}", json=changed)).status_code == 200
+
+    assert (await client.get(url)).json() == {"state": "stale", "reason": "input_changed"}
+
+
+async def test_staleness_reports_a_deleted_input(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    run = await _finished_run(client, seeded)
+
+    deleted = await client.delete(f"/api/shift-templates/{seeded['shift_ids'][0]}")
+    assert deleted.status_code == 204
+
+    response = await client.get(f"/api/schedules/{run['id']}/staleness")
+    assert response.json() == {"state": "stale", "reason": "input_deleted"}
+
+
+async def test_manual_edit_inherits_staleness_from_its_parent(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    run = await _finished_run(client, seeded)
+    edit = await client.post(
+        f"/api/schedules/{run['id']}/edits", json={"assignments": run["assignments"]}
+    )
+    assert edit.status_code in (200, 201)
+
+    response = await client.get(f"/api/schedules/{edit.json()['id']}/staleness")
+    assert response.json() == {"state": "current", "reason": None}

@@ -1,6 +1,6 @@
 # Kế hoạch hoàn thiện ShiftOpt
 
-Cập nhật: 2026-11-08, sau merge `feat/phase-9-10` vào `main` (`256e94a`), [benchmarks.md](benchmarks.md), [đặc tả.md](đặc%20tả.md) và kế hoạch nhóm đề xuất ngày 2026-11-08. File này thay cho các kế hoạch rời trước đó.
+Cập nhật: 2026-11-09, sau merge PR #25 vào `main` (`b0d0dfc`): đã xong A (trừ A4, A5), B, C, D1, D2 (chụp ảnh), D4, F, G1–G5. Dựa trên [benchmarks.md](benchmarks.md), [đặc tả.md](đặc%20tả.md) và kế hoạch nhóm đề xuất ngày 2026-11-08. File này thay cho các kế hoạch rời trước đó.
 
 **Nhóm điền trước khi dùng:**
 
@@ -23,7 +23,7 @@ Cập nhật: 2026-11-08, sau merge `feat/phase-9-10` vào `main` (`256e94a`), [
 2. **Bằng chứng tối ưu hóa:** so với baseline xếp tay, so hai solver, đo độ nhạy và đánh đổi, trên nhiều store.
 3. **Sản phẩm chạy được, trình bày trung thực:** UI được duyệt, báo cáo và slide khớp số đo, giới hạn nói rõ.
 
-Mức ưu tiên: **P0** bắt buộc, **P1** nên có, **P2** có thì tốt. Việc đụng phạm vi đã chốt trong CLAUDE.md (mục 14) hoặc thứ tự ưu tiên của mô hình (mục 5.2) ghi **"cần duyệt đặc tả"** và chỉ làm sau khi nhóm đồng ý.
+Mức ưu tiên: **P0** bắt buộc, **P1** nên có, **P2** có thì tốt. Việc đụng phạm vi đã chốt trong CLAUDE.md (mục 14) hoặc thứ tự ưu tiên của mô hình (mục 5.2) ghi **"cần duyệt đặc tả"**. Đặc tả đã duyệt 2026-11-08 (D21–D23 cho phép F, H, I có điều kiện).
 
 ## 2. Hiện trạng
 
@@ -39,36 +39,41 @@ Mức ưu tiên: **P0** bắt buộc, **P1** nên có, **P2** có thì tốt. Vi
 | Độ nhạy ở engine: `z(λ)`, chi phí biên bằng giải lại, dual LP gắn nhãn xấp xỉ | CLAUDE §13 dòng 5 |
 | Ingest file doanh số tổng quát, CSV hoặc parquet, gợi ý cột (đặc tả D19) | `backend/src/demand/sales_ingest.py` |
 | Giao diện tối | CLAUDE.md mục 8.3 |
-| **Xếp lại lịch (repair) và gợi ý người thay** (đặc tả D20): ngày khóa, người vắng, ca ghim, tầng "số ca thay đổi" sau thiếu người; kiểm tập khóa bằng validator trước khi giải | `engine/src/shiftopt/models/roster_cpsat.py`, `engine/src/shiftopt/replacement.py`, `POST /schedules/{id}/repair`, `GET /schedules/{id}/replacements` |
+| **Xếp lại lịch (repair) và gợi ý người thay** (đặc tả D20): ngày khóa, người vắng, ca ghim, tầng "số ca thay đổi" sau thiếu người; kiểm tập khóa bằng validator trước khi giải; báo nghỉ đột xuất (`reroster`) | `engine/src/shiftopt/models/roster_cpsat.py`, `engine/src/shiftopt/replacement.py`, `POST /schedules/{id}/repair`, `POST /schedules/{id}/reroster`, `GET /schedules/{id}/replacements` |
+| Công thức ILP và bản HiGHS của mô hình theo nhân viên; so sánh solver, kích thước, integrality gap, trọng số (B) | `model.md` mục 2a, `benchmarks.md` mục 2b, 2c, 7, 8 |
+| Baseline greedy, 3 store, nút "So với baseline" (C) | `benchmarks.md` mục 5, `docs/experiments/` |
+| Đánh đổi chi phí và công bằng (F, D21) | `model.md` mục 7, `benchmarks.md` mục 6 |
+| Cảnh báo trước khi giải, giải thích giờ thiếu, ngân sách và giờ tối thiểu, nhãn kết quả cũ (G1–G4, D25–D27) | `model.md` mục 8, 9; `kiến trúc.md` mục 4 |
 
-Kiểm tra ngày 2026-11-08: engine 162 test pass, coverage 98,36%; backend 101 unit test pass; frontend `npm run ci` pass; `check_conventions.py` sạch. **Integration test backend chưa chạy** trong lượt này vì máy không có MySQL.
+Kiểm tra ngày 2026-11-09: engine 236 test pass, coverage 98,13%; backend 131 unit test pass cục bộ, 37 integration test pass trên CI (MySQL 8.4); `check_conventions.py` sạch; CI 6 job xanh trên PR #25.
 
 ### 2.2 Còn mở
 
 | Mục | Trạng thái | Việc |
 |---|---|---|
 | Công thức ILP mô hình theo nhân viên | Xong 2026-11-08: `model.md` mục 2a, bản HiGHS `roster_mip.py` | B5 (store 18) |
-| Acceptance dòng 2, phủ nhu cầu | Đạt có điều kiện: kịch bản cơ sở dư sức chứa; 16 người là mức tối thiểu đạt coverage 0,987 (≥ 98%); 8 người coverage 0,703, chưa chứng minh tối ưu (`benchmarks.md` 4b) | E (đo xong 2026-11-09) |
+| Acceptance dòng 2, phủ nhu cầu | Đạt có điều kiện: kịch bản cơ sở dư sức chứa; kịch bản 8 người cho coverage 0,703, gap 1,0 | E |
 | Acceptance dòng 4, so sánh solver | Đạt có điều kiện: mô hình theo nhân viên 10–30 nhân viên, 3 seed, 60 giây (`benchmarks.md` 2b) | Phạm vi, không mở rộng |
 | Acceptance dòng 5 và 9, UI | Chờ người duyệt tay | D |
-| Phạm vi dữ liệu | Mọi kết quả chỉ trên store 18 | C2 |
+| Phạm vi dữ liệu | Kịch bản cơ sở chỉ trên store 18; so với greedy trên 3 store (18, 84, 578) | Không mở rộng thêm |
 | Nhận xét quản lý | Có số đo, chưa có nhận xét | J2 |
-| Đặc tả | Bản nháp D1–D20; điều luật chưa đối chiếu nguyên văn | A3, A4 |
+| Đặc tả | Đã duyệt D1–D27; NĐ 145/2020 chưa đối chiếu văn bản gốc | A4 |
 | Repair, gợi ý người thay | Chưa duyệt trên trình duyệt; nguồn UI thứ hai (Deputy) chỉ đọc được qua snippet | A5 |
+| UI của F và G1–G4 | Có `tsc` và build, chưa duyệt tay trên trình duyệt; chưa có hai nguồn UI cho biểu đồ đánh đổi, cảnh báo trước khi giải, bảng giờ thiếu | D3 |
 
 ## 3. Lộ trình
 
 | Giai đoạn | Nội dung | Ưu tiên | Ước lượng | Phụ trách | Mốc |
 |---|---|---|---|---|---|
-| A | Hợp nhất nhánh, tài liệu, quyết định nhóm | P0 | 1 ngày | [điền] | [điền] |
-| B | Mô hình ILP và phân tích mô hình | P0 | 2,5 ngày | [điền] | [điền] |
-| C | Baseline greedy và thực nghiệm nhiều store | P0 | 2,5 ngày | [điền] | [điền] |
-| D | Đóng nghiệm thu UI | P0 | 1 ngày | [điền] | [điền] |
+| A | Hợp nhất nhánh, tài liệu, quyết định nhóm (xong trừ A4, A5) | P0 | 1 ngày | [điền] | [điền] |
+| B | Mô hình ILP và phân tích mô hình (xong; B5 thiếu store 18) | P0 | 2,5 ngày | [điền] | [điền] |
+| C | Baseline greedy và thực nghiệm nhiều store (xong) | P0 | 2,5 ngày | [điền] | [điền] |
+| D | Đóng nghiệm thu UI (còn chèn ảnh D2, duyệt tay D3) | P0 | 1 ngày | [điền] | [điền] |
 | E | Coverage khi thiếu người | P1 | 0,5 ngày | [điền] | [điền] |
-| F | Đánh đổi chi phí và công bằng (cần duyệt đặc tả) | P1 | 1 ngày | [điền] | [điền] |
-| G | Tính năng nhỏ | P2 | 1–2 ngày | [điền] | [điền] |
-| H | Tuần không quấn vòng (cần duyệt đặc tả) | P2 | 3 ngày | [điền] | [điền] |
-| I | Dự báo tối giản (cần duyệt đặc tả) | P2 | 1 ngày | [điền] | [điền] |
+| F | Đánh đổi chi phí và công bằng (D21, xong) | P1 | 1 ngày | [điền] | [điền] |
+| G | Tính năng nhỏ (xong G1–G5) | P2 | 1–2 ngày | [điền] | [điền] |
+| H | Tuần không quấn vòng (D22, chưa làm) | P2 | 3 ngày | [điền] | [điền] |
+| I | Dự báo tối giản (D23, chưa làm) | P2 | 1 ngày | [điền] | [điền] |
 | J | Báo cáo, nhận xét quản lý, slide, demo | P0 | 2,5 ngày | [điền] | [điền] |
 
 Ước lượng thô, tính cho một người, đã cộng khoảng 25% dự phòng cho B và C. Tổng P0 khoảng 9,5 ngày-người.
@@ -88,7 +93,7 @@ Chia việc cho hai người: một người làm B và C (engine, thực nghi�
 | A0 | **Xong 2026-11-08**: giữ repair, bỏ FR-9, merge vào `main`. Gốc: commit thay đổi của `feat/phase-9-10`. Fetch nhánh `tulee`, so FR-9 (`bbff7c2`) với repair (D20). Chọn **một** đường API và **một** giao diện cho báo nghỉ, bỏ bản còn lại | Một PR duy nhất chứa ingest D19, giao diện tối, báo nghỉ đã hợp nhất; không còn hai endpoint cùng việc |
 | A1 | Merge PR vào `main` | CI trên `main` xanh. **Xong 2026-11-08**: `main` = `256e94a`, run `42484777634` |
 | A2 | Đồng bộ tài liệu với D18 | Đã làm 2026-11-08: `grep -n -i "tổng đài\|erlang" CLAUDE.md docs/*.md` chỉ còn câu ghi D18 và giới hạn |
-| A3 | Nhóm duyệt đặc tả D1–D20 và "Việc cần nhóm quyết" (mục 5 của file này) | Đặc tả bỏ nhãn "bản nháp"; ghi ngày và người duyệt ở đầu `đặc tả.md` |
+| A3 | **Xong 2026-11-08**: Vinh ủy quyền cho Claude duyệt D1–D24 và các việc cần quyết (mục 5). Thành viên khác chưa xem; ai không đồng ý sửa phiếu duyệt trong `đặc tả.md` | Đặc tả bỏ nhãn "bản nháp"; ghi ngày và người duyệt ở đầu `đặc tả.md` |
 | A4 | Đối chiếu nguyên văn Đ.98, 105, 106, 109, 110, 111 và NĐ 145/2020 với văn bản 45/2019/QH14 | Đặc tả mục 4 trích nguyên văn, ghi nguồn chính thức |
 | A5 | Nguồn UI thứ hai cho màn xếp lại và gợi ý người thay: mở được trang, ghi ngày xem | phụ lục nguồn UI trong `báo cáo.md` R15 có nguồn đã mở (thay snippet Deputy) |
 | A6 | Chạy integration test backend trên MySQL 8.4 (gồm 3 test repair mới), `alembic check` | **Xong 2026-11-08** qua CI run `42484777634`: 128 passed, 0 skip, `alembic check` sạch |
@@ -101,25 +106,25 @@ Chia việc cho hai người: một người làm B và C (engine, thực nghi�
 |---|---|---|
 | B1 | **Xong 2026-11-08** (`model.md` 2a, `báo cáo.md` mục 2). Viết công thức ILP đầy đủ của mô hình theo nhân viên vào `model.md` và báo cáo: tập, tham số, biến `x[e,d,s]` nhị phân, `u_h` nguyên không âm, mọi ràng buộc (Đ.105, 109, 110, 111, ngày liên tiếp) dạng bất đẳng thức tuyến tính, mục tiêu lexicographic, cách tuyến tính hóa nghỉ 24 giờ và max/min của công bằng, tầng thay đổi của repair | Mỗi ràng buộc trong code có một dòng công thức; có bảng đối chiếu ràng buộc ↔ hàm trong `roster_cpsat.py` |
 | B2 | **Xong 2026-11-08** (9 test, khớp CP-SAT trên instance nhỏ). `engine/src/shiftopt/models/roster_mip.py`: cùng công thức B1, giải bằng PuLP + HiGHS, lexicographic bằng cách cố định tầng trước | Validator cho 0 vi phạm; với 10–20 nhân viên, cùng giá trị tầng thiếu người và chi phí với CP-SAT |
-| B3 | **Xong 2026-11-08** (`benchmarks.md` 2b). So sánh solver trên mô hình theo nhân viên: `compare_solvers.py` thêm chế độ roster, 10/20/30 nhân viên, cùng time limit và seed | Bảng trong benchmarks.md mục 2; CLAUDE §13 dòng 4 chuyển Đạt hoặc ghi rõ phạm vi |
+| B3 | **Xong 2026-11-08** (`benchmarks.md` 2b). So sánh solver trên mô hình theo nhân viên: `run_roster_scale.py --solver both`, 10/20/30 nhân viên, cùng time limit và seed | Bảng trong benchmarks.md mục 2; CLAUDE §13 dòng 4 chuyển Đạt hoặc ghi rõ phạm vi |
 | B4 | **Xong 2026-11-08** (`benchmarks.md` 2c). Kích thước mô hình: số biến, số ràng buộc theo số nhân viên (10, 20, 30, 40) và số loại ca, cho CP-SAT và MIP | Bảng và biểu đồ trong báo cáo |
-| B5 | **Xong 2026-11-08** (`benchmarks.md` 5), trừ store 18: engine không dựng được nhu cầu store 18 nếu không gọi backend. Integrality gap: so LP relaxation với nghiệm nguyên tối ưu trên nhiều instance, cả mô hình tổng hợp và MIP theo nhân viên | Bảng trong báo cáo, kèm giải thích vì sao dual LP chỉ là xấp xỉ |
-| B6 | **Xong 2026-11-08** (`benchmarks.md` 6). Lexicographic so với trọng số: cùng instance, thử `M_u` nhỏ, vừa, lớn; chỉ ra khi nào trọng số đảo thứ tự ưu tiên | Bảng trong báo cáo |
+| B5 | **Xong 2026-11-08** (`benchmarks.md` 7), trừ store 18: engine không dựng được nhu cầu store 18 nếu không gọi backend. Integrality gap: so LP relaxation với nghiệm nguyên tối ưu trên nhiều instance, cả mô hình tổng hợp và MIP theo nhân viên | Bảng trong báo cáo, kèm giải thích vì sao dual LP chỉ là xấp xỉ |
+| B6 | **Xong 2026-11-08** (`benchmarks.md` 8). Lexicographic so với trọng số: cùng instance, thử `M_u` nhỏ, vừa, lớn; chỉ ra khi nào trọng số đảo thứ tự ưu tiên | Bảng trong báo cáo |
 
 B2 chậm trên instance lớn thì chỉ báo cáo phạm vi đã đo và giải thích lý do (MIP lớn hơn, CP-SAT mạnh ở ràng buộc chuỗi).
 
 ### C. Baseline greedy và thực nghiệm nhiều store (P0)
 
-Trạng thái: C1–C5 đã làm (2026-11-08); C6 chưa làm theo yêu cầu. Chỉ 3 store đạt tiêu chí, xem mô tả dữ liệu mục 8.
+Trạng thái: C1–C6 đã làm (2026-11-08). Chỉ 3 store đạt tiêu chí, xem mô tả dữ liệu mục 8.
 
 | # | Việc | Xong khi |
 |---|---|---|
 | C1 | `engine/src/shiftopt/baseline.py`: greedy ưu tiên giờ thiếu nhiều nhất, chọn người khả dụng có ít giờ nhất, kiểm ràng buộc cứng trước mỗi lần gán. Validator kiểm lại | Test: greedy luôn 0 vi phạm; trên ví dụ có đáp án tay, chi phí greedy ≥ tối ưu |
 | C2 | Chọn thêm 3–5 store khác quy mô (theo tổng doanh số). Ingest bằng `derive_demand` qua `backend/scripts/baseline_store18.py --store N` (script `build_demand_store.py` đã bỏ) | Tiêu chí chọn và loại trừ ghi trong `mô tả dữ liệu.md` |
-| C3 | `engine/benchmarks/run_experiments.py`: một lệnh sinh `docs/experiments/scenario_results.csv`, seed cố định, `num_workers = 1`, nhiều seed cho kịch bản chính | Cột: store, kịch bản, phương án, chi phí, giờ thiếu, giờ thừa, coverage, status, gap, thời gian |
+| C3 | `backend/scripts/run_experiments.py`: một lệnh sinh `docs/experiments/scenario_results.csv`, seed cố định, `num_workers = 1`, nhiều seed cho kịch bản chính | Cột: store, kịch bản, phương án, chi phí, giờ thiếu, giờ thừa, coverage, status, gap, thời gian |
 | C4 | Kịch bản: cơ sở; λ ∈ {0,8 … 1,3}; bớt 1, 2, 5 nhân viên; bộ ca 3 giờ bắt đầu (0/8/16) so với 6 giờ bắt đầu (0/4/…/20); p ∈ {3, 4, 5}; báo nghỉ 1 người 1–3 ngày, đo `changes` của repair | Mỗi kịch bản có dòng cho CP-SAT và greedy, trên mọi store đã chọn |
 | C5 | Bảng và biểu đồ: chênh lệch chi phí tối ưu so với greedy, coverage, thời gian, theo store | Báo cáo có mục "Tối ưu so với baseline" |
-| C6 | (P1) Nút "So với baseline" trong What-if, bảng hai phương án | Thấy trên UI; `npm run ci` pass; có hai nguồn UI trong phụ lục nguồn UI trong `báo cáo.md` |
+| C6 | **Xong 2026-11-08** (`POST /analysis/baseline-compare`, `BaselineCompare.tsx`). (P1) Nút "So với baseline" trong What-if, bảng hai phương án | Thấy trên UI; `npm run ci` pass; có hai nguồn UI trong phụ lục nguồn UI trong `báo cáo.md` |
 
 ### D. Đóng nghiệm thu UI (P0)
 
@@ -134,32 +139,32 @@ Trạng thái: C1–C5 đã làm (2026-11-08); C6 chưa làm theo yêu cầu. Ch
 
 | # | Việc | Xong khi |
 |---|---|---|
-| E1 | Kịch bản "vừa đủ": sức chứa khoảng 1,1 × nhu cầu (store 18, khoảng 12 người) | **Xong 2026-11-09**: quét 8–18 người, 60 và 120 giây, `benchmarks.md` 4b. Số người tối thiểu đạt 98% là 16 (sức chứa 1,64 × nhu cầu, không phải 1,1). Dữ liệu `docs/experiments/coverage_capacity*.csv` |
-| E2 | Kịch bản căng (8 người): thử thêm worker và `decompose=True`. Kết quả phân rã là xấp xỉ, không bao giờ `OPTIMAL`, phải ghi nhãn | **Xong 2026-11-09**: `benchmarks.md` 4b; `decompose` nhanh hơn nhưng không tốt hơn, luôn ghi `approximate`. 8 worker chứng minh được tầng thiếu người trong 2,5 giây nhưng không tái lập được, chỉ tham khảo. CLAUDE §13 dòng 2 đã ghi ba mức |
+| E1 | Kịch bản "vừa đủ": sức chứa khoảng 1,1 × nhu cầu (store 18, khoảng 12 người) | Đo coverage, status, gap với 60 và 120 giây |
+| E2 | Kịch bản căng (8 người): thử thêm worker và `decompose=True`. Kết quả phân rã là xấp xỉ, không bao giờ `OPTIMAL`, phải ghi nhãn | Bảng trong benchmarks.md; CLAUDE §13 dòng 2 ghi ba mức: dư, vừa đủ, căng |
 
-### F. Đánh đổi chi phí và công bằng (P1, cần duyệt đặc tả)
+### F. Đánh đổi chi phí và công bằng (P1, đã duyệt D21, xong)
 
-CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi phí để công bằng hơn, tức đổi thứ tự này. Nhóm duyệt trước khi làm.
+CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi phí để công bằng hơn, tức đổi thứ tự này. **Đã duyệt (D21)**: `cost_tolerance_percent` mặc định 0 nên hành vi cũ không đổi. CLAUDE.md mục 5.2 đã cập nhật.
 
 | # | Việc | Xong khi |
 |---|---|---|
-| F1 | `constraints/fairness.py`: thêm độ lệch giờ làm `H_max − H_min` cạnh ca đêm | Test tiêm lịch lệch, đo đúng |
-| F2 | `cost_tolerance` (0–10%): tầng công bằng được tăng chi phí tối đa theo tỷ lệ này (epsilon-constraint) | Test: tolerance 0 cho kết quả như hiện nay |
-| F3 | Quét tolerance, vẽ đường đánh đổi trong What-if và báo cáo | Đường cong trên UI; số liệu trong benchmarks.md |
+| F1 | **Xong 2026-11-09**: `worked_hours_spread` trong `constraints/fairness.py`, KPI `hours_spread`, tầng `hours_spread` trong CP-SAT và MIP khi tol > 0 | `test_fairness_tolerance.py` (đo đúng lịch tiêm 16 giờ) |
+| F2 | **Xong 2026-11-09**: `SolveParams.cost_tolerance_percent` (0–10, mặc định 0); biên tầng chi phí `floor(C·(100+t)/100)`; API `SolveSettings` và lượt sửa lại (reroster) chuyển tiếp khóa. Tol 0 cho đúng biên cũ | Test: tol 0 không có tầng giờ làm; tol 10 làm chênh ca đêm giảm 6 → 3 với chi phí ≤ 110% |
+| F3 | **Xong 2026-11-09**: `fairness_sweep` (API, worker song song, What-if có hai biểu đồ SVG và bảng); số đo trong `benchmarks.md` mục 6. Mọi điểm đo là `FEASIBLE` trong 60 giây, chưa phải tối ưu chứng minh | Số liệu trong benchmarks.md; smoke flow và duyệt tay UI chưa chạy |
 
 ### G. Tính năng nhỏ (P2)
 
 | # | Việc | Ghi chú |
 |---|---|---|
-| G1 | Cảnh báo trước khi giải: nhân viên không còn ngày khả dụng, tổng sức chứa < tổng nhu cầu, không ai làm được ca đêm | Rẻ, giúp hiểu vì sao thiếu |
-| G2 | Giải thích giờ thiếu: với mỗi giờ thiếu, liệt kê ràng buộc chặn (hết người, chạm 48 giờ, nghỉ 12 giờ) | Dùng lại hạ tầng độ nhạy |
-| G3 | Trần ngân sách tuần, giờ tối thiểu theo hợp đồng | Ràng buộc tuyến tính |
-| G4 | Đánh dấu kết quả cũ khi đầu vào đổi (hash đầu vào trong `solve_runs`) | Cần migration Alembic |
+| G1 | **Xong 2026-11-09**: `engine/src/shiftopt/diagnostics.py` (ba cảnh báo, điều kiện cần; G3 thêm hai cảnh báo nữa); `POST /schedules/preview-warnings`; hiện trên form Optimize và What-if (không chặn nút) | Rẻ, giúp hiểu vì sao thiếu |
+| G2 | **Xong 2026-11-09**: `engine/src/shiftopt/shortfall.py` (`explain_shortfall`), `GET /schedules/{id}/shortfall`, bảng "Vì sao còn giờ thiếu người" ở trang lịch; model.md mục 9 | Dùng lại validator (như gợi ý người thay), không gọi solver |
+| G3 | **Xong 2026-11-09**: `Employee.min_weekly_hours` (mềm, tầng `min_hours`), `Instance.weekly_budget` (cứng, `OVER_BUDGET` trong validator), migration `5b8d1f3a7c20`, trường ngân sách trong form giải, cột giờ tối thiểu trong nhân viên. Đặc tả D16 sửa, D25, D26 mới | Ràng buộc tuyến tính |
+| G4 | **Xong 2026-11-09**: cột `source_inputs` và `input_hash` (migration `8c4a2e9d6f31`), `GET /schedules/{id}/staleness`, cảnh báo "Đầu vào đã đổi sau lượt này" trên trang lịch; đặc tả D27 | Cần migration Alembic |
 | G5 | Gợi ý người thay khi báo nghỉ | **Đã làm** (D20) |
 
 ### H. Tuần không quấn vòng (P2, cần duyệt đặc tả)
 
-Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùng tuần. CLAUDE.md mục 14 để chân trời nhiều tuần ngoài phạm vi bản đầu. Không làm thì ghi rõ giới hạn trong báo cáo và chuẩn bị câu trả lời (mục 8).
+Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùng tuần. CLAUDE.md mục 14 để chân trời nhiều tuần ngoài phạm vi bản đầu. **Đã duyệt có điều kiện (D22)**: mặc định vẫn `cyclic`, làm sau A–F và J. Làm xong thì sửa CLAUDE.md mục 14. Không làm thì ghi rõ giới hạn trong báo cáo và chuẩn bị câu trả lời (mục 8).
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -169,7 +174,7 @@ Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùn
 
 ### I. Dự báo tối giản (P2, cần duyệt đặc tả)
 
-CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; mục 10 cấm thêm thư viện. Chỉ làm khi A–F xong và nhóm đồng ý.
+CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; mục 10 cấm thêm thư viện. **Đã duyệt có điều kiện (D23)**: chỉ baseline mùa vụ, không thêm thư viện. Chỉ làm khi A–F xong.
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -182,7 +187,7 @@ CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; m
 
 | # | Việc | Xong khi |
 |---|---|---|
-| J1 | Cập nhật `báo cáo.md`: công thức ILP (B1), phân tích mô hình (B4–B6), so sánh solver (B3), baseline và nhiều store (C), xếp lại (D20), đánh đổi (F nếu có), giới hạn tuần vòng tròn, D18 | Mọi con số có dòng tương ứng trong benchmarks.md hoặc `scenario_results.csv` |
+| J1 | Cập nhật `báo cáo.md`: công thức ILP (B1), phân tích mô hình (B4–B6), so sánh solver (B3), baseline và nhiều store (C), xếp lại (D20), đánh đổi (F), tính năng G1–G4, giới hạn tuần vòng tròn, D18 | Mọi con số có dòng tương ứng trong benchmarks.md hoặc `scenario_results.csv` |
 | J2 | Nhận xét quản lý: giờ nào đẩy chi phí (heatmap chi phí biên); thêm hoặc bớt một người đổi chi phí và coverage bao nhiêu; ràng buộc nào chặt nhất; tác động của `p` và `alpha`; bộ ca 3 hay 6 giờ bắt đầu; báo nghỉ một người đổi bao nhiêu ca | Mỗi nhận xét có số đo và phạm vi (store, kịch bản) |
 | J3 | `slides.md`: thêm "Công thức ILP", "Tối ưu so với baseline", "Nhận xét quản lý", "Xếp lại khi có người vắng"; giữ 10–12 slide | Số liệu khớp báo cáo |
 | J4 | `demo.md`: kịch bản 5–7 phút gồm Optimize, λ, xếp lại, sửa tay gây vi phạm | Chạy thử hai lần không lỗi; có video dự phòng |
@@ -192,11 +197,12 @@ CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; m
 ## 5. Việc cần nhóm quyết
 
 1. **Đã chốt 2026-11-08:** giữ repair D20, bỏ FR-9 (`tulee`); nộp từ `main`.
-2. Duyệt đặc tả D1–D20, gồm D20 (repair: tầng "số ca thay đổi" đứng **trước** chi phí).
-3. Chấp nhận phạm vi CLAUDE §13 dòng 4 (mô hình theo nhân viên 10–30 nhân viên, 3 seed; CP-SAT không chứng minh được ở 10 nhân viên).
-4. Xác nhận kịch bản cơ sở D13 (store 18, 30 nhân viên).
-5. Thêm Playwright làm dependency cho D1 hay không.
-6. Có làm F, H, I không (mỗi mục đổi đặc tả).
+2. **Đã chốt 2026-11-08:** duyệt đặc tả D1–D24, gồm D20 (repair: tầng "số ca thay đổi" đứng **trước** chi phí).
+3. **Đã chốt 2026-11-08:** chấp nhận phạm vi CLAUDE §13 dòng 4 (mô hình theo nhân viên 10–30 nhân viên, 3 seed; CP-SAT không chứng minh được ở 10 nhân viên).
+4. **Đã chốt 2026-11-08:** kịch bản cơ sở D13 (store 18, 30 nhân viên).
+5. **Đã chốt 2026-11-08:** không thêm Playwright (D24).
+6. **Đã chốt 2026-11-08:** cho phép làm F, H, I có điều kiện (D21–D23).
+7. **Đã chốt 2026-11-09:** giờ tối thiểu mềm (D25), ngân sách tuần cứng theo lượt (D26), nhãn kết quả cũ bằng so hash snapshot (D27).
 
 ## 6. Kiểm tra cho mọi việc
 
@@ -221,9 +227,13 @@ Một việc chỉ tính là xong khi:
 6. Tuân thủ: lượt solver 0 vi phạm; sửa tay gây vi phạm Đ.110 thì lượt mới thất bại, lượt gốc không đổi.
 7. Xếp lại: ngày trước "Xếp lại từ ngày" có nhãn "khóa" và giữ nguyên; ô đổi có chữ "đổi"; KPI "Ca thay đổi"; ngày vắng rơi vào ngày khóa bị từ chối với thông báo rõ.
 8. Gợi ý người thay: không có người vắng và người đã có ca ngày đó; Áp dụng tạo lượt mới 0 vi phạm.
-9. What-if: kéo λ thấy đường cong; heatmap chi phí biên; dual LP có nhãn "xấp xỉ".
+9. What-if: kéo λ thấy đường cong; heatmap chi phí biên; dual LP có nhãn "xấp xỉ"; so với baseline greedy; quét dung sai chi phí hiện hai biểu đồ và bảng, điểm chưa chứng minh vẽ rỗng.
 10. Xuất CSV mở được.
-11. Lặp lại 4–9 ở giao diện tối.
+11. Cảnh báo trước khi giải: bỏ mẫu ca đêm khi có nhu cầu đêm thì form hiện cảnh báo, nút Optimize vẫn bấm được.
+12. Ngân sách và giờ tối thiểu: ngân sách chặt làm tăng giờ thiếu và CostSummary hiện ngân sách; nhân viên có giờ tối thiểu không đạt được thì KPI "Thiếu giờ hợp đồng" > 0.
+13. Giờ thiếu: lượt có giờ thiếu hiện bảng "Vì sao còn giờ thiếu người" với luật chặn.
+14. Kết quả cũ: sửa lương một nhân viên sau khi giải thì lượt cũ hiện "Đầu vào đã đổi sau lượt này".
+15. Lặp lại 4–14 ở giao diện tối.
 
 ## 8. Câu hỏi bảo vệ nên chuẩn bị
 
@@ -235,7 +245,9 @@ Một việc chỉ tính là xong khi:
 | Vì sao lexicographic thay vì trọng số? | Trọng số chọn sai làm đảo thứ tự ưu tiên; có số đo minh họa | B6 |
 | Mô hình lớn cỡ nào, giải được tới đâu? | Bảng kích thước và thời gian theo số nhân viên; Curtois & Qu | B4, benchmarks.md mục 1 |
 | Tối ưu tốt hơn xếp tay bao nhiêu? | Số đo trên nhiều store | C5 |
-| Kết quả có đúng cho store khác không? | Đã chạy 3–5 store; nêu phạm vi | C2–C5 |
+| Kết quả có đúng cho store khác không? | Đã chạy 3 store (18, 84, 578); nêu phạm vi | C2–C5 |
+| Vì sao lịch tối ưu dồn ca đêm vào vài người? | Chi phí đứng trước công bằng; dung sai chi phí vài phần trăm đổi lấy ca đêm đều hơn, có số đo | F, `benchmarks.md` mục 6 |
+| Vì sao giờ này còn thiếu người? | Bảng giải thích chỉ ra luật chặn từng người (48 giờ, nghỉ 12 giờ, ngày vắng, ngân sách) | G2, `model.md` mục 9 |
 | Người báo ốm giữa tuần thì sao? | Xếp lại: khóa ngày đã qua, solver đổi ít ca nhất; tập khóa được validator kiểm trước nên luôn có lời giải | `model.md` mục 6, đặc tả D20 |
 | FreshRetailNet có phải dữ liệu nhân sự? | Không; là doanh số chuẩn hóa; `alpha`, `p` là giả định, có quét độ nhạy | `mô tả dữ liệu.md` |
 | Ca đêm lấy nhu cầu từ đâu? | Mức tối thiểu cố định, vì doanh số đêm gần bằng 0 | CLAUDE.md nguyên tắc 7 |

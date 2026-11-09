@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, cast
 
+from shiftopt.domain import PERCENT_BASE
 from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -35,6 +36,8 @@ class SolveRun(Base):
     solve_status: Mapped[str | None] = mapped_column(String(32))
     params: Mapped[dict[str, float]] = mapped_column(JSON)
     instance_snapshot: Mapped[dict[str, object]] = mapped_column(JSON)
+    source_inputs: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    input_hash: Mapped[str | None] = mapped_column(String(64))
     assignments: Mapped[list[dict[str, object]] | None] = mapped_column(JSON)
     objective: Mapped[float | None]
     best_bound: Mapped[float | None]
@@ -52,6 +55,11 @@ class SolveRun(Base):
         """Employee codes of the solved instance, in snapshot order."""
         rows = cast("list[dict[str, Any]]", self.instance_snapshot["employees"])
         return [str(row["id"]) for row in rows]
+
+    @property
+    def weekly_budget(self) -> int | None:
+        budget = cast("int | None", self.instance_snapshot.get("weekly_budget"))
+        return None if budget is None else budget // PERCENT_BASE
 
     @property
     def shift_types(self) -> list[dict[str, Any]]:

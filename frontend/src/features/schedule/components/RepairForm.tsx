@@ -56,6 +56,7 @@ function toBody(
     relative_gap_limit: REPAIR_GAP_LIMIT,
     num_workers: REPAIR_WORKERS,
     random_seed: REPAIR_SEED,
+    cost_tolerance_percent: run.params.cost_tolerance_percent ?? 0,
   };
 }
 

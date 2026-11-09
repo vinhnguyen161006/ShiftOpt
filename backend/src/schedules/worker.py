@@ -12,6 +12,7 @@ def to_solve_params(params: dict[str, float]) -> SolveParams:
         relative_gap_limit=float(params["relative_gap_limit"]),
         num_workers=int(params["num_workers"]),
         random_seed=int(params["random_seed"]),
+        cost_tolerance_percent=float(params.get("cost_tolerance_percent", 0.0)),
     )
 
 

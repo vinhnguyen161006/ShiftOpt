@@ -1,4 +1,6 @@
 import copy
+import hashlib
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from typing import Any
@@ -18,6 +20,7 @@ def build_snapshot(
     templates: Sequence[ShiftTemplate],
     employees: Sequence[EmployeeRecord],
     rules: LaborRules,
+    weekly_budget: int | None = None,
 ) -> Snapshot:
     """Plain JSON copy of one scheduling problem. Employees are ordered by code and shifts by
     start hour and name, so the same data always yields the same instance."""
@@ -36,13 +39,24 @@ def build_snapshot(
                 "id": employee.code,
                 "hourly_wage": employee.hourly_wage,
                 "max_weekly_hours": employee.max_weekly_hours,
+                "min_weekly_hours": employee.min_weekly_hours,
                 "unavailable_days": sorted(employee.unavailable_days),
                 "preferred_days_off": sorted(employee.preferred_days_off),
             }
             for employee in sorted(employees, key=lambda e: e.code)
         ],
         "rules": asdict(rules),
+        "weekly_budget": weekly_budget,
     }
+
+
+def input_hash(snapshot: Snapshot) -> str:
+    """SHA-256 of the snapshot without its repair part, keys sorted and no spaces, so the same
+    inputs always give the same hash. MySQL does not keep the key order of a JSON column, which
+    is why the keys are sorted here instead of relying on insertion order."""
+    inputs = {key: value for key, value in snapshot.items() if key != REPAIR_KEY}
+    canonical = json.dumps(inputs, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def instance_from_snapshot(snapshot: Snapshot) -> Instance:
@@ -53,6 +67,7 @@ def instance_from_snapshot(snapshot: Snapshot) -> Instance:
                 id=row["id"],
                 hourly_wage=row["hourly_wage"],
                 max_weekly_hours=row.get("max_weekly_hours"),
+                min_weekly_hours=row.get("min_weekly_hours"),
                 unavailable_days=frozenset(row["unavailable_days"]),
                 preferred_days_off=frozenset(row["preferred_days_off"]),
             )
@@ -63,6 +78,7 @@ def instance_from_snapshot(snapshot: Snapshot) -> Instance:
             for row in snapshot["shift_types"]
         ),
         rules=LaborRules(**snapshot["rules"]),
+        weekly_budget=snapshot.get("weekly_budget"),
     )
 
 

@@ -6,10 +6,13 @@ from typing import Any
 
 from shiftopt import kpi
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.domain import Assignment, Instance, Solution
+from shiftopt.diagnostics import diagnose
+from shiftopt.domain import PERCENT_BASE, Assignment, Instance, Solution
 from shiftopt.replacement import suggest_replacements
 from shiftopt.schedule_diff import diff_solutions
+from shiftopt.shortfall import explain_shortfall
 from shiftopt.solvers.base import ModelInvalidError
+from shiftopt.time_grid import HOURS_PER_DAY
 from shiftopt.validation import LEGAL_BASIS, validate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,17 +29,23 @@ from src.schedules.schemas import (
     ComplianceRead,
     KpiRead,
     ManualEditRequest,
+    PreSolveWarningRead,
+    PreviewWarningsRead,
     RepairRequest,
     ReplacementRead,
     RerosterRequest,
     ScheduleChangesRead,
+    ShortfallHourRead,
+    ShortfallReasonRead,
     SolveRequest,
     SolveSettings,
+    StalenessRead,
     ViolationRead,
 )
 from src.schedules.snapshot import (
     Snapshot,
     build_snapshot,
+    input_hash,
     instance_from_snapshot,
     repair_from_snapshot,
     repair_snapshot,
@@ -69,6 +78,7 @@ def solve_params(payload: SolveSettings) -> dict[str, float]:
         "relative_gap_limit": payload.relative_gap_limit,
         "num_workers": payload.num_workers,
         "random_seed": payload.random_seed,
+        "cost_tolerance_percent": payload.cost_tolerance_percent,
     }
 
 
@@ -109,6 +119,16 @@ def check_limits(payload: SolveSettings) -> None:
         raise InstanceTooLargeError(f"num_workers must not exceed {settings.solve_workers}")
 
 
+async def preview_warnings(session: AsyncSession, payload: SolveRequest) -> PreviewWarningsRead:
+    instance = instance_from_snapshot(await snapshot_for(session, payload))
+    return PreviewWarningsRead(
+        warnings=[
+            PreSolveWarningRead(kind=item.kind, detail=item.detail, employee_id=item.employee_id)
+            for item in diagnose(instance)
+        ]
+    )
+
+
 async def snapshot_for(session: AsyncSession, payload: SolveRequest) -> Snapshot:
     check_limits(payload)
     profile = await get_profile(session, payload.demand_profile_id)
@@ -118,7 +138,8 @@ async def snapshot_for(session: AsyncSession, payload: SolveRequest) -> Snapshot
         max_weekly_hours=payload.max_weekly_hours,
         max_consecutive_days=payload.max_consecutive_days,
     )
-    snapshot = build_snapshot(profile.required_staff, templates, employees, rules)
+    budget = None if payload.weekly_budget is None else payload.weekly_budget * PERCENT_BASE
+    snapshot = build_snapshot(profile.required_staff, templates, employees, rules, budget)
     try:
         instance_from_snapshot(snapshot)
     except ValueError as error:
@@ -126,13 +147,27 @@ async def snapshot_for(session: AsyncSession, payload: SolveRequest) -> Snapshot
     return snapshot
 
 
+def source_inputs(payload: SolveRequest) -> dict[str, Any]:
+    return {
+        "demand_profile_id": payload.demand_profile_id,
+        "shift_template_ids": payload.shift_template_ids,
+        "employee_ids": payload.employee_ids,
+        "max_weekly_hours": payload.max_weekly_hours,
+        "max_consecutive_days": payload.max_consecutive_days,
+        "weekly_budget": payload.weekly_budget,
+    }
+
+
 async def create_run(session: AsyncSession, payload: SolveRequest) -> SolveRun:
     await ensure_job_capacity(session)
+    snapshot = await snapshot_for(session, payload)
     run = SolveRun(
         demand_profile_id=payload.demand_profile_id,
         status=RunStatus.QUEUED,
         params=solve_params(payload),
-        instance_snapshot=await snapshot_for(session, payload),
+        instance_snapshot=snapshot,
+        source_inputs=source_inputs(payload),
+        input_hash=input_hash(snapshot),
     )
     session.add(run)
     await session.commit()
@@ -264,6 +299,8 @@ def get_kpi(run: SolveRun) -> KpiRead:
         night_premium_cost=measures.night_premium_cost,
         night_shift_stddev=measures.night_shift_stddev,
         weekend_shift_stddev=measures.weekend_shift_stddev,
+        hours_spread=measures.hours_spread,
+        min_hours_shortfall=measures.min_hours_shortfall,
         hard_violations=len(validate(instance, solution)),
         staff_by_hour=list(kpi.staff_by_hour(instance, solution)),
         required_by_hour=list(instance.demand),
@@ -338,6 +375,8 @@ async def create_manual_edit(
         solver="manual",
         params=base.params,
         instance_snapshot=base.instance_snapshot,
+        source_inputs=base.source_inputs,
+        input_hash=base.input_hash,
         assignments=rows,
         understaffed_hours=kpi.compute_kpi(instance, solution).understaffed_hours,
         hard_violations=len(violations),
@@ -425,6 +464,8 @@ async def create_repair_run(
         status=RunStatus.QUEUED,
         params=solve_params(payload),
         instance_snapshot=snapshot,
+        source_inputs=None if payload.demand_profile_id is not None else base.source_inputs,
+        input_hash=None if payload.demand_profile_id is not None else base.input_hash,
     )
     session.add(run)
     await session.commit()
@@ -446,6 +487,7 @@ async def create_reroster(
         relative_gap_limit=base.params["relative_gap_limit"],
         num_workers=int(base.params["num_workers"]),
         random_seed=int(base.params["random_seed"]),
+        cost_tolerance_percent=float(base.params.get("cost_tolerance_percent", 0.0)),
         from_day=from_day,
         absences=[AbsenceWrite(employee_code=payload.employee_code, days=payload.absent_days)],
     )
@@ -495,6 +537,44 @@ def get_replacements(
             prefers_off=item.prefers_off,
         )
         for item in candidates
+    ]
+
+
+async def get_staleness(session: AsyncSession, run: SolveRun) -> StalenessRead:
+    """Rebuild the snapshot from the inputs the run was made from and compare hashes. The run
+    itself is never changed. A run without a recorded hash is unknown, not stale."""
+    if run.source_inputs is None or run.input_hash is None:
+        return StalenessRead(state="unknown", reason="no_record")
+    request = SolveRequest.model_validate(
+        {**run.source_inputs, "time_limit_seconds": 1.0, "num_workers": 1}
+    )
+    try:
+        current = await snapshot_for(session, request)
+    except NotFoundError:
+        return StalenessRead(state="stale", reason="input_deleted")
+    except (InvalidInputError, InstanceTooLargeError):
+        return StalenessRead(state="stale", reason="input_invalid")
+    if input_hash(current) == run.input_hash:
+        return StalenessRead(state="current", reason=None)
+    return StalenessRead(state="stale", reason="input_changed")
+
+
+def get_shortfall(run: SolveRun) -> list[ShortfallHourRead]:
+    instance, solution = _schedule(run)
+    return [
+        ShortfallHourRead(
+            hour=item.hour,
+            day=item.hour // HOURS_PER_DAY,
+            hour_of_day=item.hour % HOURS_PER_DAY,
+            shortfall=item.shortfall,
+            uncoverable=item.uncoverable,
+            reasons=[
+                ShortfallReasonRead(kind=kind.value, legal_basis=LEGAL_BASIS[kind], employees=count)
+                for kind, count in item.blocked
+            ],
+            free_employee_codes=list(item.free_employees),
+        )
+        for item in explain_shortfall(instance, solution)
     ]
 
 

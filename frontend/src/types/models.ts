@@ -32,6 +32,9 @@ export type ScheduleChangesRead = Schemas["ScheduleChangesRead"];
 export type RepairRequest = Schemas["RepairRequest"];
 export type AbsenceWrite = Schemas["AbsenceWrite"];
 export type ReplacementRead = Schemas["ReplacementRead"];
+export type ShortfallHourRead = Schemas["ShortfallHourRead"];
+export type StalenessRead = Schemas["StalenessRead"];
+export type ShortfallReasonRead = Schemas["ShortfallReasonRead"];
 export type ComplianceRead = Schemas["ComplianceRead"];
 export type ViolationRead = Schemas["ViolationRead"];
 export type KpiRead = Schemas["KpiRead"];
@@ -45,6 +48,11 @@ export type SweepPoint = Schemas["SweepPoint"];
 export type StaffingSweepRequest = Schemas["StaffingSweepRequest"];
 export type StaffingSweepResult = Schemas["StaffingSweepResult"];
 export type StaffingSweepPoint = Schemas["StaffingSweepPoint"];
+export type FairnessSweepRequest = Schemas["FairnessSweepRequest"];
+export type FairnessSweepResult = Schemas["FairnessSweepResult"];
+export type FairnessSweepPoint = Schemas["FairnessSweepPoint"];
+export type PreSolveWarningRead = Schemas["PreSolveWarningRead"];
+export type PreviewWarningsRead = Schemas["PreviewWarningsRead"];
 
 export type SalesIngestQuery =
   operations["ingest_sales_api_demand_profiles_ingest_post"]["parameters"]["query"];

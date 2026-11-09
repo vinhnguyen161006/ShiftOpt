@@ -14,6 +14,7 @@ class AnalysisKind(StrEnum):
     LP_DUALS = "lp_duals"
     STAFFING_SWEEP = "staffing_sweep"
     BASELINE_COMPARE = "baseline_compare"
+    FAIRNESS_SWEEP = "fairness_sweep"
 
 
 class AnalysisRun(Base):

@@ -2,6 +2,7 @@ import statistics
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from shiftopt.constraints.fairness import min_hours_shortfall, worked_hours_spread
 from shiftopt.domain import Assignment, Instance, ShiftType, Solution
 from shiftopt.time_grid import HOURS_PER_WEEK, hour_of_week, shift_hours
 
@@ -18,6 +19,8 @@ class Kpi:
     night_premium_cost: int
     night_shift_stddev: float
     weekend_shift_stddev: float
+    hours_spread: int
+    min_hours_shortfall: int
 
 
 def staff_by_hour(instance: Instance, solution: Solution) -> tuple[int, ...]:
@@ -95,6 +98,8 @@ def compute_kpi(instance: Instance, solution: Solution) -> Kpi:
         night_premium_cost=night_premium_cost(instance, solution),
         night_shift_stddev=_spread(night_counts),
         weekend_shift_stddev=_spread(weekend_counts),
+        hours_spread=worked_hours_spread(instance, solution),
+        min_hours_shortfall=min_hours_shortfall(instance, solution),
     )
 
 

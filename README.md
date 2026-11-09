@@ -33,9 +33,10 @@ Một cửa hàng hoặc kho mở 24/7 có lượng việc thay đổi theo từ
 
 ShiftOpt nhận **nhu cầu theo giờ, danh sách nhân viên, mẫu ca và tham số luật**, rồi:
 
-1. **Xếp lịch tối ưu** bằng mô hình quy hoạch nguyên theo từng nhân viên (OR-Tools CP-SAT). Giải theo bốn tầng ưu tiên: ít thiếu người nhất, rồi chi phí thấp nhất, rồi công bằng ca đêm, rồi tôn trọng ngày muốn nghỉ.
+1. **Xếp lịch tối ưu** bằng mô hình quy hoạch nguyên theo từng nhân viên (OR-Tools CP-SAT; cùng công thức ILP cũng giải được bằng PuLP + HiGHS để đối chiếu). Giải theo tầng ưu tiên: ít thiếu người nhất, rồi gần giờ tối thiểu theo hợp đồng (nếu có), rồi chi phí thấp nhất trong ngân sách (nếu có), rồi công bằng ca đêm, rồi tôn trọng ngày muốn nghỉ.
 2. **Kiểm tra lại toàn bộ luật** bằng một validator viết riêng, độc lập với solver. Hệ thống không tin trạng thái của solver.
-3. **Phân tích độ nhạy bằng giải lại thật**: chi phí thay đổi ra sao khi nhu cầu tăng giảm, khi giả định quy đổi thay đổi, và khi một giờ cần thêm một người.
+3. **Phân tích độ nhạy bằng giải lại thật**: chi phí thay đổi ra sao khi nhu cầu tăng giảm, khi giả định quy đổi thay đổi, khi một giờ cần thêm một người, và khi chấp nhận trả thêm chút chi phí để lịch công bằng hơn.
+4. **Hỗ trợ vận hành**: xếp lại khi có người vắng, gợi ý người thay, cảnh báo trước khi giải, giải thích vì sao giờ nào đó còn thiếu người, và báo khi đầu vào đã đổi sau lượt giải.
 
 Nhu cầu có thể nhập tay, nhập CSV, hoặc **ingest file doanh số** (CSV hoặc parquet) để hệ thống tự suy ra số người cần mỗi giờ. FreshRetailNet-50K là bộ dữ liệu mẫu cho demo. Mọi giả định quy đổi đều hiện trên giao diện.
 
@@ -82,6 +83,8 @@ Mô tả chi tiết từng tầng và thuật toán: [docs/kiến trúc.md](docs
 | Nghỉ giữa ca 30 phút (ca đêm 45 phút), trừ khỏi số người có mặt | Đ.109 | Cứng |
 | Phụ cấp làm đêm 30%, giờ đêm 22h–06h | Đ.98, Đ.106 | Chi phí |
 | Phủ nhu cầu từng giờ | Đề bài | Mềm: luôn có lời giải, giờ thiếu hiện trên biểu đồ |
+| Ngân sách lương tuần (tùy chọn) | Đặc tả D26 | Cứng: ngân sách chặt làm tăng giờ thiếu, không làm mô hình vô nghiệm |
+| Giờ tối thiểu theo hợp đồng (tùy chọn) | Đặc tả D25 | Mềm: tầng riêng ngay sau thiếu người |
 
 - **Giải theo tầng (lexicographic)** thay vì dùng trọng số phạt tùy ý: tầng sau không được làm xấu kết quả tầng trước.
 - **Trung thực về chất lượng lời giải.** Chỉ gọi là tối ưu khi solver trả `OPTIMAL`. Kết quả `FEASIBLE` luôn kèm gap và cận.
@@ -109,6 +112,16 @@ Mô tả chi tiết từng tầng và thuật toán: [docs/kiến trúc.md](docs
 | Chi phí biên theo giờ (169 lần giải) | Tổng hợp (HiGHS) | Bản đồ nhiệt giờ nào đắt nhất nếu cần thêm người |
 | Dual của LP nới lỏng | Tổng hợp (HiGHS) | Ước lượng, luôn gắn nhãn **"xấp xỉ"** |
 | So sánh hai lượt giải | — | KPI và chi phí đặt cạnh nhau |
+| So với baseline greedy | CP-SAT và heuristic tham lam | Tối ưu hơn xếp kiểu tham lam bao nhiêu, trên cùng instance |
+| Quét dung sai chi phí 0–10% | Theo nhân viên (CP-SAT) | Đánh đổi giữa chi phí và độ đều của ca đêm, giờ làm |
+
+### 5. Hỗ trợ vận hành
+
+- **Xếp lại (repair) và báo nghỉ đột xuất:** khóa các ngày đã qua, ghim ca, đổi ít ca nhất có thể; tập ca bị khóa được validator kiểm trước nên luôn có lời giải.
+- **Gợi ý người thay** cho một ca, chỉ gồm người không gây vi phạm luật.
+- **Cảnh báo trước khi giải** khi cấu hình chắc chắn gây thiếu người (không ai còn ngày làm, sức chứa dưới nhu cầu, không ca đêm, giờ tối thiểu không đạt được, ngân sách dưới chi phí phủ rẻ nhất).
+- **Giải thích giờ thiếu:** với mỗi giờ thiếu, luật nào chặn việc xếp thêm từng người.
+- **Nhãn "đầu vào đã đổi"** khi hồ sơ nhu cầu, mẫu ca hoặc nhân viên của một lượt bị sửa hay xóa sau khi giải.
 
 ---
 
@@ -160,7 +173,7 @@ uv run --locked python -m scripts.download_freshretailnet
 cd ..
 ```
 
-Script tải `train.parquet` vào `data/demo/` và `eval.parquet` vào `data/raw/`, có kiểm SHA-256. File mẫu `data/demo/nhu_cau_cua_hang_24h.csv` đã có sẵn trong repo.
+Script tải `train.parquet` vào `data/demo/` và `eval.parquet` vào `data/raw/freshretailnet50k/data/`, có kiểm SHA-256. File mẫu `data/demo/nhu_cau_cua_hang_24h.csv` đã có sẵn trong repo.
 
 ### 3. Chạy toàn bộ hệ thống
 
@@ -212,13 +225,17 @@ ShiftOpt/
 │   │   ├── time_grid.py       # Trục 168 giờ có quấn vòng, khung giờ đêm
 │   │   ├── staffing/          # Nhu cầu ẩn giờ hết hàng, quy đổi tuyến tính
 │   │   ├── constraints/       # LaborRules (hằng số luật), cặp ca cấm, cửa sổ ngày liên tiếp
-│   │   ├── models/            # roster_cpsat (theo nhân viên), set_covering_pulp, implicit_breaks
+│   │   ├── models/            # roster_cpsat (theo nhân viên), roster_mip (ILP, HiGHS), set_covering_pulp, implicit_breaks
 │   │   ├── solvers/           # SolveParams / SolveResult chung cho CP-SAT và HiGHS
 │   │   ├── sensitivity/       # Quét λ, chi phí biên, dual LP, quét giả định
 │   │   ├── validation.py      # Kiểm tra luật độc lập, không import models/ hay solvers/
-│   │   └── kpi.py             # Phủ, thiếu / thừa, chi phí, công bằng
+│   │   ├── kpi.py             # Phủ, thiếu / thừa, chi phí, công bằng
+│   │   ├── baseline.py        # Heuristic tham lam để so sánh
+│   │   ├── replacement.py     # Gợi ý người thay, chỉ qua validator
+│   │   ├── diagnostics.py     # Cảnh báo trước khi giải
+│   │   └── shortfall.py       # Giải thích giờ thiếu
 │   ├── tests/                 # Test engine, coverage 98%
-│   └── benchmarks/            # Curtois & Qu, so sánh solver, quy mô 20–40 nhân viên
+│   └── benchmarks/            # Curtois & Qu, so sánh solver, quy mô, integrality gap, trọng số, dung sai chi phí
 ├── backend/
 │   ├── src/                   # demand, employees, shifts, schedules, analysis, rules; jobs.py
 │   ├── migrations/            # Alembic
@@ -230,7 +247,7 @@ ShiftOpt/
 │   ├── locales/vi.ts          # Toàn bộ chữ tiếng Việt của giao diện
 │   └── types/api.ts           # Sinh từ OpenAPI, không sửa tay
 ├── data/demo/                 # File dùng khi demo: train.parquet (không commit), CSV mẫu
-├── docs/                      # Đặc tả, kiến trúc, mô hình, benchmark, nghiệm thu, demo, ADR
+├── docs/                      # Đặc tả, kế hoạch, kiến trúc, mô hình, dữ liệu, benchmark, demo, báo cáo, slide
 ├── scripts/check_conventions.py   # Cưỡng chế "không comment" và "code chỉ ASCII"
 ├── docker-compose.yml
 └── Makefile
@@ -247,8 +264,8 @@ make typecheck      # mypy strict, tsc
 make test           # pytest engine (chặn dưới 80% coverage) và backend
 ```
 
-- Engine: 147 test, coverage 98%.
-- Backend: 110 test. Test tích hợp chạy trên MySQL 8.4 thật và tự bỏ qua khi thiếu biến `SHIFTOPT_TEST_DATABASE_URL`.
+- Engine: 236 test, coverage 98%.
+- Backend: 168 test (131 unit, 37 tích hợp). Test tích hợp chạy trên MySQL 8.4 thật và tự bỏ qua khi thiếu biến `SHIFTOPT_TEST_DATABASE_URL`.
 - Các test **tiêm vi phạm** để chứng minh validator bắt được lỗi thật: nghỉ 8 giờ giữa hai ca, 7 ngày làm liên tiếp, 49 giờ/tuần, nghỉ tuần 18 giờ.
 
 CI (GitHub Actions) chạy: kiểm tra quy ước, lint, mypy, pytest, `alembic check`, đối chiếu OpenAPI với kiểu TypeScript, build image Docker, gitleaks, `pip-audit`, `npm audit`.
@@ -262,6 +279,10 @@ uv run --locked python benchmarks/download_curtois_qu.py
 uv run --locked python benchmarks/run_curtois_qu.py --time-limit 120 --workers 8 --seed 0
 uv run --locked python benchmarks/compare_solvers.py
 uv run --locked python benchmarks/run_roster_scale.py --sizes 20 30 40 --seeds 0 1 2 --time-limit 60 --workers 1
+uv run --locked python benchmarks/run_roster_scale.py --solver both --sizes 10 20 30 --seeds 0 1 2 --time-limit 60 --workers 1
+uv run --locked python -m benchmarks.integrality_gap
+uv run --locked python -m benchmarks.weighted_vs_lexicographic
+uv run --locked python -m benchmarks.cost_tolerance
 ```
 
 Mọi kết luận về hiệu năng chỉ áp dụng cho các instance và time limit đã đo.
@@ -279,7 +300,7 @@ Mọi kết luận về hiệu năng chỉ áp dụng cho các instance và time
 
 - Nhu cầu từ file doanh số là tuần trung bình của dữ liệu quá khứ, chưa phải dự báo tuần tới.
 - Chi phí biên và dual LP tính trên mô hình tổng hợp: không giới hạn số người, một mức lương chung, không có luật theo từng người. Kết quả không phải chi phí thêm một người cho đội hiện tại.
-- Chỉ hỗ trợ một địa điểm, một loại kỹ năng, một tuần. Không hỗ trợ tổng đài (đặc tả D18).
+- Chỉ hỗ trợ một địa điểm, một loại kỹ năng, một tuần. Tuần quấn vòng: ca Chủ nhật nối với thứ Hai cùng tuần, không nối với tuần trước. Không hỗ trợ tổng đài (đặc tả D18).
 - Job quá hạn không bị dừng thật, và thời gian chờ trong hàng đợi cũng bị tính vào hạn chót ([docs/kiến trúc.md](docs/kiến%20trúc.md) mục 10).
 - Không xác thực, không phân quyền. Chỉ triển khai cục bộ hoặc trong mạng tin cậy.
 - Điều 98, 105, 106, 109, 110, 111 của Bộ luật Lao động 2019 đã đối chiếu với bản hợp nhất VBHN 125/VBHN-VPQH (2025). Nghị định 145/2020 chưa đối chiếu văn bản gốc ([docs/đặc tả.md](docs/đặc%20tả.md) mục 4).
@@ -290,9 +311,13 @@ Mọi kết luận về hiệu năng chỉ áp dụng cho các instance và time
 
 | Tài liệu | Nội dung |
 |---|---|
-| [docs/đặc tả.md](docs/đặc%20tả.md) | Yêu cầu, quyết định D1–D18 (bản nháp, chờ nhóm duyệt) |
+| [docs/đặc tả.md](docs/đặc%20tả.md) | Yêu cầu, quyết định D1–D27 (duyệt 2026-11-08, bổ sung 2026-11-09) |
+| [docs/plan.md](docs/plan.md) | Kế hoạch hoàn thiện: đã xong gì, còn gì |
 | [docs/kiến trúc.md](docs/kiến%20trúc.md) | Các tầng hệ thống và thuật toán, viết bằng ngôn ngữ tự nhiên |
 | [docs/model.md](docs/model.md) | Công thức mô hình toán học |
+| [docs/mô tả dữ liệu.md](docs/m%C3%B4%20t%E1%BA%A3%20d%E1%BB%AF%20li%E1%BB%87u.md) | Dữ liệu mẫu FreshRetailNet-50K, cột dùng, chọn store |
 | [docs/benchmarks.md](docs/benchmarks.md) | Kết quả benchmark và điều kiện đo |
+| [docs/báo cáo.md](docs/b%C3%A1o%20c%C3%A1o.md) | Báo cáo cuối |
+| [docs/slides.md](docs/slides.md) | Nội dung slide bảo vệ |
 | [docs/demo.md](docs/demo.md) | Kịch bản demo từng bước |
 | [CLAUDE.md](CLAUDE.md) | Nguyên tắc bất biến và quy ước phát triển |

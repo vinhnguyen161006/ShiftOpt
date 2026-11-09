@@ -403,6 +403,7 @@ export const vi = {
       name: "Họ tên",
       wage: "Lương/giờ",
       maxHours: "Giờ tối đa/tuần",
+      minHours: "Giờ tối thiểu/tuần",
       lawLimit: "Theo luật (48)",
       cannotWork: "Không làm được",
       prefersOff: "Muốn nghỉ",
@@ -416,6 +417,9 @@ export const vi = {
       maxHours: "Giờ tối đa mỗi tuần",
       maxHoursHint:
         "Không bắt buộc. Để trống là theo luật (48). Giá trị thấp hơn là giới hạn cứng cho người này.",
+      minHours: "Giờ tối thiểu mỗi tuần",
+      minHoursHint:
+        "Không bắt buộc. Mục tiêu mềm theo hợp đồng: solver cố đạt ngay sau khi phủ nhu cầu, nếu không đạt sẽ báo số giờ thiếu.",
       cannotWork: "Không làm được vào",
       cannotWorkHint: "Ràng buộc cứng: solver không bao giờ xếp ca vào các ngày này.",
       wouldLikeOff: "Muốn nghỉ vào",
@@ -467,6 +471,18 @@ export const vi = {
     },
   },
   solve: {
+    warnings: {
+      title: "Cảnh báo trước khi giải: lịch có thể thiếu người",
+      noAvailableDays: (id: string) => `Nhân viên ${id} không còn ngày làm nào`,
+      capacityBelowDemand:
+        "Tổng giờ làm tối đa của cả đội không đủ cho nhu cầu. Lịch sẽ thiếu người ở một số giờ.",
+      noNightShift:
+        "Có nhu cầu ban đêm nhưng không mẫu ca nào phủ giờ đêm. Thêm mẫu ca đêm để phủ.",
+      minHoursUnreachable: (id: string) =>
+        `Nhân viên ${id} không thể đạt giờ tối thiểu theo hợp đồng với các ngày làm được`,
+      budgetBelowDemand:
+        "Ngân sách thấp hơn chi phí rẻ nhất để phủ toàn bộ nhu cầu. Lịch chắc chắn thiếu người.",
+    },
     profile: "Hồ sơ nhu cầu",
     chooseProfile: "Chọn hồ sơ",
     employees: "Nhân viên",
@@ -486,6 +502,10 @@ export const vi = {
       hint: "Dùng 1 cùng seed cố định để chạy lại ra đúng kết quả.",
     },
     seed: { label: "Seed ngẫu nhiên", hint: "Được lưu cùng lượt giải." },
+    weeklyBudget: {
+      label: "Ngân sách lương tuần",
+      hint: "Không bắt buộc, theo đơn vị tiền lương. Là trần cứng cho chi phí; nếu chặt, lịch sẽ thiếu người thay vì vượt ngân sách. Để trống là không giới hạn.",
+    },
     weeklyHours: {
       label: "Giờ tối đa mỗi tuần",
       hint: "Điều 105: 48. Giảm xuống để thử kịch bản 40 giờ.",
@@ -493,6 +513,10 @@ export const vi = {
     consecutiveDays: {
       label: "Số ngày làm liên tiếp tối đa",
       hint: "6 bảo đảm ít nhất một ngày nghỉ trong mỗi 7 ngày.",
+    },
+    costTolerance: {
+      label: "Dung sai chi phí (%)",
+      hint: "0 giữ thứ tự chi phí trước công bằng. Tối đa 10: chi phí được tăng tới mức này để ca đêm và giờ làm đều hơn.",
     },
   },
   schedule: {
@@ -557,6 +581,7 @@ export const vi = {
     repairButton: "Xếp lại",
     repairTitle: (id: number) => `Xếp lại từ lượt ${id}`,
     replacementsPanel: "Gợi ý người thay",
+    shortfallPanel: "Vì sao còn giờ thiếu người",
     repair: {
       intro: (id: number) =>
         `Xếp lại từ lượt ${id}. Các ngày trước ngày bắt đầu xếp lại giữ nguyên lịch gốc (khóa); ca được ghim luôn có mặt; ngày nghỉ đột xuất không xếp ca. Kết quả là lượt mới và được validator kiểm lại.`,
@@ -635,6 +660,16 @@ export const vi = {
       feasibleSub: (gap: string) => `gap ${gap}, chưa chứng minh tối ưu`,
       noProven: "chưa có kết quả được chứng minh",
     },
+    stale: {
+      title: "Đầu vào đã đổi sau lượt này",
+      reasons: {
+        input_changed: "Hồ sơ nhu cầu, mẫu ca hoặc nhân viên của lượt này đã được sửa.",
+        input_deleted: "Một đầu vào của lượt này đã bị xóa.",
+        input_invalid: "Đầu vào hiện tại không còn dựng được instance của lượt này.",
+      } as Record<string, string>,
+      fallback: "Đầu vào của lượt này không còn khớp với dữ liệu hiện tại.",
+      hint: "Lịch vẫn đúng với đầu vào lúc giải. Giải lại để có lịch theo dữ liệu mới.",
+    },
     notice: {
       queued: "Đang chờ",
       solving: "Đang giải",
@@ -693,6 +728,8 @@ export const vi = {
       nightSub: "Điều 98, giờ 22:00–06:00",
       share: "Tỷ lệ chi phí lao động",
       shareSub: "trên doanh thu tuần giả định",
+      budget: "Ngân sách tuần",
+      budgetSub: "trần cứng của lượt này",
       revenue: "Doanh thu tuần giả định (giả định của nhóm)",
       revenueHint: "Chỉ dùng để tính tỷ lệ chi phí lao động. Cùng đơn vị tiền với lương.",
     },
@@ -707,6 +744,10 @@ export const vi = {
       efficiencySub: "cần / có",
       nightSpread: "Chênh ca đêm",
       nightSpreadSub: (weekend: string) => `độ lệch chuẩn; cuối tuần ${weekend}`,
+      hoursSpread: "Chênh giờ làm",
+      hoursSpreadSub: "max − min giờ mỗi người",
+      minHours: "Thiếu giờ hợp đồng",
+      minHoursSub: "tổng giờ dưới mức tối thiểu",
     },
     exports: {
       assignments: "CSV lịch",
@@ -715,6 +756,22 @@ export const vi = {
     },
   },
   compliance: {
+    wholeRoster: "Cả lịch",
+    shortfall: {
+      intro:
+        "Với mỗi giờ thiếu người, thử xếp thêm từng nhân viên vào một ca phủ giờ đó và đếm luật nào chặn.",
+      loading: "Đang phân tích giờ thiếu",
+      hour: "Giờ",
+      missing: "Thiếu",
+      reasons: "Luật chặn (số nhân viên)",
+      free: "Còn xếp được",
+      none: "không ai",
+      uncoverable: "Không mẫu ca nào phủ giờ này",
+      freeNotice:
+        "Một số giờ còn nhân viên xếp được mà solver chưa dùng. Lượt này chưa chứng minh tối ưu trong thời gian giới hạn; tăng thời gian giải có thể xếp thêm.",
+      caption: "Giờ thiếu người và lý do",
+      count: (kind: string, basis: string, employees: number) => `${kind} (${basis}): ${employees}`,
+    },
     noneTitle: "0 vi phạm cứng",
     noneBody:
       "Validator độc lập đã kiểm lại lịch này theo mọi quy tắc cứng (Điều 105, 109, 110, 111, số ngày làm liên tiếp, ngày không làm được) và không thấy vi phạm.",
@@ -737,6 +794,7 @@ export const vi = {
       missing_break: "thiếu giờ nghỉ giữa ca",
       break_outside_window: "giờ nghỉ nằm ngoài khung cho phép",
       unavailable_day: "xếp ca vào ngày không làm được",
+      over_budget: "chi phí vượt ngân sách tuần",
     } as Record<string, string>,
     basis: {
       "Input data": "Dữ liệu đầu vào",
@@ -746,6 +804,7 @@ export const vi = {
       "Article 109": "Điều 109",
       "Article 110": "Điều 110",
       "Article 111": "Điều 111",
+      Budget: "Ngân sách tuần",
     } as Record<string, string>,
     manual: {
       intro: (id: number) =>
@@ -821,6 +880,30 @@ export const vi = {
     noMarginalBody: "Chạy phân tích chi phí biên ở trên để tô bản đồ nhiệt 7 × 24.",
     marginalActive: (id: number) => `Đang giải lại 169 lần (phân tích ${id})`,
     baselinePanel: "So với baseline greedy",
+    fairness: {
+      panel: "Đánh đổi chi phí và công bằng",
+      noRunTitle: "Chưa quét dung sai",
+      noRunBody:
+        "Nhập các mức dung sai ở trên, có 0 làm mốc, để xem ca đêm và chênh giờ làm đổi thế nào khi trả thêm chi phí.",
+      active: (id: number) => `Đang giải lại ở từng mức dung sai (phân tích ${id})`,
+      title: "Chi phí và công bằng",
+      label: "Dung sai là phần trăm chi phí được phép tăng so với mức 0",
+      caption:
+        "Mỗi điểm là một lần giải lại đầy đủ với cùng giới hạn thời gian và seed. Mức 0 giữ thứ tự chi phí trước công bằng.",
+      nightChart: "Chênh ca đêm",
+      nightUnit: "số ca",
+      nightAria: "Chênh số ca đêm giữa nhân viên theo mức chi phí tăng thêm",
+      hoursChart: "Chênh giờ làm",
+      hoursUnit: "giờ",
+      hoursAria: "Chênh giờ làm giữa nhân viên theo mức chi phí tăng thêm",
+      noBaseline:
+        "Cần có mức 0 và mọi điểm đều có nghiệm để vẽ biểu đồ. Bảng bên dưới vẫn hiển thị các điểm đã giải.",
+      tableCaption: "Các điểm quét dung sai",
+      tolerance: "Dung sai (%)",
+      costIncrease: "Chi phí tăng (%)",
+      nightSpread: "Chênh ca đêm",
+      hoursSpread: "Chênh giờ làm",
+    },
     noBaselineTitle: "Chưa so với baseline",
     noBaselineBody:
       "Chạy so sánh baseline ở trên để xem CP-SAT và greedy trên cùng nhu cầu, cùng luật.",
@@ -865,6 +948,10 @@ export const vi = {
       runSweep: "Chạy quét nhu cầu",
       runStaffing: "Chạy quét giả định",
       runBaseline: "So với baseline greedy",
+      tolerances: "Các mức dung sai chi phí (%)",
+      tolerancesHint:
+        "Cách nhau bằng dấu phẩy, mỗi số từ 0 đến 10. Nên có 0 làm mốc so sánh. Tối đa 20.",
+      runFairness: "Quét dung sai chi phí",
       submitting: "Đang gửi...",
     },
     sweep: {
