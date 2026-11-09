@@ -1,6 +1,6 @@
 # Kiến trúc hệ thống ShiftOpt
 
-Cập nhật: 2026-11-08. Tài liệu này mô tả hệ thống theo từng tầng, kèm thuật toán và cách xử lý ở mỗi tầng, viết bằng ngôn ngữ tự nhiên. Công thức đầy đủ nằm ở [model.md](model.md).
+Cập nhật: 2026-11-09. Tài liệu này mô tả hệ thống theo từng tầng, kèm thuật toán và cách xử lý ở mỗi tầng, viết bằng ngôn ngữ tự nhiên. Công thức đầy đủ nằm ở [model.md](model.md).
 
 ## 1. Hệ thống làm gì
 
@@ -14,8 +14,9 @@ ShiftOpt nhận bốn thứ:
 Từ đó hệ thống xếp ca cho từng nhân viên, sao cho:
 
 1. thiếu người ít nhất có thể;
-2. chi phí lương thấp nhất;
-3. không vi phạm Bộ luật Lao động 2019.
+2. gần giờ tối thiểu theo hợp đồng nhất có thể, nếu có;
+3. chi phí lương thấp nhất, và không vượt ngân sách tuần nếu có;
+4. không vi phạm Bộ luật Lao động 2019.
 
 Sau đó hệ thống cho biết chi phí thay đổi ra sao khi nhu cầu hoặc giả định thay đổi.
 
@@ -62,10 +63,10 @@ Quy tắc giữa các tầng:
 | Màn hình | Người dùng làm gì |
 |---|---|
 | Nhu cầu | Tạo hồ sơ nhu cầu theo một trong ba cách: lưới 7 × 24 nhập tay, nhập file CSV, hoặc ingest file doanh số (CSV hoặc parquet): người dùng chọn cột ngày, giờ, doanh số, và các giả định quy đổi |
-| Nhân viên | Thêm, sửa nhân viên: lương theo giờ, giờ tối đa mỗi tuần, ngày không làm được, ngày muốn nghỉ |
+| Nhân viên | Thêm, sửa nhân viên: lương theo giờ, giờ tối đa và giờ tối thiểu mỗi tuần, ngày không làm được, ngày muốn nghỉ |
 | Mẫu ca | Khai báo ca: tên, giờ bắt đầu, độ dài |
-| Xếp lịch | Chọn hồ sơ nhu cầu và mẫu ca, chỉnh thiết lập solver, bấm **Tối ưu**. Xem lịch, biểu đồ phủ, chi phí, cảnh báo luật. Sửa lịch bằng tay. **Xếp lại** khi có người vắng (ngày khóa, ca ghim). **Gợi ý người thay** cho một ca. Xuất CSV |
-| Độ nhạy | Quét hệ số nhu cầu λ, quét giả định `alpha` / `p` / sàn, tính chi phí biên theo giờ, so sánh hai lượt giải |
+| Xếp lịch | Chọn hồ sơ nhu cầu và mẫu ca, chỉnh thiết lập solver (thời gian, gap, worker, seed, luật, dung sai chi phí, ngân sách tuần), bấm **Tối ưu**. Trước khi bấm, form hiện cảnh báo nếu cấu hình chắc chắn gây thiếu người. Xem lịch, biểu đồ phủ, chi phí, cảnh báo luật, bảng **vì sao còn giờ thiếu**, và nhãn **đầu vào đã đổi** khi dữ liệu bị sửa sau lượt giải. Sửa lịch bằng tay. **Xếp lại** khi có người vắng (ngày khóa, ca ghim), hoặc **báo nghỉ đột xuất** cho một người. **Gợi ý người thay** cho một ca. Xuất CSV |
+| Độ nhạy | Quét hệ số nhu cầu λ, quét giả định `alpha` / `p` / sàn, tính chi phí biên theo giờ, so sánh hai lượt giải, so với baseline greedy, quét dung sai chi phí (đánh đổi chi phí và công bằng) |
 
 **Cách xử lý:**
 
@@ -89,19 +90,20 @@ Quy tắc giữa các tầng:
 
 1. **Kiểm tra ở cửa vào.** Mọi dữ liệu gửi lên đều được kiểm tra trước khi xử lý. Ví dụ:
    - lưới nhu cầu phải đủ 168 ô, mỗi ô là số nguyên từ 0 đến 1000;
-   - giờ tối đa của một nhân viên không vượt 48;
+   - giờ tối đa của một nhân viên không vượt 48, giờ tối thiểu không vượt giờ tối đa;
+   - dung sai chi phí từ 0 đến 10%, ngân sách tuần (nếu có) là số dương;
    - số nhân viên và thời gian giải có giới hạn trên, để một yêu cầu không chiếm hết máy;
    - mẫu ca dài hơn 8 giờ bị từ chối ngay khi tạo hoặc sửa (giới hạn `max_daily_hours` của Đ.105). Vì một người làm tối đa 1 ca/ngày, điều này bảo đảm không ai làm quá 8 giờ/ngày. Solver không cần ràng buộc riêng cho giới hạn ngày, còn validator vẫn kiểm lại.
 
    Sai thì trả lỗi kèm thông điệp rõ ràng, ví dụ `demand grid must have 168 cells`, không lộ chi tiết lỗi nội bộ (stack trace).
 2. **Việc nhẹ làm ngay.** Thêm hoặc sửa nhân viên, đọc CSV, ingest file doanh số, xuất CSV đều xong trong vài giây và trả kết quả trực tiếp.
 3. **Việc nặng giao cho tầng 3.** Giải lịch và phân tích độ nhạy có thể mất hàng chục giây. API tạo một dòng job trong cơ sở dữ liệu, trả mã job ngay (`202 Accepted`), rồi giao việc cho tầng xử lý nền.
-4. **Chụp ảnh đầu vào (snapshot).** Trước khi giải, API chép toàn bộ đầu vào vào lượt giải: nhu cầu, nhân viên, mẫu ca, bộ luật (`LaborRules`), tham số solver. Sau này có sửa nhân viên thì lượt giải cũ vẫn giữ nguyên dữ liệu lúc giải. Mỗi lượt giải không bao giờ bị sửa.
+4. **Chụp ảnh đầu vào (snapshot).** Trước khi giải, API chép toàn bộ đầu vào vào lượt giải: nhu cầu, nhân viên, mẫu ca, bộ luật (`LaborRules`), ngân sách tuần; tham số solver (gồm dung sai chi phí) lưu ở cột `params`. Sau này có sửa nhân viên thì lượt giải cũ vẫn giữ nguyên dữ liệu lúc giải. Mỗi lượt giải không bao giờ bị sửa.
 
-5. **Cảnh báo trước khi giải.** `POST /api/schedules/preview-warnings` nhận cùng body với Optimize, dựng snapshot (không tạo lượt, không xếp hàng job) và chạy `diagnostics.diagnose`. Ba cảnh báo: nhân viên không còn ngày khả dụng; tổng giờ làm tối đa của đội (theo ngày khả dụng, giới hạn 48 giờ và luật ngày liên tiếp) thấp hơn tổng nhu cầu; có nhu cầu ban đêm mà không mẫu ca nào phủ giờ đêm. Mỗi cảnh báo là điều kiện cần, nên không báo sai, nhưng không đủ để kết luận lịch khả thi.
+5. **Cảnh báo trước khi giải.** `POST /api/schedules/preview-warnings` nhận cùng body với Optimize, dựng snapshot (không tạo lượt, không xếp hàng job) và chạy `diagnostics.diagnose`. Năm cảnh báo: nhân viên không còn ngày khả dụng; tổng giờ làm tối đa của đội (theo ngày khả dụng, giới hạn 48 giờ và luật ngày liên tiếp) thấp hơn tổng nhu cầu; có nhu cầu ban đêm mà không mẫu ca nào phủ giờ đêm; giờ tối thiểu của một người vượt số giờ người đó làm được; ngân sách thấp hơn chi phí rẻ nhất để phủ nhu cầu. Mỗi cảnh báo là điều kiện cần, nên không báo sai, nhưng không đủ để kết luận lịch khả thi.
 6. **Giải thích giờ thiếu.** `GET /api/schedules/{id}/shortfall` chạy `shortfall.explain_shortfall` trên lịch của lượt: với mỗi giờ thiếu, thử xếp thêm từng nhân viên rảnh vào một ca phủ giờ đó, kiểm bằng validator và ngân sách, rồi đếm luật chặn. Lịch có tầng thiếu người `OPTIMAL` thì không ai còn xếp được; nếu có người rảnh, UI nói solver chưa tìm ra trong thời gian giới hạn.
 7. **Đánh dấu kết quả cũ.** Mỗi lượt giải lưu `source_inputs` (id hồ sơ nhu cầu, mẫu ca, nhân viên và tham số luật đã dùng) và `input_hash`, SHA-256 của snapshot không có phần repair, khóa sắp xếp vì MySQL không giữ thứ tự khóa JSON. `GET /api/schedules/{id}/staleness` dựng lại snapshot từ dữ liệu hiện tại và so hash. Lượt sửa tay và xếp lại kế thừa hash của lượt cha. Chỉ tính khi mở một lượt, không tính trong danh sách.
-8. **Xếp lại và gợi ý người thay.** `POST /api/schedules/{id}/repair` tạo lượt mới từ lịch của lượt `id` (chi tiết ở mục 7.2). Trước khi tạo job, API kiểm: ngày vắng không rơi vào ngày khóa, ca ghim không rơi vào ngày khóa, và tập ca bị khóa qua được validator; sai thì trả `422` kèm danh sách. `GET /api/schedules/{id}/replacements?employee_code=&day=&limit=` trả tối đa `limit` người thay, tính ngay vì chỉ gọi validator, không gọi solver.
+8. **Xếp lại và gợi ý người thay.** `POST /api/schedules/{id}/repair` tạo lượt mới từ lịch của lượt `id` (chi tiết ở mục 7.2). Trước khi tạo job, API kiểm: ngày vắng không rơi vào ngày khóa, ca ghim không rơi vào ngày khóa, và tập ca bị khóa qua được validator; sai thì trả `422` kèm danh sách. `POST /api/schedules/{id}/reroster` là lối tắt báo nghỉ đột xuất cho một người và các ngày vắng: `from_day` mặc định là ngày vắng đầu tiên, rồi đi đúng đường repair. `GET /api/schedules/{id}/changes` so lượt với lượt cha (giữ, thêm, bỏ). `GET /api/schedules/{id}/replacements?employee_code=&day=&limit=` trả tối đa `limit` người thay, tính ngay vì chỉ gọi validator, không gọi solver.
 
 **Ingest file doanh số** (`POST /api/demand-profiles/ingest`):
 
@@ -136,8 +138,8 @@ Bản đầu cố ý không dùng Redis, Celery hay WebSocket. Một bảng job 
 | Nơi | Lưu gì |
 |---|---|
 | MySQL 8.4, bảng `demand_profiles` | Hồ sơ nhu cầu: 168 con số, nguồn, giả định quy đổi, phương pháp xử lý |
-| `employees`, `shift_templates` | Nhân viên, mẫu ca |
-| `solve_runs` | Mỗi lượt giải: ảnh chụp đầu vào, tham số, solver và phiên bản, seed, trạng thái, mục tiêu, cận, gap, thời gian, log solver, lịch kết quả, số vi phạm |
+| `employees`, `shift_templates` | Nhân viên (gồm giờ tối đa và giờ tối thiểu riêng), mẫu ca |
+| `solve_runs` | Mỗi lượt giải: ảnh chụp đầu vào, tham số, solver và phiên bản, seed, trạng thái, mục tiêu, cận, gap, thời gian, log solver, lịch kết quả, số vi phạm, đầu vào nguồn (`source_inputs`) và hash đầu vào (`input_hash`) |
 | `analysis_runs` | Mỗi lần phân tích độ nhạy: loại phân tích, tham số, kết quả |
 | Cột `sales_load` của `demand_profiles` | Tuần tải 168 giờ của hồ sơ ingest; metadata ghi SHA-256, mapping cột, phương pháp, số ô đã thay, `night_from_sales` |
 | File `data/demo/` | File dùng khi demo: `train.parquet` và CSV mẫu |
@@ -186,7 +188,7 @@ Hai cách tạo nhu cầu khác không qua khối này:
 
 ### 7.2 Khối 5b: Tối ưu hóa, tức xếp ca
 
-Hệ thống có hai mô hình. Mô hình theo nhân viên tạo lịch thật. Mô hình tổng hợp dùng cho phân tích độ nhạy và đối chiếu.
+Hệ thống có hai mô hình. Mô hình theo nhân viên tạo lịch thật. Mô hình tổng hợp dùng cho phân tích độ nhạy và đối chiếu. Mô hình theo nhân viên còn có bản ILP giải bằng PuLP + HiGHS (`roster_mip.py`), cùng công thức và cùng tầng, chỉ dùng cho benchmark và đo integrality gap (`model.md` mục 2a); lịch sản phẩm luôn do CP-SAT giải.
 
 #### Mô hình theo nhân viên (lõi sản phẩm), giải bằng OR-Tools CP-SAT
 
@@ -205,6 +207,7 @@ Hệ thống có hai mô hình. Mô hình theo nhân viên tạo lịch thật. 
 | Nghỉ ≥ 24 giờ liên tục mỗi tuần (Đ.111) | Với mỗi người, mỗi giờ trong tuần có một biến "khoảng nghỉ 24 giờ bắt đầu từ đây". Nếu chọn biến này thì 24 giờ tiếp theo người đó không làm. Bắt buộc chọn ít nhất một giờ bắt đầu. Ràng buộc này tính trên trục giờ, không chỉ đếm ngày nghỉ, vì ca qua đêm có thể làm ngày nghỉ không đủ 24 giờ |
 | Nghỉ giữa ca (Đ.109) | Mỗi ca từ 6 giờ trở lên có đúng một giờ nghỉ, đặt ở giờ thứ 2 đến giờ áp chót của ca. Trong giờ nghỉ, người đó không được tính vào số người có mặt. Nghỉ 30 hoặc 45 phút được làm tròn thành cả giờ, tức chọn phương án an toàn |
 | Ngày không làm được | Không xếp ca vào ngày nhân viên đã báo bận |
+| Ngân sách tuần (nếu có, đặc tả D26) | Tổng chi phí lương của lịch ≤ ngân sách. Vì phủ nhu cầu là mềm, ngân sách chặt chỉ làm tăng giờ thiếu, không làm mô hình vô nghiệm |
 
 **Phủ nhu cầu là ràng buộc mềm.** Mỗi giờ có một biến "thiếu người" `u`, với điều kiện:
 
@@ -214,10 +217,11 @@ số người có mặt − số người đang nghỉ giữa ca + u ≥ nhu c�
 
 Nhờ có biến `u`, mô hình luôn có lời giải kể cả khi thiếu nhân viên. Khi đó giao diện chỉ ra giờ nào thiếu, thay vì báo "vô nghiệm".
 
-**Mục tiêu: giải theo tầng (lexicographic).** Thay vì gộp mọi thứ vào một hàm có trọng số tùy chọn, hệ thống giải lần lượt bốn lần:
+**Mục tiêu: giải theo tầng (lexicographic).** Thay vì gộp mọi thứ vào một hàm có trọng số tùy chọn, hệ thống giải lần lượt từng tầng:
 
 1. **Tầng 1:** tối thiểu tổng giờ thiếu người.
-2. **Tầng 2:** giữ nguyên số giờ thiếu vừa đạt, rồi tối thiểu chi phí lương. Chi phí một ca = lương × độ dài + 30% × lương × số giờ đêm của ca (phụ cấp đêm, Đ.98). Ví dụ với lương 100: ca Ngày tốn 800, ca Đêm 0h–8h tốn 980 (có 6 giờ đêm).
+   - **Giờ tối thiểu theo hợp đồng (chỉ khi có người đặt, đặc tả D25):** giữ nguyên số giờ thiếu, rồi tối thiểu tổng số giờ mà các nhân viên còn thiếu so với mức tối thiểu của họ. Đây là mục tiêu mềm: người không đạt được mức tối thiểu (ví dụ vì bận quá nhiều ngày) chỉ làm tầng này lớn hơn 0, không làm mô hình vô nghiệm.
+2. **Tầng 2:** giữ nguyên các kết quả trên, rồi tối thiểu chi phí lương. Chi phí một ca = lương × độ dài + 30% × lương × số giờ đêm của ca (phụ cấp đêm, Đ.98). Ví dụ với lương 100: ca Ngày tốn 800, ca Đêm 0h–8h tốn 980 (có 6 giờ đêm).
 3. **Tầng 3:** giữ nguyên hai kết quả trên, rồi chia ca đêm công bằng nhất, tức tối thiểu chênh lệch giữa người làm nhiều ca đêm nhất và người làm ít nhất.
 4. **Tầng 4:** chỉ khi có người đăng ký ngày muốn nghỉ, tối thiểu số lần xếp ca vào ngày đó.
 
@@ -234,7 +238,7 @@ Mỗi tầng không được làm xấu kết quả tầng trước. Thời gian
 
 **Tái lập.** Với 1 worker và cùng seed, cùng đầu vào cho cùng lịch **khi mọi tầng giải xong trước time limit** (trạng thái `OPTIMAL`). Nếu hết giờ ở trạng thái `FEASIBLE`, lịch trả về là lịch tốt nhất tìm được tới lúc dừng, nên phụ thuộc tốc độ và tải của máy lúc chạy.
 
-**Phá đối xứng (tùy chọn, chưa bật trong API).** Hai nhân viên cùng lương và không có yêu cầu riêng thì hoán đổi được cho nhau. Engine có thể sắp xếp họ theo số ca để không phải xét các lịch chỉ khác nhau ở việc đổi tên người. Không áp cho người có yêu cầu riêng, vì có thể làm mất lời giải tốt nhất. Backend hiện gọi solver không bật tùy chọn này, và cũng không bật chế độ phân rã hai pha.
+**Phá đối xứng (tùy chọn, chưa bật trong API).** Hai nhân viên cùng lương, cùng giới hạn giờ tối đa và tối thiểu, và không có yêu cầu riêng thì hoán đổi được cho nhau. Engine có thể sắp xếp họ theo số ca để không phải xét các lịch chỉ khác nhau ở việc đổi tên người. Không áp cho người có yêu cầu riêng, vì có thể làm mất lời giải tốt nhất. Backend hiện gọi solver không bật tùy chọn này, và cũng không bật chế độ phân rã hai pha.
 
 #### Xếp lại từ lịch gốc (repair)
 
@@ -242,10 +246,11 @@ Dùng khi lịch đã công bố và có biến động giữa tuần, ví dụ 
 
 - **Đầu vào:** lịch gốc (một lượt đã có lịch), ngày bắt đầu xếp lại `from_day`, danh sách người vắng theo ngày, các ca ghim. Có thể đổi hồ sơ nhu cầu.
 - **Khóa:** mọi ngày trước `from_day` giữ nguyên lịch gốc, kể cả giờ nghỉ giữa ca. Ca ghim bắt buộc có mặt. Ngày vắng được thêm vào ngày không làm được của người đó.
-- **Mục tiêu:** chèn một tầng mới ngay sau tầng thiếu người: tối thiểu **số ca thay đổi** so với lịch gốc, đếm theo bộ (nhân viên, ngày, ca); đổi giờ nghỉ trong cùng ca không tính. Thứ tự là thiếu người, thay đổi, chi phí, công bằng ca đêm, mong muốn nghỉ. Lịch gốc được dùng làm gợi ý khởi đầu.
-- **Luôn có lời giải.** Mọi luật cứng đều "đơn điệu": bỏ bớt ca không bao giờ tạo vi phạm mới. Vì vậy nếu riêng tập ca bị khóa qua được validator thì lịch "chỉ gồm các ca bị khóa" đã hợp lệ, và solver luôn tìm được lời giải. API kiểm tập này trước khi tạo job.
+- **Mục tiêu:** chèn một tầng mới ngay sau tầng thiếu người: tối thiểu **số ca thay đổi** so với lịch gốc, đếm theo bộ (nhân viên, ngày, ca); đổi giờ nghỉ trong cùng ca không tính. Thứ tự là thiếu người, giờ tối thiểu (nếu có), thay đổi, chi phí, công bằng ca đêm, chênh giờ làm (nếu có dung sai), mong muốn nghỉ. Lịch gốc được dùng làm gợi ý khởi đầu.
+- **Luôn có lời giải.** Mọi luật cứng, kể cả ngân sách, đều "đơn điệu": bỏ bớt ca không bao giờ tạo vi phạm mới. Giờ tối thiểu là mềm nên không phá tính chất này. Vì vậy nếu riêng tập ca bị khóa qua được validator thì lịch "chỉ gồm các ca bị khóa" đã hợp lệ, và solver luôn tìm được lời giải. API kiểm tập này trước khi tạo job.
 - Không bật phá đối xứng hay phân rã khi repair, vì lịch gốc làm các nhân viên không còn hoán đổi được cho nhau.
 - Lượt repair lưu lịch gốc, `from_day` và ca ghim trong ảnh chụp đầu vào, nên chạy lại được. Giao diện đánh dấu ô khác lịch gốc bằng chữ "đổi" và ngày khóa bằng nhãn "khóa".
+- **Báo nghỉ đột xuất** (`reroster`) là repair cho một người và các ngày vắng, `from_day` mặc định là ngày vắng đầu tiên. Không có solver riêng.
 
 **Gợi ý người thay.** Với một ca (người vắng, ngày), thử lần lượt từng nhân viên còn trống ngày đó, giao đúng ca đó với cùng giờ nghỉ, rồi chạy validator trên cả lịch. Chỉ giữ người không gây vi phạm. Xếp theo: người có đăng ký muốn nghỉ ngày đó xếp sau, rồi chi phí thêm thấp hơn, rồi số giờ trong tuần ít hơn. Bấm **Áp dụng** thì tạo lượt sửa tay mới, validator kiểm lại như mọi lượt sửa tay.
 
@@ -279,9 +284,10 @@ Mô hình này nhỏ và giải rất nhanh, nên được dùng để:
    - số ngày làm liên tiếp dài nhất (tính vòng) ≤ 6;
    - mỗi ca cần nghỉ có giờ nghỉ nằm trong khoảng cho phép (Đ.109);
    - không có ca nào vào ngày nhân viên đã báo không làm được.
-3. Trả về danh sách vi phạm. Mỗi vi phạm gồm loại, nhân viên và chi tiết. Giao diện gắn loại vi phạm với điều luật tương ứng (Đ.105, Đ.109, Đ.110, Đ.111) khi hiển thị.
+3. Nếu lượt có ngân sách tuần: tổng chi phí của cả lịch ≤ ngân sách. Vi phạm này thuộc cả lịch, không gắn với một nhân viên.
+4. Trả về danh sách vi phạm. Mỗi vi phạm gồm loại, nhân viên (trống với vi phạm ngân sách) và chi tiết. Giao diện gắn loại vi phạm với điều luật tương ứng (Đ.105, Đ.109, Đ.110, Đ.111) khi hiển thị.
 
-**Khi nào chạy:** sau mỗi lượt giải (kể cả repair), sau mỗi lần người dùng sửa lịch bằng tay, trên tập ca bị khóa trước khi tạo job repair, và với từng ứng viên khi gợi ý người thay.
+**Khi nào chạy:** sau mỗi lượt giải (kể cả repair), sau mỗi lần người dùng sửa lịch bằng tay, trên tập ca bị khóa trước khi tạo job repair, với từng ứng viên khi gợi ý người thay, và với từng ca thử khi giải thích giờ thiếu.
 
 **Trạng thái khi có vi phạm.** Quy tắc giống nhau cho lượt do solver tạo và lượt sửa tay: có ít nhất một vi phạm cứng thì lượt đó có trạng thái `failed`, kèm thông điệp "validator found N hard-constraint violations". Ở đây `failed` nghĩa là **"đây không phải lịch hợp lệ để dùng"**, không phải lỗi hệ thống. Lượt vẫn được lưu đầy đủ: lịch, biểu đồ, KPI và danh sách vi phạm vẫn xem được. Khung **Tuân thủ** liệt kê từng vi phạm theo điều luật.
 
@@ -299,7 +305,8 @@ Tính trực tiếp từ lịch, không lấy từ solver:
 | Hiệu suất lịch | Tổng nhu cầu ÷ tổng người có mặt. Càng gần 1 càng ít thừa |
 | Chi phí lao động | Tổng lương các ca cộng phụ cấp đêm 30% |
 | Tỷ lệ chi phí lao động | Chi phí ÷ doanh thu giả định do người dùng nhập |
-| Công bằng | Độ lệch chuẩn số ca đêm và số ca cuối tuần giữa các nhân viên |
+| Công bằng | Độ lệch chuẩn số ca đêm và số ca cuối tuần giữa các nhân viên; chênh giờ làm (người làm nhiều nhất trừ người làm ít nhất) |
+| Giờ thiếu hợp đồng | Tổng số giờ các nhân viên còn thiếu so với giờ tối thiểu của họ |
 
 ### 7.5 Khối 5e: Phân tích độ nhạy
 
@@ -344,6 +351,10 @@ Vì vậy kết quả **không phải** chi phí thêm một người cho đội
 
 **(5) So sánh hai kịch bản.** Chọn hai lượt giải bất kỳ, đặt cạnh nhau tỷ lệ phủ, giờ thiếu, chi phí và các chỉ số khác.
 
+**(6) So với baseline greedy.** Giải cùng instance bằng CP-SAT và bằng heuristic tham lam (`baseline.py`): mỗi bước lấy cặp (ngày, ca) phủ nhiều giờ còn thiếu nhất và giao cho người ít giờ nhất mà lịch riêng của họ vẫn qua validator. Greedy luôn ghi "khả thi, chưa chứng minh tối ưu".
+
+**(7) Quét dung sai chi phí (đánh đổi chi phí và công bằng).** Giải lại ở từng mức dung sai (mặc định 0, 1, 2, 5, 10%), báo chi phí tăng so với mức 0, chênh ca đêm và chênh giờ làm. Mỗi điểm là một lần giải đầy đủ; điểm không `OPTIMAL` được đánh dấu.
+
 ---
 
 ## 8. Một lần bấm "Tối ưu" đi qua các tầng thế nào
@@ -356,7 +367,7 @@ Vì vậy kết quả **không phải** chi phí thêm một người cho đội
    - trả mã job.
 3. **Giao diện:** chuyển sang trang lượt giải và bắt đầu hỏi lại trạng thái.
 4. **Xử lý nền:** đổi trạng thái sang `running`, giao việc cho một tiến trình trong pool, kèm hạn chót.
-5. **Engine, khối 5b:** dựng mô hình CP-SAT rồi giải bốn tầng: thiếu người, chi phí, công bằng ca đêm, mong muốn nghỉ.
+5. **Engine, khối 5b:** dựng mô hình CP-SAT rồi giải theo tầng: thiếu người, (giờ tối thiểu), chi phí, công bằng ca đêm, (chênh giờ làm), mong muốn nghỉ.
 6. **Xử lý nền:**
    - nhận lịch;
    - gọi **khối 5c** kiểm tra lại toàn bộ luật;
@@ -392,10 +403,12 @@ Lệnh: `docker compose up -d --build`, rồi mở `http://localhost:3000`.
 - Xử lý nền (mục 5), chưa sửa trong code (đặc tả D15):
   - Hạn chót của job tính từ lúc job được gửi vào pool, nên **thời gian chờ trong hàng đợi cũng bị tính**. Một job xếp sau hai phân tích dài có thể bị đánh dấu `failed` vì quá hạn trước khi kịp chạy.
   - Job quá hạn không bị dừng thật; tiến trình chạy tiếp tới khi tự xong.
-  - Quét λ mở thêm một pool con để giải các điểm song song, nên số tiến trình thật có thể nhiều hơn `max_concurrent_jobs`.
+  - Quét λ và quét dung sai mở thêm một pool con để giải các điểm song song, nên số tiến trình thật có thể nhiều hơn `max_concurrent_jobs`.
 - Chỉ hỗ trợ một địa điểm, một loại kỹ năng, một tuần. Không hỗ trợ tổng đài (đặc tả D18).
 - Repair khóa theo ngày, không theo giờ. Tuần vẫn quấn vòng, nên ca của ngày bị khóa vẫn ràng buộc ca Chủ nhật qua luật nghỉ 12 giờ và 24 giờ.
 - Gợi ý người thay chỉ xét giao nguyên ca cho một người khác; không đổi chéo hai người, không đổi loại ca.
-- Repair và gợi ý người thay chưa chạy integration test trên MySQL và chưa duyệt trên trình duyệt.
+- Giải thích giờ thiếu chỉ thử thêm **một** ca cho **một** người; không xét đổi chéo hay dời giờ nghỉ.
+- Nhãn "đầu vào đã đổi" so ảnh chụp đầu vào. Đổi tên nhân viên không tính, vì tên không nằm trong ảnh chụp. Lượt cũ từ trước khi có hash hiện là "không rõ".
+- Giao diện chưa được duyệt tay trên trình duyệt sau các phần repair, F và G.
 - Nghị định 145/2020 chưa được đối chiếu với văn bản gốc (đặc tả mục 4).
 - Mọi số liệu hiệu năng chỉ đúng cho các trường hợp đã đo ([benchmarks.md](benchmarks.md)).
