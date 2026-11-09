@@ -1,5 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
+import { RequireAuth } from "../features/auth/components/RequireAuth";
 import { AppLayout } from "./layout";
+import { LoginRoute, RegisterRoute } from "./routes/auth";
 import { DemandRoute } from "./routes/demand";
 import { EmployeesRoute } from "./routes/employees";
 import { HomeRoute } from "./routes/home";
@@ -9,8 +11,14 @@ import { WhatIfRoute } from "./routes/what-if";
 
 const router = createBrowserRouter([
   { path: "/", element: <HomeRoute /> },
+  { path: "/login", element: <LoginRoute /> },
+  { path: "/register", element: <RegisterRoute /> },
   {
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
       { path: "/demand", element: <DemandRoute /> },
       { path: "/employees", element: <EmployeesRoute /> },

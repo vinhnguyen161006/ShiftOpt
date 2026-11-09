@@ -6,6 +6,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from src.analysis import models as analysis_models
+from src.auth import models as auth_models
 from src.config import get_settings
 from src.database import Base
 from src.demand import models as demand_models
@@ -15,6 +16,7 @@ from src.shifts import models as shifts_models
 
 REGISTERED_MODELS = (
     analysis_models,
+    auth_models,
     demand_models,
     employees_models,
     schedules_models,

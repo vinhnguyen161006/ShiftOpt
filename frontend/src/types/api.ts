@@ -123,6 +123,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_api_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout */
+        post: operations["logout_api_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_api_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demand-profiles": {
         parameters: {
             query?: never;
@@ -936,6 +1004,13 @@ export interface components {
             /** Weekly Rest Hours */
             weekly_rest_hours: number;
         };
+        /** LoginRequest */
+        LoginRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
         /** LpDualsRequest */
         LpDualsRequest: {
             /** Hourly Wage */
@@ -1007,6 +1082,15 @@ export interface components {
         PreviewWarningsRead: {
             /** Warnings */
             warnings: components["schemas"]["PreSolveWarningRead"][];
+        };
+        /** RegisterRequest */
+        RegisterRequest: {
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
         };
         /** RepairRequest */
         RepairRequest: {
@@ -1352,6 +1436,20 @@ export interface components {
             /** Understaffed Hours */
             understaffed_hours: number | null;
         };
+        /** UserRead */
+        UserRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Id */
+            id: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -1397,7 +1495,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1430,7 +1530,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1463,7 +1565,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1496,7 +1600,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1529,7 +1635,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1562,7 +1670,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1597,7 +1707,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -1621,12 +1733,140 @@ export interface operations {
             };
         };
     };
-    list_profiles_api_demand_profiles_get: {
+    login_api_auth_login_post: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_api_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_profiles_api_demand_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -1639,6 +1879,15 @@ export interface operations {
                     "application/json": components["schemas"]["DemandProfileRead"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     create_profile_api_demand_profiles_post: {
@@ -1646,7 +1895,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1679,7 +1930,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1726,7 +1979,9 @@ export interface operations {
             };
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1759,7 +2014,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1776,6 +2033,15 @@ export interface operations {
                     "application/json": components["schemas"]["SalesInspection"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     get_profile_api_demand_profiles__profile_id__get: {
@@ -1785,7 +2051,9 @@ export interface operations {
             path: {
                 profile_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -1816,7 +2084,9 @@ export interface operations {
             path: {
                 profile_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1851,7 +2121,9 @@ export interface operations {
             path: {
                 profile_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -1878,7 +2150,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -1891,6 +2165,15 @@ export interface operations {
                     "application/json": components["schemas"]["EmployeeRead"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     create_employee_api_employees_post: {
@@ -1898,7 +2181,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1933,7 +2218,9 @@ export interface operations {
             path: {
                 employee_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -1964,7 +2251,9 @@ export interface operations {
             path: {
                 employee_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -1999,7 +2288,9 @@ export interface operations {
             path: {
                 employee_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2026,7 +2317,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2039,6 +2332,15 @@ export interface operations {
                     "application/json": components["schemas"]["LaborRulesRead"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     list_schedules_api_schedules_get: {
@@ -2046,7 +2348,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2059,6 +2363,15 @@ export interface operations {
                     "application/json": components["schemas"]["SolveRunRead"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     create_schedule_api_schedules_post: {
@@ -2066,7 +2379,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2099,7 +2414,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2134,7 +2451,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2165,7 +2484,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2196,7 +2517,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2227,7 +2550,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2258,7 +2583,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2289,7 +2616,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2324,7 +2653,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2355,7 +2686,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2386,7 +2719,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2425,7 +2760,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2456,7 +2793,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2491,7 +2830,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2522,7 +2863,9 @@ export interface operations {
             path: {
                 run_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2551,7 +2894,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2564,6 +2909,15 @@ export interface operations {
                     "application/json": components["schemas"]["ShiftTemplateRead"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     create_template_api_shift_templates_post: {
@@ -2571,7 +2925,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2606,7 +2962,9 @@ export interface operations {
             path: {
                 template_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2637,7 +2995,9 @@ export interface operations {
             path: {
                 template_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2672,7 +3032,9 @@ export interface operations {
             path: {
                 template_id: number;
             };
-            cookie?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {

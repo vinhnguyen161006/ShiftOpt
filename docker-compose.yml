@@ -33,6 +33,11 @@ services:
       SHIFTOPT_DATABASE_URL: mysql+asyncmy://${SHIFTOPT_DB_USER}:${SHIFTOPT_DB_PASSWORD}@db:3306/shiftopt?charset=utf8mb4
       SHIFTOPT_MAX_SOLVE_SECONDS: ${SHIFTOPT_MAX_SOLVE_SECONDS:-300}
       SHIFTOPT_SOLVE_WORKERS: ${SHIFTOPT_SOLVE_WORKERS:-8}
+      SHIFTOPT_ALLOWED_EMAILS: ${SHIFTOPT_ALLOWED_EMAILS:-[]}
+      SHIFTOPT_COOKIE_SECURE: ${SHIFTOPT_COOKIE_SECURE:-false}
+      SHIFTOPT_GOOGLE_CLIENT_ID: ${SHIFTOPT_GOOGLE_CLIENT_ID:-}
+      SHIFTOPT_GOOGLE_CLIENT_SECRET: ${SHIFTOPT_GOOGLE_CLIENT_SECRET:-}
+      SHIFTOPT_GOOGLE_REDIRECT_URI: ${SHIFTOPT_GOOGLE_REDIRECT_URI:-http://localhost:3000/api/auth/google/callback}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -47,6 +52,9 @@ services:
   seed:
     image: shiftopt-backend:local
     command: ["python", "-m", "scripts.seed_demo", "--base-url", "http://backend:8000/api"]
+    environment:
+      SHIFTOPT_DEMO_EMAIL: ${SHIFTOPT_DEMO_EMAIL:?set SHIFTOPT_DEMO_EMAIL in .env}
+      SHIFTOPT_DEMO_PASSWORD: ${SHIFTOPT_DEMO_PASSWORD:?set SHIFTOPT_DEMO_PASSWORD in .env}
     depends_on:
       backend:
         condition: service_healthy

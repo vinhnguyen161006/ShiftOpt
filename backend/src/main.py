@@ -2,12 +2,14 @@ from collections.abc import AsyncIterator
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.analysis import service as analysis_service
 from src.analysis.router import router as analysis_router
+from src.auth.dependencies import current_user
+from src.auth.router import router as auth_router
 from src.config import get_settings
 from src.database import create_engine, create_session_factory
 from src.demand.router import router as demand_router
@@ -51,6 +53,8 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type"],
     )
     register_exception_handlers(app)
+    app.include_router(auth_router, prefix="/api")
+    protected = [Depends(current_user)]
     for router in (
         demand_router,
         employees_router,
@@ -59,7 +63,7 @@ def create_app() -> FastAPI:
         analysis_router,
         rules_router,
     ):
-        app.include_router(router, prefix="/api")
+        app.include_router(router, prefix="/api", dependencies=protected)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
