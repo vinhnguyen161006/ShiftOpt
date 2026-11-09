@@ -287,7 +287,8 @@ Schedule adherence (so lịch với chấm công) **ngoài phạm vi** vì khôn
 | Database | MySQL 8 · SQLAlchemy 2 · Alembic |
 | Dữ liệu | `pyarrow` (đọc Parquet và CSV ở backend) · tải file mẫu FreshRetailNet bằng `urllib` theo commit ghim, không dùng `datasets` |
 | Frontend | React 19 · react-router 8 · Vite 8 · TypeScript 5.9 · CSS thuần theo phong cách trang chủ (mục 8.3) · TanStack Query 5 · Biome · openapi-typescript · biểu đồ tự vẽ bằng HTML/CSS và SVG, không thư viện |
-| Deploy | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn), `seed` (nạp dữ liệu demo khi bảng trống), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
+| Deploy (production) | Frontend trên Vercel (`frontend/vercel.json`, rewrite `/api` sang backend); backend + MySQL chạy bằng docker compose trên máy chủ, đưa ra internet qua Cloudflare quick tunnel tới `localhost:8000` |
+| Deploy (local) | Docker Compose: `db` (MySQL 8.4), `migrate` (Alembic một lần), `backend` (uvicorn), `seed` (nạp dữ liệu demo khi bảng trống), `frontend` (build Vite, phục vụ bằng nginx, proxy `/api`) |
 | Test | pytest · pytest-asyncio · httpx + asgi-lifespan · pytest-cov |
 
 **Phiên bản đã ghim:** `ortools==9.15.6755`, `pulp[highs]==3.3.2` (kèm `highspy==1.13.0`). PuLP 3.3.2 là bản mới nhất khi dựng khung (2026-10-21); nó dùng được `pulp.HiGHS` và trả `constraint.pi`, nhưng phát `DeprecationWarning` báo trước API PuLP 4 (`prob.add_variable`, `prob.constraints()` trả list). Khi nâng lên PuLP 4: sửa `models/set_covering_pulp.py` và `solvers/pulp_backend.py` rồi chạy lại toàn bộ test engine. Không nâng `ortools` hoặc `pulp` đơn lẻ mà không chạy lại toàn bộ test engine và benchmark. Frontend dùng TypeScript 5.9.3 vì `openapi-typescript` 7 chỉ hỗ trợ TypeScript `^5`.
