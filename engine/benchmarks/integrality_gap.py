@@ -1,18 +1,26 @@
 import csv
 import sys
+from pathlib import Path
 
 from benchmarks.compare_solvers import INSTANCES, WAGE
 from benchmarks.run_roster_scale import weekly_instance
+from shiftopt.domain import Employee, Instance, ShiftType
 from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
 from shiftopt.models.roster_mip import solve_roster_mip
 from shiftopt.solvers.base import SolveParams
 
 ROSTER_EMPLOYEES = 10
 ROSTER_SEEDS = (0, 1, 2)
+STORE18_EMPLOYEES = 30
+STORE18_DEMAND_FILE = (
+    Path(__file__).resolve().parents[2] / "docs" / "experiments" / "store18_demand.csv"
+)
+STORE18_SHIFTS = (ShiftType("night", 0), ShiftType("day", 8), ShiftType("evening", 16))
 TIME_LIMIT = 60.0
 PARAMS = SolveParams(
     time_limit_seconds=TIME_LIMIT, relative_gap_limit=0.0, num_workers=1, random_seed=0
 )
+Row = tuple[str, str, str, float | None, float | None, float | None, str]
 
 
 def gap_percent(lp: float | None, ip: float | None) -> float | None:
@@ -21,47 +29,66 @@ def gap_percent(lp: float | None, ip: float | None) -> float | None:
     return 100.0 * (ip - lp) / max(1.0, abs(ip))
 
 
-def aggregate_rows() -> list[tuple[str, str, str, float | None, float | None, float | None, str]]:
+def store18_instance() -> Instance:
+    """Weekly demand of FreshRetailNet store 18 under the baseline assumptions, read from the
+    export made by backend/scripts/baseline_store18.py (168 rows: hour_of_week, required_staff)."""
+    with STORE18_DEMAND_FILE.open(newline="", encoding="utf-8") as handle:
+        demand = tuple(int(row["required_staff"]) for row in csv.DictReader(handle))
+    employees = tuple(Employee(f"e{index:02d}", WAGE) for index in range(STORE18_EMPLOYEES))
+    return Instance(demand=demand, employees=employees, shift_types=STORE18_SHIFTS)
+
+
+def aggregate_row(name: str, instance: Instance) -> Row:
+    lp = solve_with_implicit_breaks(instance, WAGE, PARAMS, relax=True)
+    ip = solve_with_implicit_breaks(instance, WAGE, PARAMS, relax=False)
+    return (
+        "aggregate",
+        name,
+        "cost",
+        lp.result.objective,
+        ip.result.objective,
+        gap_percent(lp.result.objective, ip.result.objective),
+        str(ip.result.status),
+    )
+
+
+def roster_rows(name: str, instance: Instance) -> list[Row]:
+    lp = solve_roster_mip(instance, PARAMS, relax=True)
+    ip = solve_roster_mip(instance, PARAMS)
     rows = []
-    for name, build in INSTANCES:
-        instance = build()
-        lp = solve_with_implicit_breaks(instance, WAGE, PARAMS, relax=True)
-        ip = solve_with_implicit_breaks(instance, WAGE, PARAMS, relax=False)
+    for tier_index, tier_name in enumerate(("shortfall", "cost")):
+        lp_tier = lp.phases[tier_index].objective if len(lp.phases) > tier_index else None
+        ip_tier = ip.phases[tier_index].objective if len(ip.phases) > tier_index else None
+        status = str(ip.phases[tier_index].status) if len(ip.phases) > tier_index else "none"
         rows.append(
             (
-                "aggregate",
+                "per_employee",
                 name,
-                "cost",
-                lp.result.objective,
-                ip.result.objective,
-                gap_percent(lp.result.objective, ip.result.objective),
-                str(ip.result.status),
+                tier_name,
+                lp_tier,
+                ip_tier,
+                gap_percent(lp_tier, ip_tier),
+                status,
             )
         )
     return rows
 
 
-def roster_rows() -> list[tuple[str, str, str, float | None, float | None, float | None, str]]:
-    rows = []
+def aggregate_rows() -> list[Row]:
+    rows = [aggregate_row(name, build()) for name, build in INSTANCES]
+    rows.append(aggregate_row("store18", store18_instance()))
+    return rows
+
+
+def all_roster_rows() -> list[Row]:
+    rows: list[Row] = []
     for seed in ROSTER_SEEDS:
-        instance = weekly_instance(ROSTER_EMPLOYEES, seed)
-        lp = solve_roster_mip(instance, PARAMS, relax=True)
-        ip = solve_roster_mip(instance, PARAMS)
-        for tier_index, tier_name in enumerate(("shortfall", "cost")):
-            lp_tier = lp.phases[tier_index].objective if len(lp.phases) > tier_index else None
-            ip_tier = ip.phases[tier_index].objective if len(ip.phases) > tier_index else None
-            status = str(ip.phases[tier_index].status) if len(ip.phases) > tier_index else "none"
-            rows.append(
-                (
-                    "per_employee",
-                    f"seed{seed}_{ROSTER_EMPLOYEES}emp",
-                    tier_name,
-                    lp_tier,
-                    ip_tier,
-                    gap_percent(lp_tier, ip_tier),
-                    status,
-                )
+        rows.extend(
+            roster_rows(
+                f"seed{seed}_{ROSTER_EMPLOYEES}emp", weekly_instance(ROSTER_EMPLOYEES, seed)
             )
+        )
+    rows.extend(roster_rows(f"store18_{STORE18_EMPLOYEES}emp", store18_instance()))
     return rows
 
 
@@ -72,7 +99,7 @@ def main() -> None:
     labelled approximate. A missing value means that solve produced no objective."""
     writer = csv.writer(sys.stdout)
     writer.writerow(("model", "instance", "tier", "z_lp", "z_ip", "gap_pct", "ip_status"))
-    for row in aggregate_rows() + roster_rows():
+    for row in aggregate_rows() + all_roster_rows():
         writer.writerow(row)
 
 

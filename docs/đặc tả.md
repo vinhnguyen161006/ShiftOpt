@@ -2,9 +2,9 @@
 
 **Trạng thái:** đã duyệt ngày 2026-11-08. Người dùng (Vinh) ủy quyền cho Claude quyết định mọi mục ở mục 3 và phiếu duyệt; kết quả ghi ở phiếu duyệt. Bổ sung ngày 2026-11-09: sửa D16, thêm D25–D27, theo câu trả lời của người dùng. Các thành viên khác của nhóm chưa xem bản này: ai không đồng ý thì sửa dòng tương ứng ở phiếu. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
 
-**Chưa đóng:** Nghị định 145/2020 chưa đối chiếu văn bản gốc (mục 4). Điểm này không chặn duyệt vì code đang chặt hơn nguồn thứ cấp.
+**Chưa đóng:** văn bản sửa đổi Nghị định 145/2020, nếu có (mục 4). Nghị định 145/2020 đã đối chiếu với văn bản gốc ngày 2026-11-09.
 
-**Nguồn luật.** Điều 98, 105, 106, 109, 110, 111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025) (mục 4). Nghị định 145/2020 chưa đối chiếu văn bản gốc.
+**Nguồn luật.** Điều 98, 105, 106, 109, 110, 111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025) (mục 4). Nghị định 145/2020 đã đối chiếu với văn bản gốc (2026-11-09, mục 4).
 
 ## 1. Phạm vi
 
@@ -122,9 +122,9 @@ Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "
 
 Mọi hằng nằm trong `LaborRules` (`engine/src/shiftopt/constraints/labor_law_vn.py`). Mô hình và validator cùng đọc từ đó.
 
-**Nguồn đã đối chiếu:** Bộ luật Lao động 45/2019/QH14, bản hợp nhất VBHN 125/VBHN-VPQH (2025) của Văn phòng Quốc hội, đã gồm sửa đổi theo Luật 71/2025/QH15 (hiệu lực từ 01/01/2026). PDF tải từ `static.luatvietnam.vn` ngày 2026-11-08 và trích bằng `pdftotext`. Bản trích bị lỗi font nên dấu tiếng Việt trong cột "Nội dung" được chép lại theo ngữ cảnh, không phải chép ký tự gốc; trước khi nộp, đối chiếu lại với PDF của Văn phòng Quốc hội.
+**Nguồn đã đối chiếu (2026-11-09):** PDF bản gốc Bộ luật Lao động 45/2019/QH14 (`data/raw/Bộ luật Lao động 2019 (số 45_2019_QH14).pdf`, dấu ký Cổng TTĐT Chính phủ 12/12/2019) và Nghị định 145/2020/NĐ-CP (`data/raw/Nghị định 145_2020_NĐ-CP.pdf`, ký 17/12/2020). Hai file có lớp chữ, đã đọc nguyên văn bằng `mutool`, khớp với bản đọc ảnh trước đó. Đối chiếu: BLLĐ Điều 98 khoản 2, 105, 106, 109, 110, 111; NĐ 145 Điều 63 khoản 3 và Điều 64.
 
-**Chưa đối chiếu:** Nghị định 145/2020/NĐ-CP (Điều 64, nghỉ giữa giờ). Chỉ có nguồn thứ cấp, xem ghi chú dưới bảng.
+**Đã đối chiếu VBHN 2025 (2026-11-09):** Bản hợp nhất VBHN 125/VBHN-VPQH (file `data/raw/BLLD-VBHN-125-2025.pdf`, có lớp chữ) ghi BLLĐ 45/2019/QH14 đã sửa đổi, bổ sung bởi Luật 71/2025/QH15, hiệu lực từ 01/01/2026. Nội dung Điều 98 khoản 2, 105 khoản 1 và 2, 106, 109 khoản 1, 110, 111 khoản 1 giống hệt bản gốc 2019 đã nêu trên. **Chưa kiểm:** văn bản sửa đổi, bổ sung NĐ 145/2020 (nếu có); không có file trong repo.
 
 | Điều | Nội dung (trích, rút gọn) | Giá trị trong code | Kết quả |
 |---|---|---|---|
@@ -138,7 +138,16 @@ Mọi hằng nằm trong `LaborRules` (`engine/src/shiftopt/constraints/labor_la
 
 Đ.98 khoản 1 (hệ số 150%, 200%, 300% làm thêm) và Đ.107 chưa dùng trong mô hình bản đầu (CLAUDE.md mục 5.4 và 6, mức mở rộng).
 
-**Nghị định 145/2020/NĐ-CP, Điều 64 (chưa đối chiếu, nguồn thứ cấp):** nguồn tra được nêu thêm điều kiện làm ít nhất 03 giờ ban đêm để áp mức 45 phút. Nếu đúng, code vẫn áp 45 phút cho ca có giờ đêm và mất một giờ phủ, nên vẫn chặt hơn; không cần đổi code. Vẫn cần đối chiếu với văn bản gốc.
+**Nghị định 145/2020/NĐ-CP, đối chiếu với PDF gốc:**
+
+| Điều | Nội dung (trích, rút gọn) | Giá trị trong code | Kết quả |
+|---|---|---|---|
+| NĐ 64 khoản 1 | Mức 45 phút (Đ.109 khoản 1) áp dụng cho người làm từ 06 giờ trở lên trong một ngày, trong đó **ít nhất 03 giờ** thuộc khung giờ làm việc ban đêm (Đ.106 BLLĐ) | Áp 45 phút cho mọi ca có giờ đêm, không đòi 3 giờ đêm | Chặt hơn luật, có chủ đích: code không dùng điều kiện 3 giờ. Không cần đổi code |
+| NĐ 64 khoản 2 | Với làm việc theo ca liên tục (NĐ 63 khoản 3), thời gian nghỉ giữa giờ tính vào giờ làm việc, ít nhất 30 phút; làm ban đêm ít nhất 45 phút | Tính 30/45 phút (cùng với Đ.109) | Khớp |
+| NĐ 64 khoản 3 | Người sử dụng lao động quyết định thời điểm nghỉ trong giờ làm việc, nhưng **không được bố trí** nghỉ vào thời điểm bắt đầu hoặc kết thúc ca | Vị trí nghỉ là giờ 1 đến L−2 của ca (`Shift.break_window`, `domain.py`), không bao giờ là giờ đầu hoặc cuối. Validator kiểm `BREAK_OUTSIDE_WINDOW` | Khớp ở mức giờ. Nghỉ được làm tròn thành cả một giờ (xấp xỉ, bảo thủ). Mô hình tổng hợp dùng cùng cửa sổ |
+| NĐ 63 khoản 3 | Ca liên tục để được tính nghỉ giữa giờ khi: a) người lao động làm trong ca từ 06 giờ trở lên; b) thời gian chuyển tiếp giữa hai ca liền kề không quá 45 phút | Không dùng | Không ảnh hưởng: mô hình dùng ca rời, không có ca liên tục |
+
+Điều 64 khoản 3 đã được code xử lý qua `break_window`. Phần còn lại là giới hạn: nghỉ tính theo giờ nguyên, nên nghỉ 30 phút được tính như một giờ đủ (bảo thủ).
 
 Bẫy Điều 111 với ca qua đêm: validator tính khoảng nghỉ liên tục trên trục giờ, không chỉ đếm ngày nghỉ.
 ## 5. Tiêu chí nghiệm thu
@@ -169,7 +178,7 @@ Lấy từ CLAUDE.md mục 13. Kết quả đo nằm trong [benchmarks.md](bench
 - Kịch bản cơ sở (store 18, 30 nhân viên) dư sức chứa: 468 giờ-người nhu cầu trên 1440 sức chứa. Đạt 98% không chứng minh được khi thiếu người.
 - Kịch bản căng (8 nhân viên, sức chứa 384 < 468) không đạt tối ưu trong 60 giây: coverage 70,3%, gap 100%. Kết quả là `FEASIBLE`, không được gọi là tối ưu.
 - Kịch bản cơ sở chỉ đo store 18 (3 seed, 1 worker); so sánh với greedy đo 3 store (18, 84, 578, `benchmarks.md` mục 5). Không suy ra cho store khác.
-- Nghị định 145/2020 chưa đối chiếu văn bản gốc. Các điều luật còn lại ở mục 4 đã đối chiếu.
+- Nghị định 145/2020 đã đối chiếu văn bản gốc (mục 4); văn bản sửa đổi, nếu có, chưa kiểm.
 - Lịch tuần quấn vòng: ca Chủ nhật nối với thứ Hai cùng tuần, không nối với tuần trước (D22).
 - Chưa có chấm công; không đo adherence.
 - Giờ tối thiểu theo hợp đồng là mềm (D25): lịch có thể để một người dưới mức tối thiểu và chỉ báo số giờ thiếu.

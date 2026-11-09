@@ -410,5 +410,5 @@ Lệnh: `docker compose up -d --build`, rồi mở `http://localhost:3000`.
 - Giải thích giờ thiếu chỉ thử thêm **một** ca cho **một** người; không xét đổi chéo hay dời giờ nghỉ.
 - Nhãn "đầu vào đã đổi" so ảnh chụp đầu vào. Đổi tên nhân viên không tính, vì tên không nằm trong ảnh chụp. Lượt cũ từ trước khi có hash hiện là "không rõ".
 - Giao diện chưa được duyệt tay trên trình duyệt sau các phần repair, F và G.
-- Nghị định 145/2020 chưa được đối chiếu với văn bản gốc (đặc tả mục 4).
+- Nghị định 145/2020 đã đối chiếu với văn bản gốc (đặc tả mục 4); văn bản sửa đổi, nếu có, chưa kiểm.
 - Mọi số liệu hiệu năng chỉ đúng cho các trường hợp đã đo ([benchmarks.md](benchmarks.md)).

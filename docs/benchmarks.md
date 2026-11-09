@@ -2,6 +2,8 @@
 
 Mọi số trong file này chạy lại được bằng lệnh ghi bên dưới. Kết luận chỉ áp cho instance, time limit, seed và số worker đã ghi (CLAUDE.md nguyên tắc 5). Không trích số của nhóm khác như số của ShiftOpt.
 
+**Đơn vị chi phí:** mọi chi phí trong file này là đơn vị nội bộ của engine, bằng lương mỗi giờ × giờ × 100 (`PERCENT_BASE` trong `engine/src/shiftopt/domain.py`, để phụ cấp đêm 30% là số nguyên). Chia cho 100 để ra số tiền lương. Ví dụ store 18, 30 nhân viên: 8 892 000 đơn vị nội bộ tương ứng 88 920 tiền lương. Tỷ lệ phần trăm không bị ảnh hưởng.
+
 Máy đo: Windows 11 (10.0.26200), 16 luồng CPU, Python 3.11.14, OR-Tools 9.15.6755, PuLP 3.3.2. Mục 1–3 đo ngày 2026-10-29; mục 2b, 2c, 7, 8 đo ngày 2026-11-08; mục 4 ngày 2026-11-05; mục 5 ngày 2026-11-08; mục 6 ngày 2026-11-09. Các mục đo trước khi có giờ tối thiểu và ngân sách (G3) không dùng hai tính năng này, nên không bị ảnh hưởng.
 
 ## 1. Curtois & Qu (2014), Instance1–5
@@ -247,6 +249,29 @@ Báo nghỉ 1 người từ thứ Tư (`repair` so với greedy chạy lại t�
 
 Giới hạn: ba store, 30 giây mỗi lượt, một worker. Kết quả không suy ra cho store khác hay cho giới hạn thời gian dài hơn.
 
+### 5b. Nhận xét quản lý: store 18, cùng lượt thực nghiệm (plan J2)
+
+Các dòng CP-SAT seed 0 của store 18 trong `docs/experiments/scenario_results.csv` (cùng lượt chạy mục 5, 30 giây, 1 worker). Số nhân viên của kịch bản cơ sở do `run_experiments.employee_count` đặt: `ceil(1,25 × 468 / 40) = 15` người, lương 100, `p = 4`, 3 ca 0/8/16 h. Đây khác kịch bản cơ sở 30 người của mục 4.
+
+| Kịch bản | Nhân viên | Giờ thiếu | Giờ thừa | Coverage | Chi phí | Tầng CP-SAT |
+|---|---|---|---|---|---|---|
+| cơ sở (3 ca) | 15 | 12 | 174 | 0,974 | 7 740 000 | optimal / optimal / feasible |
+| 6 giờ bắt đầu ca (0/4/…/20) | 15 | 0 | 71 | 1,000 | 6 514 000 | optimal / optimal / optimal |
+| bớt 1 người | 14 | 18 | 138 | 0,962 | 7 242 000 | optimal / optimal / optimal |
+| bớt 2 người | 13 | 30 | 108 | 0,936 | 6 690 000 | optimal / optimal / optimal |
+| bớt 5 người | 10 | 81 | 33 | 0,827 | 5 028 000 | feasible / feasible / feasible |
+| λ = 1,1 | 15 | 56 | 50 | 0,912 | 7 704 000 | optimal / optimal / feasible |
+| λ = 1,3 | 15 | 101 | 31 | 0,856 | 7 632 000 | feasible / optimal / feasible |
+| p = 3 | 15 | 60 | 101 | 0,898 | 7 608 000 | optimal / optimal / feasible |
+| p = 5 | 15 | 0 | 177 | 1,000 | 7 166 000 | optimal / optimal / optimal |
+
+Đọc trong phạm vi đã đo (một store, seed 0, 30 giây):
+
+- **Bộ ca quan trọng hơn số người.** Với cùng 15 người, chuyển từ 3 lên 6 giờ bắt đầu ca đưa giờ thiếu từ 12 về 0, giờ thừa từ 174 về 71 và chi phí giảm khoảng 15,8%; cả ba tầng `OPTIMAL`. Tầng thiếu người và chi phí của kịch bản 3 ca cũng `OPTIMAL`, nên so sánh hai tầng này là giữa hai tối ưu đã chứng minh.
+- **Mỗi người bớt đi làm tăng giờ thiếu nhanh dần:** 12 → 18 → 30 giờ khi bớt 1 rồi 2 người (đều `OPTIMAL` ở tầng thiếu người); bớt 5 người còn 81 giờ thiếu nhưng chỉ `FEASIBLE`.
+- **Giả định năng suất `p` tác động ngang với biến động nhu cầu:** `p = 3` cho 60 giờ thiếu, gần bằng λ = 1,1 (56 giờ); `p = 5` phủ đủ. Kết luận về biên chế phụ thuộc mạnh vào giả định quy đổi.
+- Chi phí giảm khi λ tăng hay khi bớt người vì phần thiếu không phát sinh lương; không đọc như tiết kiệm.
+
 Tái chạy:
 
 ```
@@ -287,7 +312,7 @@ Kết luận trong phạm vi đã đo:
 
 Gap đo bằng cùng một công thức trên cả hai mô hình: `gap_pct = 100 (z_IP − z_LP) / max(1, z_IP)`. `z_LP` là tối ưu của bài toán nới lỏng (biến liên tục). Đây là nguồn gốc của nhãn "xấp xỉ" cho dual LP ([model.md](model.md) mục 5, [kiến trúc.md](kiến%20trúc.md) mục 7.5): dual lấy từ bài toán nới lỏng, nên sai lệch với chi phí biên thật tùy theo gap.
 
-Lệnh: `cd engine && uv run --locked python -u -m benchmarks.integrality_gap`
+Lệnh: `cd engine && uv run --locked python -u -m benchmarks.integrality_gap`. Nhu cầu store 18 đọc từ `docs/experiments/store18_demand.csv` (168 giờ, xuất bằng `backend/scripts/baseline_store18.py`, cùng giả định mục 4).
 
 Mô hình tổng hợp (có nghỉ ngầm, [model.md](model.md) mục 1b), chi phí lương:
 
@@ -296,6 +321,7 @@ Mô hình tổng hợp (có nghỉ ngầm, [model.md](model.md) mục 1b), chi p
 | uniform_3_shifts | 2 217 600 | 3 696 000 | 40,0 |
 | peaked_3_shifts | 3 371 200 | 4 256 000 | 20,8 |
 | peaked_spaced_8_shifts | 3 570 000 | 3 570 000 | 0,0 |
+| store 18, 30 nhân viên (nhu cầu thật, mục 4) | 8 828 000 | 8 892 000 | 0,72 |
 
 Mô hình theo nhân viên, 10 nhân viên, seed 0, 1, 2 (HiGHS, 60 giây, tầng 1 và tầng 2):
 
@@ -308,11 +334,20 @@ Mô hình theo nhân viên, 10 nhân viên, seed 0, 1, 2 (HiGHS, 60 giây, tần
 | 2 | thiếu người | 28,9 | 34,0 | 15,0 |
 | 2 | chi phí | 5 101 000 | 5 106 000 | 0,10 |
 
+Store 18, 30 nhân viên, nhu cầu tuần cố định (không có seed), HiGHS 60 giây, `relative_gap_limit = 0`:
+
+| Tầng | z_LP | z_IP | gap (%) | Trạng thái IP |
+|---|---|---|---|---|
+| thiếu người | 0 | 0 | 0,0 | optimal |
+| chi phí | 8 827 999,9 | 8 892 000 | 0,72 | optimal |
+
 Kết luận trong phạm vi đã đo:
 
 - Gap của tổng hợp lớn ở instance đều (40%) và đỉnh (21%). Ở instance ca cách đều 8 ca, gap bằng 0. Dual LP của mô hình tổng hợp vì vậy chỉ có thể dùng làm xấp xỉ, không thể đọc như chi phí biên của giờ nguyên.
 - Mô hình theo nhân viên: gap của tầng chi phí rất nhỏ (dưới 0,4%), gap của tầng thiếu người lớn hơn nhiều (6–15%). Lý do: nhu cầu 3–4 người không chia được đều theo ca 8 giờ, nên nghiệm nới lỏng có phần giờ thiếu không nguyên.
-- Không đo ở store 18 trong lượt này: engine không dựng được nhu cầu store 18 mà không gọi backend. Kết quả chỉ áp dụng cho các instance trên.
+- Store 18 (B5): cả hai mô hình có gap tầng chi phí 0,72%, cả hai `OPTIMAL`. Z_IP của hai mô hình bằng nhau (8 892 000), kiểm tra chéo được. Tầng thiếu người bằng 0 vì 30 nhân viên dư sức chứa, nên gap tầng này không có ý nghĩa ở kịch bản này.
+- Trên nhu cầu thật, gap nhỏ hơn nhiều so với instance tổng hợp đỉnh 3 ca (20,8%). Nguyên nhân chưa kiểm chứng riêng: nhu cầu cao và nhiều ca khiến nghiệm nới lỏng gần nguyên hơn. Đây là một store với một bộ giả định (`alpha = 1`, `p = 4`); không suy ra cho store khác.
+- Mô hình tổng hợp và mô hình theo nhân viên đều cho gap dưới 1% trên store 18, nhưng dual LP vẫn chỉ là xấp xỉ theo nguyên tắc 4 của CLAUDE.md.
 
 ## 8. Lexicographic so với mục tiêu có trọng số
 

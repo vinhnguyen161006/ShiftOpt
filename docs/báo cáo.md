@@ -43,7 +43,7 @@ Mục tiêu giải theo tầng: thiếu người, rồi giờ tối thiểu (khi
 
 Các hằng nằm trong `LaborRules`: giờ/ngày 8, giờ/tuần 48, nghỉ 12 giờ giữa ca, nghỉ 24 giờ hằng tuần, khung đêm 22h–06h, phụ cấp đêm 30%, nghỉ giữa giờ 30 phút (45 phút ban đêm), `K = 6` ngày liên tiếp.
 
-**Đối chiếu luật.** Điều 98, 105, 106, 109, 110, 111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025); Đ.111 khoản 1 và Đ.105 khoản 2 của code chặt hơn luật. Nghị định 145/2020 chưa đối chiếu văn bản gốc. Xem [đặc tả.md](đặc%20tả.md) mục 4.
+**Đối chiếu luật.** Điều 98, 105, 106, 109, 110, 111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025); Đ.111 khoản 1 và Đ.105 khoản 2 của code chặt hơn luật. Nghị định 145/2020 đã đối chiếu văn bản gốc (2026-11-09). Xem [đặc tả.md](đặc%20tả.md) mục 4.
 
 Hai ca pháp lý của nghiệm thu được kiểm bằng test: ca 14h–22h rồi 06h–14h bị cấm; ca qua đêm rồi nghỉ đủ 24 giờ không bị báo vi phạm (`test_afternoon_then_morning_breaks_rest_rule`, `test_overnight_shift_then_full_24_hour_rest_is_allowed`) (CLAUDE.md mục 13, dòng 6).
 
@@ -121,7 +121,7 @@ Thứ tự mặc định đặt chi phí trước công bằng, nên lịch rẻ
 - **Đạt có điều kiện:** coverage 98% ở kịch bản cơ sở (kịch bản dư sức chứa); so sánh solver trên cả mô hình tổng hợp và mô hình theo nhân viên, trong phạm vi 10–30 nhân viên, 3 seed, 60 giây (đặc tả D12).
 - **Chờ:** độ nhạy và UI cần người duyệt trên trình duyệt. Smoke flow trên Compose chạy đạt.
 
-Backend có 168 test: 131 unit, 37 integration chạy trên MySQL 8.4.10 trong CI, không skip. Migration head `8c4a2e9d6f31` khớp model (`alembic check` sạch).
+Backend có 219 test: 166 unit, 53 integration chạy trên MySQL 8.4.10 trong CI. Migration head `d4e5f6a7b8c9` (owner_scoped_data); CI có bước `alembic check`.
 
 ## 9. Hạn chế
 
@@ -132,7 +132,7 @@ Backend có 168 test: 131 unit, 37 integration chạy trên MySQL 8.4.10 trong C
 - Quét dung sai chi phí mới đo trên dữ liệu sinh, mọi điểm `FEASIBLE`.
 - Giải thích giờ thiếu chỉ thử thêm một ca cho một người, không xét đổi chéo.
 - Nghỉ giữa giờ xấp xỉ bằng một giờ phủ, bảo thủ.
-- Nghị định 145/2020 chưa đối chiếu văn bản gốc.
+- Nghị định 145/2020 đã đối chiếu văn bản gốc; văn bản sửa đổi, nếu có, chưa kiểm.
 - Nhu cầu là doanh số kho tiền phương, không phải nhu cầu nhân sự; mọi quy đổi là giả định của nhóm.
 - Chưa có chấm công, nên không đo adherence. Không hỗ trợ tổng đài.
 - Không có dự báo; không tính WAPE/MAPE.
@@ -181,9 +181,10 @@ Không chép mã từ nguồn nào dưới đây. Mọi thứ được viết l�
 | R12 | web.dev, bài về `prefers-color-scheme` (tác giả ghi trên trang: Thomas Steiner; trang không hiện tiêu đề và ngày trong phần đọc được) | https://web.dev/articles/prefers-color-scheme | 2026-11-07 | Trang không ghi giấy phép trong phần đọc được; không lấy mã | Mẫu "theo tín hiệu của trình duyệt trước, cho người dùng ghi đè sau"; khai báo `color-scheme` để ô nhập và thanh cuộn của trình duyệt cũng tối |
 | R13 | MDN, thuộc tính CSS `color-scheme` | https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme | 2026-11-07, trang ghi sửa lần cuối 2026-07-21 | Creative Commons (chân trang không nêu rõ loại nào); không lấy mã | `color-scheme: dark` đổi màu nền canvas, thanh cuộn và mặc định của ô nhập; kiểm tra tín hiệu hệ thống bằng `prefers-color-scheme` |
 | R14 | Timefold quickstarts, employee scheduling (`use-cases/employee-scheduling`) | https://github.com/TimefoldAI/timefold-quickstarts (mục use-cases/employee-scheduling) | 2026-11-08 | Apache-2.0 (ghi trên trang repo); không lấy mã | Ý tưởng pinning và replanning từ chủ đề bài toán: giữ phần đã chạy, xếp lại phần còn lại. README của mục không đọc được qua công cụ, nên bố cục lưới lấy từ dự án ShiftOpt (`ScheduleGrid`), không từ mẫu Timefold |
-| R15 | Deputy, Find replacement (trợ giúp quản lý) | https://help.deputy.com/hc/en-au/articles/4688987465743 | 2026-11-08 | Trang trả 403 khi mở; không dùng làm nguồn | Không dùng. Thay bằng R17 |
+| R15 | Deputy, Find replacement (trợ giúp quản lý) | https://help.deputy.com/hc/en-au/articles/4688987465743 | 2026-11-08 | Trang trả 403 khi mở; không dùng làm nguồn | Không dùng. Thay bằng R17 và R18 |
 | R16 | Timefold docs, Employee Shift Scheduling, "Real-time planning" | https://docs.timefold.ai/employee-shift-scheduling/latest/real-time-planning | 2026-11-08 | Không ghi giấy phép trong phần đọc được; không lấy mã | Xếp lại: cập nhật đầu vào (người vắng) rồi giải lại; ca được ghim giữ nguyên, ca khác có thể đổi người; báo mức thay đổi (tỷ lệ ca và nhân viên bị ảnh hưởng) |
-| R17 | Connecteam, "Shift swap or shift replacement" (trợ giúp) | https://help.connecteam.com/en/articles/16644414-let-s-settle-this-once-and-for-all-shift-swap-or-shift-replacement | 2026-11-08 | Không ghi giấy phép trong phần đọc được; không lấy mã | Gợi ý người thay: tách thay ca (một chiều) và đổi ca (hai chiều); ứng viên được cảnh báo trùng ca hoặc không khả dụng; quản lý duyệt trước khi có hiệu lực. Trang không nói quản lý thấy gì trong danh sách, nên chỉ lấy hành vi chung |
+| R17 | Connecteam, "Let's settle this once and for all: shift swap or shift replacement" (trợ giúp; trang ghi "Written by Tair", 2026-08-26) | https://help.connecteam.com/en/articles/16644414-let-s-settle-this-once-and-for-all-shift-swap-or-shift-replacement | 2026-11-09 (mở được, HTTP 200) | Không ghi giấy phép trong phần đọc được; không lấy mã | Gợi ý người thay: nút "Find Replacement" trên ca, danh sách đồng nghiệp đủ điều kiện và đang rảnh, cảnh báo trùng ca hoặc không khả dụng ngay khi chọn; phân biệt thay ca (một chiều) và đổi ca (hai chiều); ca gốc vẫn của người cũ tới khi có người nhận. Trang không nói quản lý thấy gì trong danh sách ứng viên |
+| R18 | Connecteam, "Admin approval for shift replacements" (trợ giúp; trang ghi "Updated this week", ảnh chụp đề ngày 2026-08-31) | https://help.connecteam.com/en/articles/6800236-admin-approval-for-shift-replacements | 2026-11-09 (mở được, HTTP 200) | Không ghi giấy phép trong phần đọc được; không lấy mã | Màn quản lý duyệt yêu cầu: danh sách yêu cầu chờ duyệt (tab riêng, gắn vào ca), trước khi duyệt xem giờ làm và ca trước/sau của cả hai người, cảnh báo đỏ khi vượt giới hạn giờ tuần; duyệt hoặc từ chối từng loại yêu cầu riêng. Dùng cho màn "Gợi ý người thay" ở phần duyệt, không dùng cho danh sách ứng viên |
 
 ### Bố cục lấy từ chính trang chủ
 

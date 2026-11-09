@@ -1,6 +1,6 @@
 # Kế hoạch hoàn thiện ShiftOpt
 
-Cập nhật: 2026-11-09, sau merge PR #25 vào `main` (`b0d0dfc`): đã xong A (trừ A4, A5), B, C, D1, D2 (chụp ảnh), D4, F, G1–G5. Dựa trên [benchmarks.md](benchmarks.md), [đặc tả.md](đặc%20tả.md) và kế hoạch nhóm đề xuất ngày 2026-11-08. File này thay cho các kế hoạch rời trước đó.
+Cập nhật: 2026-11-09, sau merge PR #25 vào `main` (`b0d0dfc`): đã xong A (A4 xong có mục mở, A5 xong 2026-11-09), B (gồm B5), C, D1, D2 (chụp ảnh), D4, F, G1–G5. **Không làm E, H, I** (quyết định 2026-11-09, mục 5): không thêm tính năng mới, đưa vào "Hướng phát triển" của báo cáo. Việc còn lại: D2 (chèn ảnh), D3 (duyệt tay), J. Dựa trên [benchmarks.md](benchmarks.md), [đặc tả.md](đặc%20tả.md) và kế hoạch nhóm đề xuất ngày 2026-11-08. File này thay cho các kế hoạch rời trước đó.
 
 **Nhóm điền trước khi dùng:**
 
@@ -23,7 +23,7 @@ Cập nhật: 2026-11-09, sau merge PR #25 vào `main` (`b0d0dfc`): đã xong A 
 2. **Bằng chứng tối ưu hóa:** so với baseline xếp tay, so hai solver, đo độ nhạy và đánh đổi, trên nhiều store.
 3. **Sản phẩm chạy được, trình bày trung thực:** UI được duyệt, báo cáo và slide khớp số đo, giới hạn nói rõ.
 
-Mức ưu tiên: **P0** bắt buộc, **P1** nên có, **P2** có thì tốt. Việc đụng phạm vi đã chốt trong CLAUDE.md (mục 14) hoặc thứ tự ưu tiên của mô hình (mục 5.2) ghi **"cần duyệt đặc tả"**. Đặc tả đã duyệt 2026-11-08 (D21–D23 cho phép F, H, I có điều kiện).
+Mức ưu tiên: **P0** bắt buộc, **P1** nên có, **P2** có thì tốt. Việc đụng phạm vi đã chốt trong CLAUDE.md (mục 14) hoặc thứ tự ưu tiên của mô hình (mục 5.2) ghi **"cần duyệt đặc tả"**. Đặc tả đã duyệt 2026-11-08 (D21–D23 cho phép F, H, I có điều kiện). F đã làm; H, I không làm (2026-11-09).
 
 ## 2. Hiện trạng
 
@@ -51,36 +51,36 @@ Kiểm tra ngày 2026-11-09: engine 236 test pass, coverage 98,13%; backend 131 
 
 | Mục | Trạng thái | Việc |
 |---|---|---|
-| Công thức ILP mô hình theo nhân viên | Xong 2026-11-08: `model.md` mục 2a, bản HiGHS `roster_mip.py` | B5 (store 18) |
-| Acceptance dòng 2, phủ nhu cầu | Đạt có điều kiện: kịch bản cơ sở dư sức chứa; kịch bản 8 người cho coverage 0,703, gap 1,0 | E |
+| Công thức ILP mô hình theo nhân viên | Xong 2026-11-08: `model.md` mục 2a, bản HiGHS `roster_mip.py` | B5 (xong 2026-11-09) |
+| Acceptance dòng 2, phủ nhu cầu | Đạt có điều kiện: kịch bản cơ sở dư sức chứa; kịch bản 8 người cho coverage 0,703, gap 1,0; mức "vừa đủ" chưa đo trong `benchmarks.md` | Không làm E; ghi giới hạn trong báo cáo (J1) |
 | Acceptance dòng 4, so sánh solver | Đạt có điều kiện: mô hình theo nhân viên 10–30 nhân viên, 3 seed, 60 giây (`benchmarks.md` 2b) | Phạm vi, không mở rộng |
 | Acceptance dòng 5 và 9, UI | Chờ người duyệt tay | D |
 | Phạm vi dữ liệu | Kịch bản cơ sở chỉ trên store 18; so với greedy trên 3 store (18, 84, 578) | Không mở rộng thêm |
 | Nhận xét quản lý | Có số đo, chưa có nhận xét | J2 |
-| Đặc tả | Đã duyệt D1–D27; NĐ 145/2020 chưa đối chiếu văn bản gốc | A4 |
-| Repair, gợi ý người thay | Chưa duyệt trên trình duyệt; nguồn UI thứ hai (Deputy) chỉ đọc được qua snippet | A5 |
+| Đặc tả | Đã duyệt D1–D28; đối chiếu BLLĐ (bản gốc và VBHN 2025) và NĐ 145 xong 2026-11-09; còn mở sửa đổi NĐ 145 (nếu có) | A4 |
+| Repair, gợi ý người thay | Chưa duyệt trên trình duyệt. Nguồn UI thứ hai: Connecteam (R17, R18), mở được ngày 2026-11-09; Deputy (R15) vẫn 403 | A5 (xong) |
 | UI của F và G1–G4 | Có `tsc` và build, chưa duyệt tay trên trình duyệt; chưa có hai nguồn UI cho biểu đồ đánh đổi, cảnh báo trước khi giải, bảng giờ thiếu | D3 |
 
 ## 3. Lộ trình
 
 | Giai đoạn | Nội dung | Ưu tiên | Ước lượng | Phụ trách | Mốc |
 |---|---|---|---|---|---|
-| A | Hợp nhất nhánh, tài liệu, quyết định nhóm (xong trừ A4, A5) | P0 | 1 ngày | [điền] | [điền] |
-| B | Mô hình ILP và phân tích mô hình (xong; B5 thiếu store 18) | P0 | 2,5 ngày | [điền] | [điền] |
+| A | Hợp nhất nhánh, tài liệu, quyết định nhóm (xong, còn mục mở ở A4) | P0 | 1 ngày | [điền] | [điền] |
+| B | Mô hình ILP và phân tích mô hình (xong, gồm B5) | P0 | 2,5 ngày | [điền] | [điền] |
 | C | Baseline greedy và thực nghiệm nhiều store (xong) | P0 | 2,5 ngày | [điền] | [điền] |
 | D | Đóng nghiệm thu UI (còn chèn ảnh D2, duyệt tay D3) | P0 | 1 ngày | [điền] | [điền] |
-| E | Coverage khi thiếu người | P1 | 0,5 ngày | [điền] | [điền] |
+| E | Coverage khi thiếu người (**không làm**, 2026-11-09) | — | — | — | — |
 | F | Đánh đổi chi phí và công bằng (D21, xong) | P1 | 1 ngày | [điền] | [điền] |
 | G | Tính năng nhỏ (xong G1–G5) | P2 | 1–2 ngày | [điền] | [điền] |
-| H | Tuần không quấn vòng (D22, chưa làm) | P2 | 3 ngày | [điền] | [điền] |
-| I | Dự báo tối giản (D23, chưa làm) | P2 | 1 ngày | [điền] | [điền] |
+| H | Tuần không quấn vòng (D22, **không làm**, 2026-11-09) | — | — | — | — |
+| I | Dự báo tối giản (D23, **không làm**, 2026-11-09) | — | — | — | — |
 | J | Báo cáo, nhận xét quản lý, slide, demo | P0 | 2,5 ngày | [điền] | [điền] |
 
 Ước lượng thô, tính cho một người, đã cộng khoảng 25% dự phòng cho B và C. Tổng P0 khoảng 9,5 ngày-người.
 
-Thứ tự đề xuất: A → B1 → C → D → B2–B6 → J (bản nháp) → E → F → J (bản cuối) → G, H, I nếu còn thời gian.
+Thứ tự còn lại: J1, J2 (dùng số đo đã có) → D2 (chèn ảnh) → J3 → D3 (duyệt tay) → J4 → J5, J6.
 
-Thiếu thời gian thì làm đủ A, B1–B3, C1–C5, D, J. Đưa E–I vào mục "Hướng phát triển" của báo cáo, kèm lý do.
+E, H, I không làm (quyết định 2026-11-09). Ghi vào mục "Hướng phát triển" của báo cáo, kèm lý do (J1). Các bảng việc ở mục 4 được giữ để mô tả phần mở rộng đó.
 
 Chia việc cho hai người: một người làm B và C (engine, thực nghiệm), một người làm D và J (UI, tài liệu, demo). A làm chung.
 
@@ -94,8 +94,8 @@ Chia việc cho hai người: một người làm B và C (engine, thực nghi�
 | A1 | Merge PR vào `main` | CI trên `main` xanh. **Xong 2026-11-08**: `main` = `256e94a`, run `42484777634` |
 | A2 | Đồng bộ tài liệu với D18 | Đã làm 2026-11-08: `grep -n -i "tổng đài\|erlang" CLAUDE.md docs/*.md` chỉ còn câu ghi D18 và giới hạn |
 | A3 | **Xong 2026-11-08**: Vinh ủy quyền cho Claude duyệt D1–D24 và các việc cần quyết (mục 5). Thành viên khác chưa xem; ai không đồng ý sửa phiếu duyệt trong `đặc tả.md` | Đặc tả bỏ nhãn "bản nháp"; ghi ngày và người duyệt ở đầu `đặc tả.md` |
-| A4 | Đối chiếu nguyên văn Đ.98, 105, 106, 109, 110, 111 và NĐ 145/2020 với văn bản 45/2019/QH14 | Đặc tả mục 4 trích nguyên văn, ghi nguồn chính thức |
-| A5 | Nguồn UI thứ hai cho màn xếp lại và gợi ý người thay: mở được trang, ghi ngày xem | phụ lục nguồn UI trong `báo cáo.md` R15 có nguồn đã mở (thay snippet Deputy) |
+| A4 | **Xong 2026-11-09** (đối chiếu bản gốc 45/2019/QH14 và NĐ 145/2020, PDF trong `data/raw/`, đọc từng trang ảnh). Khớp: Đ.98 kh.2, 105, 106, 109 kh.1, 110, 111 kh.1; NĐ 145 Đ.64 kh.1 (chặt hơn, không cần đổi code). NĐ 145 Đ.64 kh.3 đã có qua `break_window` (giờ 1 đến L−2). Đã đối chiếu VBHN 125/2025: không đổi các điều trên. **Còn mở:** văn bản sửa đổi NĐ 145/2020 (nếu có) | Đặc tả mục 4 có nội dung đối chiếu với nguồn gốc, ghi rõ nguồn |
+| A5 | **Xong 2026-11-09**: nguồn UI thứ hai cho màn xếp lại và gợi ý người thay. Đã mở Connecteam (R17 trợ giúp đổi/thay ca, R18 duyệt yêu cầu), ghi ngày xem trong phụ lục `báo cáo.md`. Deputy (R15) vẫn không dùng. Còn thiếu: không nguồn nào nói quản lý thấy gì trong danh sách ứng viên | phụ lục nguồn UI trong `báo cáo.md` R15, R17, R18 |
 | A6 | Chạy integration test backend trên MySQL 8.4 (gồm 3 test repair mới), `alembic check` | **Xong 2026-11-08** qua CI run `42484777634`: 128 passed, 0 skip, `alembic check` sạch |
 
 ### B. Mô hình ILP và phân tích mô hình (P0)
@@ -108,7 +108,7 @@ Chia việc cho hai người: một người làm B và C (engine, thực nghi�
 | B2 | **Xong 2026-11-08** (9 test, khớp CP-SAT trên instance nhỏ). `engine/src/shiftopt/models/roster_mip.py`: cùng công thức B1, giải bằng PuLP + HiGHS, lexicographic bằng cách cố định tầng trước | Validator cho 0 vi phạm; với 10–20 nhân viên, cùng giá trị tầng thiếu người và chi phí với CP-SAT |
 | B3 | **Xong 2026-11-08** (`benchmarks.md` 2b). So sánh solver trên mô hình theo nhân viên: `run_roster_scale.py --solver both`, 10/20/30 nhân viên, cùng time limit và seed | Bảng trong benchmarks.md mục 2; CLAUDE §13 dòng 4 chuyển Đạt hoặc ghi rõ phạm vi |
 | B4 | **Xong 2026-11-08** (`benchmarks.md` 2c). Kích thước mô hình: số biến, số ràng buộc theo số nhân viên (10, 20, 30, 40) và số loại ca, cho CP-SAT và MIP | Bảng và biểu đồ trong báo cáo |
-| B5 | **Xong 2026-11-08** (`benchmarks.md` 7), trừ store 18: engine không dựng được nhu cầu store 18 nếu không gọi backend. Integrality gap: so LP relaxation với nghiệm nguyên tối ưu trên nhiều instance, cả mô hình tổng hợp và MIP theo nhân viên | Bảng trong báo cáo, kèm giải thích vì sao dual LP chỉ là xấp xỉ |
+| B5 | **Xong 2026-11-09** (`benchmarks.md` 7, gồm store 18: gap 0,72% ở cả hai mô hình; nhu cầu xuất sang `docs/experiments/store18_demand.csv`). Integrality gap: so LP relaxation với nghiệm nguyên tối ưu trên nhiều instance, cả mô hình tổng hợp và MIP theo nhân viên | Bảng trong báo cáo, kèm giải thích vì sao dual LP chỉ là xấp xỉ |
 | B6 | **Xong 2026-11-08** (`benchmarks.md` 8). Lexicographic so với trọng số: cùng instance, thử `M_u` nhỏ, vừa, lớn; chỉ ra khi nào trọng số đảo thứ tự ưu tiên | Bảng trong báo cáo |
 
 B2 chậm trên instance lớn thì chỉ báo cáo phạm vi đã đo và giải thích lý do (MIP lớn hơn, CP-SAT mạnh ở ràng buộc chuỗi).
@@ -135,7 +135,9 @@ Trạng thái: C1–C6 đã làm (2026-11-08). Chỉ 3 store đạt tiêu chí, 
 | D3 | Một người duyệt tay theo checklist mục 7 | CLAUDE §13 dòng 5 và 9 chuyển Đạt, có tên và ngày |
 | D4 | **Xong 2026-11-08** (chưa có lỗi từ D2–D3). Tiêu đề lượt xếp lại và lượt báo nghỉ ghi "xếp lại từ lượt …", lượt sửa tay vẫn "sửa từ lượt …" (`runEyebrow`, helper `lib/run-kind.ts`). Cột "Từ lượt" trong bảng lượt có nhãn "xếp lại" hoặc "sửa tay". Đã xóa khóa `repairMeta` không dùng. Biome, tsc và vite build pass (chạy binary Linux trực tiếp vì `npm` của WSL gọi cmd.exe) | Không còn lỗi đã ghi; `npm run ci` pass |
 
-### E. Coverage khi thiếu người (P1)
+### E. Coverage khi thiếu người (không làm)
+
+**Không làm (quyết định 2026-11-09).** Báo cáo dùng hai mức đã đo (dư 30 người, căng 8 người, `benchmarks.md` mục 4) và ghi mức "vừa đủ" là chưa đo. Bảng dưới giữ lại để mô tả hướng phát triển.
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -162,9 +164,9 @@ CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi p
 | G4 | **Xong 2026-11-09**: cột `source_inputs` và `input_hash` (migration `8c4a2e9d6f31`), `GET /schedules/{id}/staleness`, cảnh báo "Đầu vào đã đổi sau lượt này" trên trang lịch; đặc tả D27 | Cần migration Alembic |
 | G5 | Gợi ý người thay khi báo nghỉ | **Đã làm** (D20) |
 
-### H. Tuần không quấn vòng (P2, cần duyệt đặc tả)
+### H. Tuần không quấn vòng (không làm)
 
-Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùng tuần. CLAUDE.md mục 14 để chân trời nhiều tuần ngoài phạm vi bản đầu. **Đã duyệt có điều kiện (D22)**: mặc định vẫn `cyclic`, làm sau A–F và J. Làm xong thì sửa CLAUDE.md mục 14. Không làm thì ghi rõ giới hạn trong báo cáo và chuẩn bị câu trả lời (mục 8).
+Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùng tuần. CLAUDE.md mục 14 để chân trời nhiều tuần ngoài phạm vi bản đầu. Đặc tả D22 đã cho phép có điều kiện. **Không làm (quyết định 2026-11-09):** ghi rõ giới hạn trong báo cáo (J1) và chuẩn bị câu trả lời (mục 8). Bảng dưới giữ lại để mô tả hướng phát triển.
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -172,9 +174,9 @@ Mô hình coi tuần là vòng tròn: ca Chủ nhật nối với thứ Hai cùn
 | H2 | Nghỉ 12 giờ, 24 giờ, số ngày liên tiếp tính cả kỳ trước, ở mô hình và validator | Test tiêm: ca kết thúc 22h Chủ nhật kỳ trước rồi 06h thứ Hai bị cấm; đã làm 5 ngày với K = 6 thì chỉ còn 1 ngày |
 | H3 | Backend lấy `previous_state` từ một lượt trước; UI chọn "tuần trước" | Integration test trên MySQL pass |
 
-### I. Dự báo tối giản (P2, cần duyệt đặc tả)
+### I. Dự báo tối giản (không làm)
 
-CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; mục 10 cấm thêm thư viện. **Đã duyệt có điều kiện (D23)**: chỉ baseline mùa vụ, không thêm thư viện. Chỉ làm khi A–F xong.
+CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; mục 10 cấm thêm thư viện. Đặc tả D23 đã cho phép có điều kiện (chỉ baseline mùa vụ). **Không làm (quyết định 2026-11-09):** ghi vào hướng phát triển của báo cáo (J1). Bảng dưới giữ lại để mô tả phần đó.
 
 | # | Việc | Xong khi |
 |---|---|---|
@@ -187,7 +189,7 @@ CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; m
 
 | # | Việc | Xong khi |
 |---|---|---|
-| J1 | Cập nhật `báo cáo.md`: công thức ILP (B1), phân tích mô hình (B4–B6), so sánh solver (B3), baseline và nhiều store (C), xếp lại (D20), đánh đổi (F), tính năng G1–G4, giới hạn tuần vòng tròn, D18 | Mọi con số có dòng tương ứng trong benchmarks.md hoặc `scenario_results.csv` |
+| J1 | Cập nhật `báo cáo.md`: công thức ILP (B1), phân tích mô hình (B4–B6), so sánh solver (B3), baseline và nhiều store (C), xếp lại (D20), đánh đổi (F), tính năng G1–G4, giới hạn tuần vòng tròn, D18; mục "Hướng phát triển" gồm E, H, I kèm lý do không làm | Mọi con số có dòng tương ứng trong benchmarks.md hoặc `scenario_results.csv` |
 | J2 | Nhận xét quản lý: giờ nào đẩy chi phí (heatmap chi phí biên); thêm hoặc bớt một người đổi chi phí và coverage bao nhiêu; ràng buộc nào chặt nhất; tác động của `p` và `alpha`; bộ ca 3 hay 6 giờ bắt đầu; báo nghỉ một người đổi bao nhiêu ca | Mỗi nhận xét có số đo và phạm vi (store, kịch bản) |
 | J3 | `slides.md`: thêm "Công thức ILP", "Tối ưu so với baseline", "Nhận xét quản lý", "Xếp lại khi có người vắng"; giữ 10–12 slide | Số liệu khớp báo cáo |
 | J4 | `demo.md`: kịch bản 5–7 phút gồm Optimize, λ, xếp lại, sửa tay gây vi phạm | Chạy thử hai lần không lỗi; có video dự phòng |
@@ -203,6 +205,7 @@ CLAUDE.md mục 14 không huấn luyện mô hình dự báo ở bản đầu; m
 5. **Đã chốt 2026-11-08:** không thêm Playwright (D24).
 6. **Đã chốt 2026-11-08:** cho phép làm F, H, I có điều kiện (D21–D23).
 7. **Đã chốt 2026-11-09:** giờ tối thiểu mềm (D25), ngân sách tuần cứng theo lượt (D26), nhãn kết quả cũ bằng so hash snapshot (D27).
+8. **Đã chốt 2026-11-09:** không làm thêm tính năng. E (coverage khi thiếu người), H (tuần không quấn vòng), I (dự báo tối giản) chuyển vào "Hướng phát triển" của báo cáo. Chỉ hoàn thiện D2, D3, J.
 
 ## 6. Kiểm tra cho mọi việc
 
@@ -251,15 +254,16 @@ Một việc chỉ tính là xong khi:
 | Người báo ốm giữa tuần thì sao? | Xếp lại: khóa ngày đã qua, solver đổi ít ca nhất; tập khóa được validator kiểm trước nên luôn có lời giải | `model.md` mục 6, đặc tả D20 |
 | FreshRetailNet có phải dữ liệu nhân sự? | Không; là doanh số chuẩn hóa; `alpha`, `p` là giả định, có quét độ nhạy | `mô tả dữ liệu.md` |
 | Ca đêm lấy nhu cầu từ đâu? | Mức tối thiểu cố định, vì doanh số đêm gần bằng 0 | CLAUDE.md nguyên tắc 7 |
-| Tuần nối tuần xử lý thế nào? | Hiện quấn vòng; đã nêu giới hạn, hoặc đã sửa ở H | báo cáo mục Hạn chế |
+| Tuần nối tuần xử lý thế nào? | Hiện quấn vòng: ca Chủ nhật nối với thứ Hai cùng tuần. Là giới hạn đã biết; hướng phát triển là chế độ tuyến tính có trạng thái tuần trước (H) | báo cáo mục Hạn chế và Hướng phát triển |
+| Có dự báo nhu cầu không? | Không; nhu cầu lấy từ doanh số quan sát đã khử censoring. Dự báo nằm ngoài phạm vi bản đầu (CLAUDE.md mục 14), là hướng phát triển (I) | báo cáo mục Hướng phát triển |
 | Vì sao bỏ chế độ tổng đài? | Quyết định D18, giữ một chế độ bán lẻ; đề bài cho phép "tổng đài hoặc cửa hàng 24/7" | đặc tả D18 |
 
 ## 9. Rủi ro
 
 | Rủi ro | Cách giảm |
 |---|---|
-| Thiếu thời gian | Làm đủ P0 trước; E–I vào "Hướng phát triển" |
+| Thiếu thời gian | Chỉ còn D2, D3, J; E, H, I đã chuyển vào "Hướng phát triển" |
 | MIP theo nhân viên (B2) chậm | Chỉ so trên instance nhỏ; báo cáo đúng phạm vi |
 | Store mới (C2) có dữ liệu bất thường | Ghi tiêu chí chọn và loại trừ trong `mô tả dữ liệu.md` |
-| H làm hỏng test cũ | Giữ cyclic mặc định, chạy toàn bộ test trước mỗi commit |
+| Báo cáo nói quá phạm vi (ví dụ coverage khi thiếu người, tuần nối tuần) | Ghi rõ mức đã đo và giới hạn; không trích mức "vừa đủ" khi chưa có số đo |
 | Demo lỗi trên máy chấm | Video dự phòng; dữ liệu seed sẵn bằng service `seed` |

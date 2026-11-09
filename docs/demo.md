@@ -67,7 +67,7 @@ Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần c
 
 "Ràng buộc cứng" nghĩa là solver **không bao giờ** được vi phạm, kể cả khi thiếu người. Khi thiếu người, lịch vẫn được tạo nhưng báo rõ giờ nào thiếu.
 
-Lưu ý khi trình bày: các điều luật đã đối chiếu với VBHN 125/VBHN-VPQH (2025), xem `docs/đặc tả.md` mục 4. Nghị định 145/2020 chưa đối chiếu văn bản gốc.
+Lưu ý khi trình bày: các điều luật đã đối chiếu với VBHN 125/VBHN-VPQH (2025), xem `docs/đặc tả.md` mục 4. Nghị định 145/2020 đã đối chiếu văn bản gốc (2026-11-09).
 
 ### A5. Ba điểm khác biệt cần nhấn mạnh
 
@@ -417,6 +417,6 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 - Bước 4 đo 6,5 giây bằng trình duyệt tự động một lần ngày 2026-11-06. Script `baseline_store18` cho 12–20 giây với cùng dữ liệu (`docs/benchmarks.md` mục 4). Chưa đo lại qua giao diện sau các thay đổi F và G.
 - Thời gian bước 8, 9, 10 qua giao diện chưa đo.
 - Ảnh chụp tự động ngày 2026-11-07 đã bỏ khỏi repo và chưa qua duyệt tay. Chụp lại trước buổi demo.
-- Nghị định 145/2020 chưa đối chiếu văn bản gốc (`docs/đặc tả.md` mục 4).
+- Nghị định 145/2020 đã đối chiếu văn bản gốc (`docs/đặc tả.md` mục 4); văn bản sửa đổi, nếu có, chưa kiểm.
 - Bước 7c, 7d (xếp lại, gợi ý người thay): có test engine, unit backend và integration trên MySQL (CI), smoke flow pass trên stack `shiftopt-e2e`; chưa bấm thử trên trình duyệt. Ảnh dự phòng có ở `docs/images/` (repair, replacements, reroster, schedule_dark).
 - Bước 9b, cảnh báo trước khi giải, bảng giờ thiếu và nhãn đầu vào đã đổi (F, G1–G4, 2026-11-09): có test engine, backend và CI; chưa bấm thử trên trình duyệt, chưa có ảnh dự phòng.
