@@ -20,7 +20,10 @@ export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: Credentials) => apiFetch<UserRead>("/auth/login", jsonInit("POST", body)),
-    onSuccess: (user) => queryClient.setQueryData(ME_KEY, user),
+    onSuccess: (user) => {
+      queryClient.clear();
+      queryClient.setQueryData(ME_KEY, user);
+    },
   });
 }
 
@@ -29,7 +32,10 @@ export function useRegister() {
   return useMutation({
     mutationFn: (body: RegisterInput) =>
       apiFetch<UserRead>("/auth/register", jsonInit("POST", body)),
-    onSuccess: (user) => queryClient.setQueryData(ME_KEY, user),
+    onSuccess: (user) => {
+      queryClient.clear();
+      queryClient.setQueryData(ME_KEY, user);
+    },
   });
 }
 
@@ -37,6 +43,6 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiFetch<void>("/auth/logout", jsonInit("POST")),
-    onSettled: () => queryClient.removeQueries({ queryKey: ME_KEY }),
+    onSettled: () => queryClient.clear(),
   });
 }

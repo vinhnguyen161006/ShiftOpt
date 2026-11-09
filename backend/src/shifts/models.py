@@ -2,7 +2,7 @@ from datetime import datetime
 
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.domain import ShiftType
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
@@ -10,9 +10,11 @@ from src.database import Base
 
 class ShiftTemplate(Base):
     __tablename__ = "shift_templates"
+    __table_args__ = (UniqueConstraint("owner_id", "name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(64), unique=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(64))
     start_hour: Mapped[int]
     length_hours: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

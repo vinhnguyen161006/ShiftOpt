@@ -41,32 +41,35 @@ def _utc_now() -> datetime:
 
 async def create_run(
     session: AsyncSession,
+    owner_id: int,
     kind: AnalysisKind,
     request: AnalysisRequest,
 ) -> AnalysisRun:
     await ensure_job_capacity(session)
     check_limits(request.solve)
     body: dict[str, Any] = {
-        "snapshot": await snapshot_for(session, request.solve),
+        "snapshot": await snapshot_for(session, owner_id, request.solve),
         "params": solve_params(request.solve),
     }
     if isinstance(request, DemandSweepRequest):
         body["multipliers"] = request.multipliers
     elif isinstance(request, StaffingSweepRequest):
-        body.update(await _staffing_inputs(session, request))
+        body.update(await _staffing_inputs(session, owner_id, request))
     elif isinstance(request, FairnessSweepRequest):
         body["tolerances"] = request.tolerances
     elif not isinstance(request, BaselineCompareRequest):
         body["hourly_wage"] = request.hourly_wage
-    run = AnalysisRun(kind=kind, status=RunStatus.QUEUED, request=body)
+    run = AnalysisRun(owner_id=owner_id, kind=kind, status=RunStatus.QUEUED, request=body)
     session.add(run)
     await session.commit()
     await session.refresh(run)
     return run
 
 
-async def _staffing_inputs(session: AsyncSession, request: StaffingSweepRequest) -> dict[str, Any]:
-    profile = await get_profile(session, request.solve.demand_profile_id)
+async def _staffing_inputs(
+    session: AsyncSession, owner_id: int, request: StaffingSweepRequest
+) -> dict[str, Any]:
+    profile = await get_profile(session, owner_id, request.solve.demand_profile_id)
     if profile.sales_load is None:
         raise InvalidInputError(
             "staffing sweep needs a demand profile built from a sales file; "
@@ -124,9 +127,9 @@ async def _finish(jobs: JobContext, run_id: int, fields: dict[str, Any]) -> None
         await session.commit()
 
 
-async def get_run(session: AsyncSession, run_id: int) -> AnalysisRun:
+async def get_run(session: AsyncSession, owner_id: int, run_id: int) -> AnalysisRun:
     run = await session.get(AnalysisRun, run_id)
-    if run is None:
+    if run is None or run.owner_id != owner_id:
         raise NotFoundError(f"analysis run {run_id} not found")
     return run
 

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, Query, Response, status
 
+from src.auth.dependencies import CurrentUserDep
 from src.jobs import JobsDep
 from src.schedules import service
 from src.schedules.dependencies import SessionDep, ValidRun
@@ -36,22 +37,25 @@ def _csv_response(content: str, run_id: int, name: str) -> Response:
 async def create_schedule(
     payload: SolveRequest,
     session: SessionDep,
+    user: CurrentUserDep,
     jobs: JobsDep,
     background: BackgroundTasks,
 ) -> JobAccepted:
-    run = await service.create_run(session, payload)
+    run = await service.create_run(session, user.id, payload)
     background.add_task(service.execute_run, jobs, run.id)
     return JobAccepted(job_id=run.id, status=run.status)
 
 
 @router.post("/preview-warnings", response_model=PreviewWarningsRead)
-async def preview_warnings(payload: SolveRequest, session: SessionDep) -> PreviewWarningsRead:
-    return await service.preview_warnings(session, payload)
+async def preview_warnings(
+    payload: SolveRequest, session: SessionDep, user: CurrentUserDep
+) -> PreviewWarningsRead:
+    return await service.preview_warnings(session, user.id, payload)
 
 
 @router.get("", response_model=list[SolveRunRead])
-async def list_schedules(session: SessionDep) -> list[SolveRunRead]:
-    return [SolveRunRead.model_validate(r) for r in await service.list_runs(session)]
+async def list_schedules(session: SessionDep, user: CurrentUserDep) -> list[SolveRunRead]:
+    return [SolveRunRead.model_validate(r) for r in await service.list_runs(session, user.id)]
 
 
 @router.get("/{run_id}", response_model=SolveRunRead)

@@ -8,6 +8,7 @@ from sqlalchemy import update
 from src.analysis.models import AnalysisKind, AnalysisRun
 from src.main import recover_interrupted_jobs
 from src.schedules.models import RunStatus, SolveRun
+from tests.integration.conftest import STUB_USER
 from tests.integration.helpers import solve_body
 
 pytestmark = pytest.mark.integration
@@ -18,14 +19,23 @@ MAX_PENDING = 4
 async def _insert_jobs(app: FastAPI, status: RunStatus, count: int) -> None:
     async with app.state.session_factory() as session:
         for _ in range(count):
-            session.add(SolveRun(status=status, params={}, instance_snapshot={}))
+            session.add(
+                SolveRun(owner_id=STUB_USER.id, status=status, params={}, instance_snapshot={})
+            )
         await session.commit()
 
 
 async def _insert_analysis(app: FastAPI, status: RunStatus, count: int) -> None:
     async with app.state.session_factory() as session:
         for _ in range(count):
-            session.add(AnalysisRun(kind=AnalysisKind.DEMAND_SWEEP, status=status, request={}))
+            session.add(
+                AnalysisRun(
+                    owner_id=STUB_USER.id,
+                    kind=AnalysisKind.DEMAND_SWEEP,
+                    status=status,
+                    request={},
+                )
+            )
         await session.commit()
 
 

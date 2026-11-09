@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import JSON, DateTime, String, func
+from sqlalchemy import JSON, DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base, enum_column
@@ -19,9 +19,11 @@ class StaffingMode(StrEnum):
 
 class DemandProfile(Base):
     __tablename__ = "demand_profiles"
+    __table_args__ = (UniqueConstraint("owner_id", "name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(120), unique=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
     source: Mapped[DemandSource] = mapped_column(enum_column(DemandSource))
     mode: Mapped[StaffingMode] = mapped_column(enum_column(StaffingMode))
     required_staff: Mapped[list[int]] = mapped_column(JSON)

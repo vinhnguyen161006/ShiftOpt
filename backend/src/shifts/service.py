@@ -16,23 +16,27 @@ def _check_length(length_hours: int) -> None:
         raise InvalidInputError(f"shift length must not exceed {limit} hours (Article 105)")
 
 
-async def list_templates(session: AsyncSession) -> list[ShiftTemplate]:
+async def list_templates(session: AsyncSession, owner_id: int) -> list[ShiftTemplate]:
     result = await session.scalars(
-        select(ShiftTemplate).order_by(ShiftTemplate.start_hour, ShiftTemplate.name)
+        select(ShiftTemplate)
+        .where(ShiftTemplate.owner_id == owner_id)
+        .order_by(ShiftTemplate.start_hour, ShiftTemplate.name)
     )
     return list(result)
 
 
-async def get_template(session: AsyncSession, template_id: int) -> ShiftTemplate:
+async def get_template(session: AsyncSession, owner_id: int, template_id: int) -> ShiftTemplate:
     template = await session.get(ShiftTemplate, template_id)
-    if template is None:
+    if template is None or template.owner_id != owner_id:
         raise NotFoundError(f"shift template {template_id} not found")
     return template
 
 
-async def create_template(session: AsyncSession, payload: ShiftTemplateCreate) -> ShiftTemplate:
+async def create_template(
+    session: AsyncSession, owner_id: int, payload: ShiftTemplateCreate
+) -> ShiftTemplate:
     _check_length(payload.length_hours)
-    template = ShiftTemplate(**payload.model_dump())
+    template = ShiftTemplate(**payload.model_dump(), owner_id=owner_id)
     session.add(template)
     await commit_unique(session, DUPLICATE_NAME)
     await session.refresh(template)
@@ -40,10 +44,10 @@ async def create_template(session: AsyncSession, payload: ShiftTemplateCreate) -
 
 
 async def update_template(
-    session: AsyncSession, template_id: int, payload: ShiftTemplateUpdate
+    session: AsyncSession, owner_id: int, template_id: int, payload: ShiftTemplateUpdate
 ) -> ShiftTemplate:
     _check_length(payload.length_hours)
-    template = await get_template(session, template_id)
+    template = await get_template(session, owner_id, template_id)
     for field, value in payload.model_dump().items():
         setattr(template, field, value)
     await commit_unique(session, DUPLICATE_NAME)
@@ -51,7 +55,7 @@ async def update_template(
     return template
 
 
-async def delete_template(session: AsyncSession, template_id: int) -> None:
-    template = await get_template(session, template_id)
+async def delete_template(session: AsyncSession, owner_id: int, template_id: int) -> None:
+    template = await get_template(session, owner_id, template_id)
     await session.delete(template)
     await session.commit()

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 200 * 1024 * 1024
     session_ttl_hours: int = 12
     cookie_secure: bool = False
+    open_signup: bool = False
     allowed_emails: list[str] = Field(default_factory=list)
     allowed_email_domains: list[str] = Field(default_factory=list)
     min_password_length: int = 8

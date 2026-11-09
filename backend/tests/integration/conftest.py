@@ -35,6 +35,10 @@ async def app(database_url: str, monkeypatch: pytest.MonkeyPatch) -> AsyncIterat
         async with application.state.engine.begin() as connection:
             for table in TABLES:
                 await connection.execute(text(f"DELETE FROM {table}"))
+            await connection.execute(
+                text("INSERT INTO users (id, email, display_name) VALUES (:id, :email, :name)"),
+                {"id": STUB_USER.id, "email": STUB_USER.email, "name": STUB_USER.display_name},
+            )
         yield application
     get_settings.cache_clear()
 

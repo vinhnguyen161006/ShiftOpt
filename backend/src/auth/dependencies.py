@@ -17,3 +17,6 @@ async def current_user(
     shiftopt_session: Annotated[str | None, Cookie()] = None,
 ) -> UserRecord:
     return await service.resolve_session(session, shiftopt_session)
+
+
+CurrentUserDep = Annotated[UserRecord, Depends(current_user)]

@@ -24,6 +24,7 @@ class SolveRun(Base):
     __tablename__ = "solve_runs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     demand_profile_id: Mapped[int | None] = mapped_column(
         ForeignKey("demand_profiles.id", ondelete="SET NULL")
     )

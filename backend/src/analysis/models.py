@@ -23,6 +23,7 @@ class AnalysisRun(Base):
     __tablename__ = "analysis_runs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     kind: Mapped[AnalysisKind] = mapped_column(enum_column(AnalysisKind))
     base_run_id: Mapped[int | None] = mapped_column(
         ForeignKey("solve_runs.id", ondelete="SET NULL")
