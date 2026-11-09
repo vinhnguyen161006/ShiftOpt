@@ -48,7 +48,7 @@ Kiểm tra ngày 2026-11-08: engine 162 test pass, coverage 98,36%; backend 101 
 | Mục | Trạng thái | Việc |
 |---|---|---|
 | Công thức ILP mô hình theo nhân viên | Xong 2026-11-08: `model.md` mục 2a, bản HiGHS `roster_mip.py` | B5 (store 18) |
-| Acceptance dòng 2, phủ nhu cầu | Đạt có điều kiện: kịch bản cơ sở dư sức chứa; kịch bản 8 người cho coverage 0,703, gap 1,0 | E |
+| Acceptance dòng 2, phủ nhu cầu | Đạt có điều kiện: kịch bản cơ sở dư sức chứa; 16 người là mức tối thiểu đạt coverage 0,987 (≥ 98%); 8 người coverage 0,703, chưa chứng minh tối ưu (`benchmarks.md` 4b) | E (đo xong 2026-11-09) |
 | Acceptance dòng 4, so sánh solver | Đạt có điều kiện: mô hình theo nhân viên 10–30 nhân viên, 3 seed, 60 giây (`benchmarks.md` 2b) | Phạm vi, không mở rộng |
 | Acceptance dòng 5 và 9, UI | Chờ người duyệt tay | D |
 | Phạm vi dữ liệu | Mọi kết quả chỉ trên store 18 | C2 |
@@ -134,8 +134,8 @@ Trạng thái: C1–C5 đã làm (2026-11-08); C6 chưa làm theo yêu cầu. Ch
 
 | # | Việc | Xong khi |
 |---|---|---|
-| E1 | Kịch bản "vừa đủ": sức chứa khoảng 1,1 × nhu cầu (store 18, khoảng 12 người) | Đo coverage, status, gap với 60 và 120 giây |
-| E2 | Kịch bản căng (8 người): thử thêm worker và `decompose=True`. Kết quả phân rã là xấp xỉ, không bao giờ `OPTIMAL`, phải ghi nhãn | Bảng trong benchmarks.md; CLAUDE §13 dòng 2 ghi ba mức: dư, vừa đủ, căng |
+| E1 | Kịch bản "vừa đủ": sức chứa khoảng 1,1 × nhu cầu (store 18, khoảng 12 người) | **Xong 2026-11-09**: quét 8–18 người, 60 và 120 giây, `benchmarks.md` 4b. Số người tối thiểu đạt 98% là 16 (sức chứa 1,64 × nhu cầu, không phải 1,1). Dữ liệu `docs/experiments/coverage_capacity*.csv` |
+| E2 | Kịch bản căng (8 người): thử thêm worker và `decompose=True`. Kết quả phân rã là xấp xỉ, không bao giờ `OPTIMAL`, phải ghi nhãn | **Xong 2026-11-09**: `benchmarks.md` 4b; `decompose` nhanh hơn nhưng không tốt hơn, luôn ghi `approximate`. 8 worker chứng minh được tầng thiếu người trong 2,5 giây nhưng không tái lập được, chỉ tham khảo. CLAUDE §13 dòng 2 đã ghi ba mức |
 
 ### F. Đánh đổi chi phí và công bằng (P1, cần duyệt đặc tả)
 

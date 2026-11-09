@@ -180,7 +180,7 @@ Lệnh:
 
 ```
 cd backend
-uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 --productivity 4 --time-limit 60 --workers 1 --seeds 0 1 2
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 --productivity 4 --time-limits 60 --workers 1 --seeds 0 1 2
 ```
 
 | Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng | Solver |
@@ -193,7 +193,7 @@ Kịch bản căng (8 nhân viên, cùng nhu cầu và giả định, sức ch�
 
 ```
 cd backend
-uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 --productivity 4 --time-limit 60 --workers 1 --seeds 0 1 2
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 --productivity 4 --time-limits 60 --workers 1 --seeds 0 1 2
 ```
 
 | Seed | Status | Gap | Wall (s) | Thiếu (giờ) | Coverage | Vi phạm cứng |
@@ -206,9 +206,68 @@ Kết quả: không chứng minh được tối ưu trong 60 giây (gap 1,0 ở 
 
 Kết luận trong phạm vi đã đo:
 - 3/3 `OPTIMAL`, coverage 1,0, 0 vi phạm cứng, mọi lần dưới 60 giây.
-- Kịch bản này dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người. Cần kịch bản căng (ít nhân viên hơn) để kiểm tiêu chí đó; chưa đo.
+- Kịch bản này dư sức chứa: giờ đỉnh cần 8 người, tổng nhu cầu 468 giờ-người mỗi tuần (chưa tính nghỉ giữa giờ), sức chứa 30 × 48 = 1440. Coverage 98% đạt ở đây không chứng minh được khả năng phủ khi thiếu người. Mục 4b đo kịch bản thiếu người.
 - Kết quả phụ thuộc `alpha`, `p`, các sàn. Đổi `p` đổi toàn bộ nhu cầu; xem độ nhạy theo giả định (`sweep_staffing_assumption`, mục 8.6).
 - 1 store, 3 seed. Không suy ra cho store khác.
+
+### 4b. Coverage khi thiếu người (plan E1, E2)
+
+Cùng nhu cầu và giả định với mục 4, số nhân viên thay đổi. Tỉ lệ sức chứa = số người × 48 giờ / 468 giờ-người nhu cầu. Cận trên coverage = 1 − cận dưới giờ thiếu / 468: solver chứng minh coverage không thể vượt mức này, và chỉ tính khi tầng thiếu người đã được giải (kể cả khi chưa tối ưu).
+
+Lệnh (1 worker, seed 0–2, chế độ exact):
+
+```
+cd backend
+uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 8 9 10 11 12 13 14 15 16 17 18 --time-limits 60 120 --modes exact --workers 1 --seeds 0 1 2
+```
+
+Dữ liệu: `docs/experiments/coverage_capacity.csv` (8–14 người) và `docs/experiments/coverage_capacity_15_18.csv` (15–18 người). Bảng gộp theo số người và giới hạn thời gian:
+
+| Người | Giới hạn (s) | Tỉ lệ sức chứa | Coverage (3 seed) | Tầng thiếu người | Cận trên coverage | Thời gian (s) |
+|---|---|---|---|---|---|---|
+| 8 | 60 | 0,82 | 0,7009, 0,7030, 0,7051 | feasible | 0,7821 | 56,2–58,2 |
+| 8 | 120 | 0,82 | 0,7009, 0,7030, 0,7051 | feasible | 0,7821 | 113,3–115,0 |
+| 9 | 60 | 0,92 | 0,7692, 0,7756, 0,7778 | feasible | 0,8248 | 55,9–58,5 |
+| 9 | 120 | 0,92 | 0,7714, 0,7756, 0,7778 | feasible | 0,8248 | 112,0–114,3 |
+| 10 | 60 | 1,03 | 0,8291, 0,8312 | feasible | 0,8590 | 56,3–56,6 |
+| 10 | 120 | 1,03 | 0,8291, 0,8312 | feasible | 0,8590 | 112,0–115,4 |
+| 11 | 60 | 1,13 | 0,8697 | feasible | 0,8846 | 55,6–57,1 |
+| 11 | 120 | 1,13 | 0,8697 | feasible | 0,8846 | 113,8–115,4 |
+| 12 | 60 | 1,23 | 0,9081 | feasible | 0,9103 | 56,4–57,6 |
+| 12 | 120 | 1,23 | 0,9081 | feasible | 0,9103 | 110,7–114,1 |
+| 13 | 60 | 1,33 | 0,9359 | optimal | 0,9359 | 3,2–3,9 |
+| 13 | 120 | 1,33 | 0,9359 | optimal | 0,9359 | 3,2–3,9 |
+| 14 | 60 | 1,44 | 0,9615 | optimal | 0,9615 | 7,1–20,6 |
+| 14 | 120 | 1,44 | 0,9615 | optimal | 0,9615 | 6,9–40,5 |
+| 15 | 60 | 1,54 | 0,9744 | optimal | 0,9744 | 4,0–20,0 |
+| 15 | 120 | 1,54 | 0,9744 | optimal | 0,9744 | 4,1–39,5 |
+| 16 | 60 | 1,64 | 0,9872 | optimal | 0,9872 | 5,2–22,7 |
+| 16 | 120 | 1,64 | 0,9872 | optimal | 0,9872 | 5,0–23,4 |
+| 17 | 60 | 1,74 | 1,0000 | optimal | 1,0000 | 19,2–22,3 |
+| 17 | 120 | 1,74 | 1,0000 | optimal | 1,0000 | 39,2–39,7 |
+| 18 | 60 | 1,85 | 1,0000 | optimal | 1,0000 | 19,6–22,3 |
+| 18 | 120 | 1,85 | 1,0000 | optimal | 1,0000 | 39,6–39,8 |
+
+Kết luận trong phạm vi đã đo (1 store, 3 seed, 1 worker):
+- Số người nhỏ nhất đạt coverage ≥ 98% là **16** (tỉ lệ sức chứa 1,64, coverage 0,9872). Với 15 người coverage là 0,9744, chưa đạt.
+- Từ 13 người trở lên, tầng thiếu người được chứng minh tối ưu trong cả 60 và 120 giây. Từ 8 đến 12 người, tầng này chỉ `feasible`: cận trên coverage được chứng minh, nhưng coverage thực tế thấp hơn và không biết khoảng cách còn lại. Tăng time limit từ 60 lên 120 giây gần như không đổi coverage (chỉ 9 người seed 0 thay đổi nhỏ).
+- Ở 17 và 18 người, tầng thiếu người đạt 0 giờ thiếu và được chứng minh. Tầng chi phí (tầng sau) thì không chứng minh được trong 120 giây (gap 0,5–0,75), nên dòng đó chỉ là `feasible`. Phần này không ảnh hưởng kết luận về coverage.
+- Mỗi người thêm vào tăng coverage khoảng 0,01–0,03 (từ 12 đến 16 người); từ 17 người coverage đạt 1,0.
+
+Kịch bản căng 8 người, so sánh exact và decompose (`docs/experiments/coverage_tight.csv`, 1 worker, seed 0–2):
+
+| Chế độ | Giới hạn (s) | Coverage (3 seed) | Tầng thiếu người | Xấp xỉ | Thời gian (s) |
+|---|---|---|---|---|---|
+| exact | 60 | 0,7009, 0,7030, 0,7051 | feasible | không | 54,4–57,4 |
+| exact | 120 | 0,7009, 0,7030, 0,7051 | feasible | không | 109,5–112,8 |
+| decompose | 60 | 0,7009, 0,7009, 0,7051 | feasible | có, không bao giờ `OPTIMAL` | 27,0–27,7 |
+| decompose | 120 | 0,7030, 0,7030, 0,7051 | feasible | có, không bao giờ `OPTIMAL` | 53,9–57,7 |
+
+Kết luận: với 8 người, exact và decompose không chứng minh được gì thêm trong 120 giây. Decompose nhanh hơn một nửa nhưng nghiệm không tốt hơn và chỉ là xấp xỉ.
+
+Lượt 8 worker (seed 0, 60 giây, `docs/experiments/coverage_tight_workers8.csv`) cho `OPTIMAL` tầng thiếu người trong 2,5 giây với 139 giờ thiếu. Lần kiểm tra lại với cùng cấu hình cho 138 giờ thiếu (coverage 0,7051). Hai lần khác nhau vì chạy đa luồng không tái lập được. Vì vậy không dùng lượt 8 worker để kết luận, chỉ ghi nhận rằng nhiều worker có thể chứng minh nhanh hơn.
+
+Lưu ý về cột CSV: `objective`, `bound`, `gap` là của tầng chi phí (tầng cuối), không phải số giờ thiếu. Số giờ thiếu nằm ở `understaffed` (nghiệm cuối) và `shortfall_bound` (cận của tầng đầu).
 
 ## 5. Tối ưu so với baseline greedy (plan C5)
 

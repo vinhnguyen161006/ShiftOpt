@@ -476,7 +476,7 @@ Rút từ khuyến nghị của báo cáo nghiên cứu nền; điều chỉnh k
 | Tiêu chí | Kết quả bắt buộc |
 |---|---|
 | Ràng buộc cứng | 0 vi phạm, xác nhận bởi `validation.py` trên mọi nghiệm |
-| Phủ nhu cầu | Coverage ≥ 98% ở kịch bản cơ sở |
+| Phủ nhu cầu | Coverage ≥ 98% ở kịch bản cơ sở. Ba mức, đo trên store 18 (`benchmarks.md` mục 4b, 1 worker, 3 seed): dư (30 người, coverage 1,0); vừa đủ (16 người, coverage 0,987, là số người nhỏ nhất đạt 98%); căng (8 người, coverage 0,703, `FEASIBLE`, không chứng minh được tối ưu) |
 | Hiệu năng | Tuần 7×24, 20–40 nhân viên, giải ≤ 60 giây, gap ≤ 1% |
 | So sánh solver | CP-SAT và HiGHS trên cùng instance, có bảng kết quả |
 | Độ nhạy | Đường cong `z(lambda)` cho `lambda` trong `[0.8, 1.3]`; heatmap chi phí biên theo giờ |
@@ -499,7 +499,7 @@ Rút từ khuyến nghị của báo cáo nghiên cứu nền; điều chỉnh k
 | Chỉnh tay bằng form, kiểm tra lại ràng buộc | Kéo-thả, Gantt theo giờ |
 | Không huấn luyện mô hình dự báo | TFT / TimesNet, intraday re-forecasting |
 | Xuất CSV | Xuất PDF |
-| Không xác thực, không phân quyền | Tổ chức, vai trò, nhật ký duyệt |
+| Không phân quyền theo vai trò (đăng nhập email/mật khẩu và Google có từ D25) | Tổ chức, vai trò, nhật ký duyệt |
 | Không đo adherence với chấm công | Tích hợp chấm công |
 | Không Redis/Celery, không WebSocket | — |
 | Không Timefold, không Gurobi bắt buộc | Gurobi qua license học thuật như backend tùy chọn |

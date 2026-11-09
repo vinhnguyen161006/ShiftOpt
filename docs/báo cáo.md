@@ -64,6 +64,8 @@ Mọi số ở đây chạy lại được; máy và phiên bản ở [benchmark
 
 **Kịch bản căng, store 18, 8 nhân viên, 3 seed.** Không đạt tối ưu trong 60 giây: `FEASIBLE`, gap 1,0, coverage 0,703, 139 giờ thiếu, 0 vi phạm cứng. Lịch vẫn hợp lệ; chất lượng chưa được chứng minh ([benchmarks.md](benchmarks.md) mục 4). Đây là giới hạn đã đo, không hạ ràng buộc.
 
+**Thiếu người, quét số người.** Với cùng nhu cầu, quét từ 8 đến 18 người (1 worker, 60 và 120 giây, 3 seed). Coverage tăng từ 0,70 (8 người) lên 0,987 (16 người) rồi 1,0 (17 người). Số người tối thiểu đạt 98% là 16, tức sức chứa khoảng 1,6 lần nhu cầu, không phải 1,1 lần như dự kiến ban đầu. Từ 13 người trở lên, tầng thiếu người được chứng minh tối ưu; từ 8 đến 12 người chỉ có cận trên coverage ([benchmarks.md](benchmarks.md) mục 4b). Kết quả chỉ áp dụng cho một cửa hàng và giả định hiện tại.
+
 ## 6. So sánh solver
 
 Trên mô hình tổng hợp có nghỉ ngầm, 3 instance (đều, đỉnh, đỉnh có ca cách đều): HiGHS và CP-SAT cùng `OPTIMAL` và cùng objective ở 10 và 60 giây, đều dưới 0,1 giây ([benchmarks.md](benchmarks.md) mục 2). Instance quá nhỏ để phân biệt hiệu năng. Không suy ra cho mô hình theo nhân viên (đoạn sau). Không trích số Mittelmann.
@@ -101,7 +103,7 @@ Greedy (`engine/src/shiftopt/baseline.py`) là heuristic để so sánh: không 
 Đối chiếu từng dòng của CLAUDE.md mục 13. Tóm tắt:
 
 - **Đạt:** ràng buộc cứng; hiệu năng 20–40 nhân viên; pháp lý (kiểm bằng test); tái lập; coverage engine 98,21%.
-- **Đạt có điều kiện:** coverage 98% ở kịch bản cơ sở (kịch bản dư sức chứa).
+- **Đạt có điều kiện:** coverage 98% ở kịch bản cơ sở (kịch bản dư sức chứa). Mức vừa đủ đo xong: 16 người đạt 98%, 8 người không (mục Kịch bản căng).
 - **Sai lệch:** so sánh solver trên mô hình tổng hợp, không trên mô hình theo nhân viên.
 - **Chờ:** độ nhạy và UI cần người duyệt trên trình duyệt. Smoke flow trên Compose chạy đạt.
 

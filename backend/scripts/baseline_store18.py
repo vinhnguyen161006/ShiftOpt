@@ -27,6 +27,12 @@ ALPHA = 1.0
 PRODUCTIVITY = 4.0
 MIN_STAFF = 1
 NIGHT_MIN_STAFF = 1
+MODES = ("exact", "decompose")
+CSV_HEADER = (
+    "store,employees,productivity,seed,workers,mode,time_limit,status,objective,bound,gap,"
+    "wall_s,understaffed,coverage,violations,capacity_ratio,shortfall_status,shortfall_bound,"
+    "coverage_upper,approximate,solver"
+)
 
 
 def baseline_instance(store_id: int, employee_count: int, productivity: float) -> Instance:
@@ -52,47 +58,60 @@ def baseline_instance(store_id: int, employee_count: int, productivity: float) -
 
 def main(
     store_id: int,
-    employee_count: int,
+    employee_counts: list[int],
     productivity: float,
-    time_limit: float,
+    time_limits: list[float],
+    modes: list[str],
     workers: int,
     seeds: list[int],
 ) -> None:
-    """One CSV row per seed: status, objective, bound, gap, wall time, understaffed hours,
-    coverage ratio, hard violations (must be 0) and solver version. Same seed with one worker
-    reproduces a row."""
-    print(
-        "store,employees,productivity,seed,workers,status,objective,bound,gap,wall_s,"
-        "understaffed,coverage,violations,solver"
-    )
-    instance = baseline_instance(store_id, employee_count, productivity)
-    for seed in seeds:
-        params = SolveParams(
-            time_limit_seconds=time_limit,
-            relative_gap_limit=0.01,
-            num_workers=workers,
-            random_seed=seed,
-        )
-        started = time.perf_counter()
-        outcome = solve_roster(instance, params)
-        elapsed = time.perf_counter() - started
-        violations = len(validate(instance, outcome.solution))
-        coverage = compute_kpi(instance, outcome.solution).coverage_ratio
-        result = outcome.result
-        print(
-            f"{store_id},{employee_count},{productivity},{seed},{workers},{result.status},"
-            f"{result.objective},{result.bound},{result.gap},{elapsed:.2f},"
-            f"{outcome.understaffed_hours},{coverage:.4f},{violations},{result.solver}"
-            f" {result.solver_version}"
-        )
+    """One CSV row per (employees, time limit, mode, seed). capacity_ratio is staffed hours at
+    the weekly maximum over total demand hours. shortfall_status and shortfall_bound come from
+    the first lexicographic tier (understaffed hours); coverage_upper = 1 - shortfall_bound /
+    total demand is the coverage the solver proves it cannot exceed. Decompose rows are
+    approximate and never OPTIMAL. Same seed with one worker reproduces a row."""
+    print(CSV_HEADER)
+    for employee_count in employee_counts:
+        instance = baseline_instance(store_id, employee_count, productivity)
+        total_demand = sum(instance.demand)
+        capacity_ratio = employee_count * LaborRules().max_weekly_hours / total_demand
+        for time_limit in time_limits:
+            for mode in modes:
+                for seed in seeds:
+                    params = SolveParams(
+                        time_limit_seconds=time_limit,
+                        relative_gap_limit=0.01,
+                        num_workers=workers,
+                        random_seed=seed,
+                    )
+                    started = time.perf_counter()
+                    outcome = solve_roster(instance, params, decompose=mode == "decompose")
+                    elapsed = time.perf_counter() - started
+                    violations = len(validate(instance, outcome.solution))
+                    coverage = compute_kpi(instance, outcome.solution).coverage_ratio
+                    result = outcome.result
+                    tier = outcome.phases[0]
+                    shortfall_bound = tier.bound
+                    coverage_upper = (
+                        None if shortfall_bound is None else 1 - shortfall_bound / total_demand
+                    )
+                    print(
+                        f"{store_id},{employee_count},{productivity},{seed},{workers},{mode},"
+                        f"{time_limit},{result.status},{result.objective},{result.bound},"
+                        f"{result.gap},{elapsed:.2f},{outcome.understaffed_hours},"
+                        f"{coverage:.4f},{violations},{capacity_ratio:.4f},{tier.status},"
+                        f"{shortfall_bound},{coverage_upper},{outcome.approximate},"
+                        f"{result.solver} {result.solver_version}"
+                    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Baseline scenario on one FreshRetailNet store")
     parser.add_argument("--store", type=int, default=18)
-    parser.add_argument("--employees", type=int, default=30)
+    parser.add_argument("--employees", type=int, nargs="+", default=[30])
     parser.add_argument("--productivity", type=float, default=PRODUCTIVITY)
-    parser.add_argument("--time-limit", type=float, default=60.0)
+    parser.add_argument("--time-limits", type=float, nargs="+", default=[60.0])
+    parser.add_argument("--modes", choices=MODES, nargs="+", default=["exact"])
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--seeds", type=int, nargs="+", default=[0])
     args = parser.parse_args()
@@ -100,7 +119,8 @@ if __name__ == "__main__":
         args.store,
         args.employees,
         args.productivity,
-        args.time_limit,
+        args.time_limits,
+        args.modes,
         args.workers,
         args.seeds,
     )
