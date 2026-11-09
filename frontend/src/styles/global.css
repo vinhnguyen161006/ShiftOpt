@@ -75,6 +75,10 @@
   padding-top: clamp(12px, 4vw, 48px);
 }
 
+.privacy-page {
+  width: min(100%, 720px);
+}
+
 .auth-brand {
   margin-right: 0;
   padding: 0;

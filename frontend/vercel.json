@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://skin-interpretation-buses-equations.trycloudflare.com/api/:path*"
+      "destination": "https://cursor-lat-nest-professionals.trycloudflare.com/api/:path*"
     },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
