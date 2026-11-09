@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.time_grid import DAYS_PER_WEEK
 
+from src.demand.schemas import MAX_CSV_CHARACTERS
+
 WeekDay = Annotated[int, Field(ge=0, lt=DAYS_PER_WEEK)]
 WeeklyHours = Annotated[int, Field(ge=1, le=LaborRules().max_weekly_hours)]
 
@@ -42,6 +44,10 @@ class EmployeeCreate(BaseModel):
 
 class EmployeeUpdate(EmployeeCreate):
     pass
+
+
+class EmployeeCsvRequest(BaseModel):
+    csv_text: str = Field(min_length=1, max_length=MAX_CSV_CHARACTERS)
 
 
 class EmployeeRead(BaseModel):

@@ -642,6 +642,21 @@
         "title": "EmployeeCreate",
         "type": "object"
       },
+      "EmployeeCsvRequest": {
+        "properties": {
+          "csv_text": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Csv Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "csv_text"
+        ],
+        "title": "EmployeeCsvRequest",
+        "type": "object"
+      },
       "EmployeeRead": {
         "properties": {
           "code": {
@@ -3883,6 +3898,69 @@
           }
         },
         "summary": "Create Employee",
+        "tags": [
+          "employees"
+        ]
+      }
+    },
+    "/api/employees/from-csv": {
+      "post": {
+        "operationId": "import_employees_api_employees_from_csv_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeCsvRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeRead"
+                  },
+                  "title": "Response Import Employees Api Employees From Csv Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Employees",
         "tags": [
           "employees"
         ]

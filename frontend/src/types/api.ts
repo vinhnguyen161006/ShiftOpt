@@ -297,6 +297,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employees/from-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Employees */
+        post: operations["import_employees_api_employees_from_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/employees/{employee_id}": {
         parameters: {
             query?: never;
@@ -856,6 +873,11 @@ export interface components {
             preferred_days_off?: number[];
             /** Unavailable Days */
             unavailable_days?: number[];
+        };
+        /** EmployeeCsvRequest */
+        EmployeeCsvRequest: {
+            /** Csv Text */
+            csv_text: string;
         };
         /** EmployeeRead */
         EmployeeRead: {
@@ -2198,6 +2220,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmployeeRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_employees_api_employees_from_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                shiftopt_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeeCsvRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeRead"][];
                 };
             };
             /** @description Validation Error */

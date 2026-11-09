@@ -169,3 +169,19 @@ async def test_demand_profile_update_and_delete(client: AsyncClient) -> None:
     assert updated.json()["required_staff"][0] == 0
     assert (await client.delete(f"/api/demand-profiles/{profile_id}")).status_code == 204
     assert (await client.get(f"/api/demand-profiles/{profile_id}")).status_code == 404
+
+
+async def test_employee_csv_import_is_all_or_nothing(client: AsyncClient) -> None:
+    good = "code,name,hourly_wage,unavailable_days\nC1,Ada,100,CN\nC2,Grace,110,\n"
+    imported = await client.post("/api/employees/from-csv", json={"csv_text": good})
+    assert imported.status_code == 201
+    assert [row["code"] for row in imported.json()] == ["C1", "C2"]
+    assert imported.json()[0]["unavailable_days"] == [6]
+    again = await client.post("/api/employees/from-csv", json={"csv_text": good})
+    assert again.status_code == 409
+    bad = "code,name,hourly_wage\nC3,Linus,100\nC4,Ken,zero\n"
+    rejected = await client.post("/api/employees/from-csv", json={"csv_text": bad})
+    assert rejected.status_code == 422
+    assert "row 3" in rejected.text
+    codes = [row["code"] for row in (await client.get("/api/employees")).json()]
+    assert codes == ["C1", "C2"]

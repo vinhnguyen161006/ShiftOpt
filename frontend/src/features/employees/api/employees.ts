@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, jsonInit } from "../../../lib/api-client";
-import type { EmployeeCreate, EmployeeRead } from "../../../types/models";
+import type { EmployeeCreate, EmployeeCsvRequest, EmployeeRead } from "../../../types/models";
 
 const EMPLOYEES_KEY = ["employees"];
 
@@ -24,6 +24,12 @@ export function useSaveEmployee() {
     id === undefined
       ? apiFetch<EmployeeRead>("/employees", jsonInit("POST", body))
       : apiFetch<EmployeeRead>(`/employees/${id}`, jsonInit("PUT", body)),
+  );
+}
+
+export function useImportEmployees() {
+  return useEmployeeMutation((body: EmployeeCsvRequest) =>
+    apiFetch<EmployeeRead[]>("/employees/from-csv", jsonInit("POST", body)),
   );
 }
 

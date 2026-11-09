@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.dependencies import CurrentUserDep
 from src.database import get_session
 from src.employees import service
-from src.employees.schemas import EmployeeCreate, EmployeeRead, EmployeeUpdate
+from src.employees.schemas import EmployeeCreate, EmployeeCsvRequest, EmployeeRead, EmployeeUpdate
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -23,6 +23,14 @@ async def create_employee(
     payload: EmployeeCreate, session: SessionDep, user: CurrentUserDep
 ) -> EmployeeRead:
     return EmployeeRead.model_validate(await service.create_employee(session, user.id, payload))
+
+
+@router.post("/from-csv", response_model=list[EmployeeRead], status_code=status.HTTP_201_CREATED)
+async def import_employees(
+    payload: EmployeeCsvRequest, session: SessionDep, user: CurrentUserDep
+) -> list[EmployeeRead]:
+    records = await service.import_employees(session, user.id, payload)
+    return [EmployeeRead.model_validate(record) for record in records]
 
 
 @router.get("/{employee_id}", response_model=EmployeeRead)
