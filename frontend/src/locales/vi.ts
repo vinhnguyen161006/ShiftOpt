@@ -71,6 +71,38 @@ export const vi = {
     },
     greeting: (name: string) => `Xin chào, ${name}`,
   },
+  privacy: {
+    title: "Chính sách quyền riêng tư",
+    updated: "Cập nhật ngày 09/11/2026",
+    lead: "ShiftOpt là đồ án học tập về xếp ca nhân viên. Trang này nói rõ ShiftOpt lưu gì về bạn và dùng vào việc gì.",
+    sections: [
+      {
+        heading: "Dữ liệu tài khoản",
+        body: "Khi đăng ký bằng email, ShiftOpt lưu email, tên hiển thị và mật khẩu đã băm (không lưu mật khẩu gốc). Khi đăng nhập bằng Google, ShiftOpt nhận từ Google email, tên và mã định danh tài khoản Google; ShiftOpt không đọc Gmail, Drive hay dữ liệu Google nào khác.",
+      },
+      {
+        heading: "Dữ liệu làm việc",
+        body: "Nhân viên, mẫu ca, hồ sơ nhu cầu, file doanh số bạn tải lên và các lượt giải thuộc về tài khoản của bạn. Tài khoản khác không xem được.",
+      },
+      {
+        heading: "Cookie",
+        body: "ShiftOpt dùng một cookie phiên đăng nhập (HttpOnly, hết hạn sau 12 giờ). Không có cookie quảng cáo hay theo dõi.",
+      },
+      {
+        heading: "Mục đích và chia sẻ",
+        body: "Dữ liệu chỉ dùng để đăng nhập và chạy chức năng xếp ca. ShiftOpt không bán, không chia sẻ dữ liệu với bên thứ ba và không dùng cho quảng cáo.",
+      },
+      {
+        heading: "Xóa dữ liệu",
+        body: "Gửi email tới địa chỉ liên hệ bên dưới để yêu cầu xóa tài khoản. Xóa tài khoản sẽ xóa toàn bộ dữ liệu làm việc của tài khoản đó.",
+      },
+      {
+        heading: "Liên hệ",
+        body: "vinhnguyen161006@gmail.com",
+      },
+    ],
+    back: "Về trang chủ",
+  },
   home: {
     nav: {
       product: "Sản phẩm",
