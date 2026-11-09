@@ -63,6 +63,7 @@ Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08. Lý 
 | D23 | Dự báo nhu cầu (plan I) | Cho phép làm ở mức P2, chỉ baseline mùa vụ (cùng giờ tuần trước, trung bình cùng giờ k tuần) là hàm thuần, không huấn luyện mô hình, không thêm thư viện. Đo bằng WAPE và bias, không dùng MAPE. Trước khi dùng split eval phải xác nhận khoảng ngày bằng `dt.min()/max()` | CLAUDE.md mục 10 cấm thêm thư viện dự báo; baseline không cần. Chỉ làm khi còn thời gian |
 | D25 | Giờ tối thiểu theo hợp đồng (plan G3) | `Employee.min_weekly_hours`, mềm: tổng giờ dưới mức tối thiểu là tầng riêng ngay sau thiếu người, trước chi phí. Không là vi phạm cứng, nên repair và gợi ý người thay vẫn đơn điệu. Giá trị lớn hơn giờ tối đa bị từ chối khi nhập | Người dùng chọn mềm 2026-11-09: mô hình không bao giờ INFEASIBLE vì hợp đồng không đạt được; UI báo số giờ thiếu |
 | D26 | Ngân sách lương tuần (plan G3) | `weekly_budget` tùy chọn trên mỗi lượt giải, lưu trong snapshot, là trần cứng cho chi phí lao động. Độ phủ vẫn mềm nên ngân sách chặt làm tăng giờ thiếu. Validator có vi phạm `OVER_BUDGET` cho cả lịch | Người dùng chọn trần cứng theo lượt 2026-11-09. Validator kiểm tra nên lịch sửa tay vượt ngân sách bị từ chối |
+| D27 | Kết quả cũ (plan G4) | Mỗi lượt giải lưu `source_inputs` (id hồ sơ nhu cầu, mẫu ca, nhân viên và tham số luật đã dùng) và `input_hash` (SHA-256 của snapshot không có phần repair, khóa sắp xếp). `GET /schedules/{id}/staleness` dựng lại snapshot từ dữ liệu hiện tại và so hash: `current`, `stale` (đổi hoặc bị xóa) hoặc `unknown` (lượt cũ chưa có hash, hoặc lượt xếp lại đổi hồ sơ nhu cầu). Lượt sửa tay và xếp lại kế thừa hash của lượt cha. Chỉ là nhãn: lượt vẫn bất biến | Người dùng chọn so snapshot 2026-11-09. Nhân viên thêm sau khi giải làm lượt "mọi nhân viên" thành `stale`, đúng nghĩa vì lịch không có người đó. Đổi tên nhân viên không làm lượt cũ vì tên không nằm trong snapshot |
 | D24 | Playwright cho kiểm thử end-to-end | Không thêm. Dùng `backend/scripts/smoke_flow.py` và duyệt tay theo checklist trong `plan.md` | Tránh dependency mới khi smoke flow đã chạy hai lần liên tiếp đều pass |
 
 ## Phiếu duyệt
@@ -99,6 +100,7 @@ Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "
 | D24 | Playwright cho kiểm thử end-to-end | Đồng ý | Không thêm. |
 | D25 | Giờ tối thiểu theo hợp đồng (plan G3) | Đồng ý | Mềm, tầng sau thiếu người. |
 | D26 | Ngân sách lương tuần (plan G3) | Đồng ý | Trần cứng theo lượt. |
+| D27 | Đánh dấu kết quả cũ (plan G4) | Đồng ý | So hash snapshot. |
 
 **Điểm code chặt hơn luật (đã xác nhận có chủ đích, 2026-11-08):**
 

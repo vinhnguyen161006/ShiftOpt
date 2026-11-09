@@ -1,4 +1,6 @@
 import copy
+import hashlib
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from typing import Any
@@ -46,6 +48,15 @@ def build_snapshot(
         "rules": asdict(rules),
         "weekly_budget": weekly_budget,
     }
+
+
+def input_hash(snapshot: Snapshot) -> str:
+    """SHA-256 of the snapshot without its repair part, keys sorted and no spaces, so the same
+    inputs always give the same hash. MySQL does not keep the key order of a JSON column, which
+    is why the keys are sorted here instead of relying on insertion order."""
+    inputs = {key: value for key, value in snapshot.items() if key != REPAIR_KEY}
+    canonical = json.dumps(inputs, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def instance_from_snapshot(snapshot: Snapshot) -> Instance:

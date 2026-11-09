@@ -32,6 +32,7 @@ export type RepairRequest = Schemas["RepairRequest"];
 export type AbsenceWrite = Schemas["AbsenceWrite"];
 export type ReplacementRead = Schemas["ReplacementRead"];
 export type ShortfallHourRead = Schemas["ShortfallHourRead"];
+export type StalenessRead = Schemas["StalenessRead"];
 export type ShortfallReasonRead = Schemas["ShortfallReasonRead"];
 export type ComplianceRead = Schemas["ComplianceRead"];
 export type ViolationRead = Schemas["ViolationRead"];

@@ -86,7 +86,7 @@ Phân rã hai pha là chiến lược giảm kích thước khi instance lớn: 
 - **Timefold Solver Python bị loại** (repo đã archive, chậm hơn Java). Chỉ tham khảo UI và mô hình miền từ bản Java.
 - **MySQL 8** (InnoDB, `utf8mb4`) cho dữ liệu ứng dụng (nhân viên, mẫu ca, nhu cầu, lượt giải, kết quả). SQLAlchemy 2 + Alembic, driver `PyMySQL` hoặc `asyncmy` (ghim version). Lịch, log solver, tham số lưu ở cột `JSON`. Không dùng SQLite thay MySQL trong test. Ghi chú Alembic: DDL của MySQL không transactional, migration lỗi giữa chừng không tự rollback; review tay kỹ.
 - **Job giải = hàng trong bảng `solve_runs`; job độ nhạy = hàng trong `analysis_runs`.** API tạo job, chạy giải trong tiến trình con (`ProcessPoolExecutor`), frontend poll theo `job_id`. Khi backend khởi động lại, job đang `running` được đánh dấu `failed` với lý do rõ ràng. **Không thêm Redis/Celery, không WebSocket** ở bản đầu.
-- **Hai phiên bản lịch không bao giờ trộn:** mỗi lượt giải là bất biến. Sửa tay lịch tạo bản mới và chạy lại validator.
+- **Hai phiên bản lịch không bao giờ trộn:** mỗi lượt giải là bất biến. Sửa tay lịch tạo bản mới và chạy lại validator. Lượt lưu `source_inputs` và `input_hash`; `GET /schedules/{id}/staleness` so hash với dữ liệu hiện tại để hiện nhãn "đầu vào đã đổi" (đặc tả D27). Nhãn không đổi lượt, không tự giải lại.
 
 ---
 

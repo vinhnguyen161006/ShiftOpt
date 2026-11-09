@@ -635,6 +635,16 @@ export const vi = {
       feasibleSub: (gap: string) => `gap ${gap}, chưa chứng minh tối ưu`,
       noProven: "chưa có kết quả được chứng minh",
     },
+    stale: {
+      title: "Đầu vào đã đổi sau lượt này",
+      reasons: {
+        input_changed: "Hồ sơ nhu cầu, mẫu ca hoặc nhân viên của lượt này đã được sửa.",
+        input_deleted: "Một đầu vào của lượt này đã bị xóa.",
+        input_invalid: "Đầu vào hiện tại không còn dựng được instance của lượt này.",
+      } as Record<string, string>,
+      fallback: "Đầu vào của lượt này không còn khớp với dữ liệu hiện tại.",
+      hint: "Lịch vẫn đúng với đầu vào lúc giải. Giải lại để có lịch theo dữ liệu mới.",
+    },
     notice: {
       queued: "Đang chờ",
       solving: "Đang giải",

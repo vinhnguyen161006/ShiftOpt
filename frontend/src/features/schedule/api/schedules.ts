@@ -7,6 +7,7 @@ import type {
   RunStatus,
   SolveRequest,
   SolveRunRead,
+  StalenessRead,
 } from "../../../types/models";
 
 const RUNS_KEY = ["schedules"];
@@ -56,6 +57,15 @@ export function useScheduleKpi(runId: number | undefined, enabled: boolean) {
     queryKey: [...RUNS_KEY, runId, "kpi"],
     queryFn: () => apiFetch<KpiRead>(`/schedules/${runId}/kpi`),
     enabled: enabled && runId !== undefined,
+  });
+}
+
+export function useStaleness(runId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: [...RUNS_KEY, runId, "staleness"],
+    queryFn: () => apiFetch<StalenessRead>(`/schedules/${runId}/staleness`),
+    enabled,
+    staleTime: 0,
   });
 }
 

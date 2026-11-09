@@ -18,6 +18,7 @@ import {
   useScheduleKpi,
   useScheduleRun,
   useScheduleRuns,
+  useStaleness,
 } from "../../features/schedule/api/schedules";
 import { CostSummary } from "../../features/schedule/components/CostSummary";
 import { NewRunForm } from "../../features/schedule/components/NewRunForm";
@@ -107,6 +108,19 @@ function ScheduleHome() {
   );
 }
 
+function StaleNotice({ runId, enabled }: { runId: number; enabled: boolean }) {
+  const staleness = useStaleness(runId, enabled);
+  if (staleness.data?.state !== "stale") {
+    return null;
+  }
+  return (
+    <Notice kind="warning" title={vi.schedule.stale.title}>
+      {vi.schedule.stale.reasons[staleness.data.reason ?? ""] ?? vi.schedule.stale.fallback}{" "}
+      {vi.schedule.stale.hint}
+    </Notice>
+  );
+}
+
 function RunView({ runId }: { runId: number }) {
   const navigate = useNavigate();
   const run = useScheduleRun(runId);
@@ -149,6 +163,7 @@ function RunView({ runId }: { runId: number }) {
         }
       />
       <SolveNotice run={data} />
+      <StaleNotice runId={runId} enabled={hasSchedule} />
       {hasSchedule && kpi.isError && <Notice kind="error" title={errorMessage(kpi.error)} />}
       {hasSchedule && <RunWorkspace run={data} kpi={kpi.data} />}
       {hasSchedule && (

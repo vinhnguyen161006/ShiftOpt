@@ -36,6 +36,8 @@ class SolveRun(Base):
     solve_status: Mapped[str | None] = mapped_column(String(32))
     params: Mapped[dict[str, float]] = mapped_column(JSON)
     instance_snapshot: Mapped[dict[str, object]] = mapped_column(JSON)
+    source_inputs: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    input_hash: Mapped[str | None] = mapped_column(String(64))
     assignments: Mapped[list[dict[str, object]] | None] = mapped_column(JSON)
     objective: Mapped[float | None]
     best_bound: Mapped[float | None]
