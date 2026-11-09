@@ -160,3 +160,16 @@ def test_parallel_sweep_matches_solving_each_point_alone() -> None:
         for multiplier in multipliers
     ]
     assert parallel["points"] == alone
+
+
+def test_fairness_sweep_has_one_row_per_tolerance_with_cost_increase() -> None:
+    payload = run_analysis(
+        "fairness_sweep",
+        {"snapshot": _snapshot(), "params": PARAMS, "tolerances": [0.0, 5.0]},
+    )
+
+    rows = payload["points"]
+    assert [row["tolerance_percent"] for row in rows] == [0.0, 5.0]
+    assert rows[0]["cost_increase_percent"] == 0.0
+    assert all(row["solve_status"] == "optimal" for row in rows)
+    assert rows[1]["cost_increase_percent"] is not None

@@ -256,3 +256,28 @@ uv run --locked python -m scripts.run_experiments --summary
 ```
 
 Lần chạy đầy đủ mất khoảng 36 phút trên một máy.
+
+## 6. Đánh đổi chi phí và công bằng (plan F3)
+
+Lệnh: `cd engine && uv run --locked python -u -m benchmarks.cost_tolerance`. Lương lệch theo vòng 100, 120, 150. Mỗi dòng là một lần giải đầy đủ với `cost_tolerance_percent` tương ứng, 1 worker, seed 0, 60 giây, không ngưỡng gap. `cost_increase_percent` so với dòng 0 của cùng số nhân viên, tính bằng `kpi.labor_cost` trên lịch trả về.
+
+| Nhân viên | Dung sai (%) | Status | Chi phí lao động | Tăng (%) | Chênh ca đêm | Chênh giờ làm | Giờ thiếu |
+|---|---|---|---|---|---|---|---|
+| 12 | 0 | feasible | 7 531 200 | 0,00 | 6 | – | 2 |
+| 12 | 1 | feasible | 7 606 200 | 1,00 | 2 | 0 | 2 |
+| 12 | 2 | feasible | 7 611 600 | 1,07 | 5 | 0 | 2 |
+| 12 | 5 | feasible | 7 615 200 | 1,12 | 2 | 0 | 2 |
+| 12 | 10 | feasible | 7 632 000 | 1,34 | 2 | 0 | 2 |
+| 20 | 0 | feasible | 6 864 000 | 0,00 | 6 | – | 0 |
+| 20 | 1 | feasible | 6 864 000 | 0,00 | 6 | 48 | 0 |
+| 20 | 2 | feasible | 7 000 000 | 1,98 | 1 | 48 | 0 |
+| 20 | 5 | feasible | 7 203 800 | 4,95 | 1 | 32 | 0 |
+| 20 | 10 | feasible | 7 539 000 | 9,83 | 1 | 24 | 0 |
+
+Kết luận trong phạm vi đã đo:
+
+- **Mọi dòng đều `FEASIBLE`, không dòng nào `OPTIMAL` trong 60 giây.** Các số chỉ là nghiệm tìm được tới lúc dừng. Không được đọc chênh lệch 1–2 đơn vị như xu hướng đã chứng minh.
+- Với 20 nhân viên, dung sai 2–10% kéo chênh ca đêm từ 6 xuống 1 và chênh giờ làm từ 48 xuống 24, với chi phí tăng 2–10%. Đây là đánh đổi thực, đúng hướng mục tiêu F.
+- Với 12 nhân viên, dung sai 1% đã đưa chênh ca đêm từ 6 xuống 2. Các dòng sau không cải thiện thêm và dao động (2 → 5 → 2), phù hợp với việc giải không kết thúc.
+- Dòng 20 nhân viên, dung sai 1%: chi phí không đổi nhưng chênh giờ làm đã có giá trị 48. Tầng `hours_spread` chưa được chứng minh tối ưu nên giá trị này là giới hạn trên.
+- Chưa đo ở store 18 hay kịch bản 30 nhân viên. Muốn kết luận chắc hơn cần chạy lại với time limit dài hơn và có gap.

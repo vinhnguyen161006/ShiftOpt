@@ -65,3 +65,19 @@ async def test_baseline_compare_returns_cpsat_and_greedy(
     methods = [point["method"] for point in run["result"]["points"]]
     assert methods == ["cpsat", "greedy"]
     assert run["result"]["points"][1]["proven"] is False
+
+
+async def test_fairness_sweep_returns_one_point_per_tolerance(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    accepted = await client.post(
+        "/api/analysis/fairness-sweep",
+        json={"solve": solve_body(seeded), "tolerances": [0.0, 5.0]},
+    )
+    assert accepted.status_code == 202
+    run = await poll(client, f"/api/analysis/{accepted.json()['job_id']}")
+
+    assert run["status"] == "succeeded", run["error"]
+    points = run["result"]["points"]
+    assert [point["tolerance_percent"] for point in points] == [0.0, 5.0]
+    assert points[0]["cost_increase_percent"] == 0.0

@@ -14,8 +14,11 @@ APPROXIMATE_LABEL = "LP relaxation dual: an approximation, the integrality gap c
 STAFFING_LABEL = "Team conversion assumption, not staffing data from the source"
 STAFFING_FLOORS = ("min_staff", "night_min_staff")
 BASELINE_LABEL = "Greedy is a heuristic for comparison, not proven optimal"
+FAIRNESS_LABEL = "Each point is a full re-solve; a point not proven optimal is marked so"
+DEFAULT_TOLERANCES = [0.0, 1.0, 2.0, 5.0, 10.0]
 
 Multiplier = Annotated[float, Field(gt=0, le=3)]
+TolerancePercent = Annotated[float, Field(ge=0, le=10)]
 StaffingField = Literal["alpha", "productivity", "min_staff", "night_min_staff"]
 StaffingValue = Annotated[float, Field(gt=0, le=1000)]
 
@@ -51,6 +54,15 @@ class StaffingSweepRequest(BaseModel):
         ):
             raise ValueError(f"{self.assumption} values must be whole numbers")
         return self
+
+
+class FairnessSweepRequest(BaseModel):
+    solve: SolveRequest
+    tolerances: list[TolerancePercent] = Field(
+        default_factory=lambda: list(DEFAULT_TOLERANCES),
+        min_length=1,
+        max_length=MAX_SWEEP_POINTS,
+    )
 
 
 class BaselineCompareRequest(BaseModel):
@@ -121,6 +133,22 @@ class StaffingSweepResult(BaseModel):
     points: list[StaffingSweepPoint]
 
 
+class FairnessSweepPoint(BaseModel):
+    tolerance_percent: float
+    solve_status: str
+    proven: bool
+    labor_cost: float | None
+    cost_increase_percent: float | None
+    night_spread: int | None
+    hours_spread: int | None
+    understaffed_hours: int | None
+
+
+class FairnessSweepResult(BaseModel):
+    label: str = FAIRNESS_LABEL
+    points: list[FairnessSweepPoint]
+
+
 class AnalysisAccepted(BaseModel):
     job_id: int
     status: RunStatus
@@ -138,6 +166,7 @@ class AnalysisRunRead(BaseModel):
         | LpDualsResult
         | StaffingSweepResult
         | BaselineCompareResult
+        | FairnessSweepResult
         | None
     )
     error: str | None

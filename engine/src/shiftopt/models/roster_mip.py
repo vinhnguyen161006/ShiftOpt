@@ -30,6 +30,8 @@ def solve_roster_mip(
     C1 to C8): shortfall, changes (repair only), labour cost with the night premium, night-shift
     spread, then preference misses. Each tier is capped at the optimum of the tier before. Breaks
     use one binary per break offset, so a break removes its worker from coverage at one hour.
+    With params.cost_tolerance_percent above 0 the cost cap is relaxed by that percentage and a
+    worked-hours spread tier is added after the night-shift spread, as in solve_roster.
     relax=True keeps the same rows and makes every variable continuous; it is used only to measure
     the integrality gap, never to produce a roster.
 
@@ -45,6 +47,14 @@ def roster_model_size(instance: Instance) -> tuple[int, int]:
     """Number of PuLP variables and constraints of the per-employee ILP, built but not solved."""
     model = _RosterMip(instance, None, relax=False)
     return len(model.problem.variables()), model.rows
+
+
+def _tier_bound(name: str, objective: float, cost_tolerance_percent: float) -> float:
+    """Right-hand side that keeps a tier at its optimum, with TIER_TOLERANCE of numerical slack.
+    The cost tier may rise by cost_tolerance_percent instead; see solve_roster for the rule."""
+    if name == "cost":
+        return objective * (100 + cost_tolerance_percent) / 100 + TIER_TOLERANCE
+    return objective + TIER_TOLERANCE
 
 
 class _RosterMip:
@@ -71,6 +81,8 @@ class _RosterMip:
         self.night_counts: list[Any] = []
         self.night_max: Any = None
         self.night_min: Any = None
+        self.hours_max: Any = None
+        self.hours_min: Any = None
         self.baseline_keys: dict[tuple[int, int, int], int | None] = {}
         self.changes: Any = None
         self._build()
@@ -214,6 +226,24 @@ class _RosterMip:
             self._row(self.night_max >= nights, "night_max")
             self._row(self.night_min <= nights, "night_min")
 
+    def _employee_hours(self, e_index: int) -> Any:
+        return pulp.lpSum(
+            self.shifts[s_index].length * work
+            for (e, _, s_index), work in self.work.items()
+            if e == e_index
+        )
+
+    def _add_hours_spread(self) -> None:
+        if len(self.employees) < 2 or self.hours_max is not None:
+            return
+        bound = HOURS_PER_WEEK
+        self.hours_max = self._var("hours_max", upper=bound)
+        self.hours_min = self._var("hours_min", upper=bound)
+        for e_index in range(len(self.employees)):
+            hours = self._employee_hours(e_index)
+            self._row(self.hours_max >= hours, "hours_max")
+            self._row(self.hours_min <= hours, "hours_min")
+
     def _cost(self) -> Any:
         return pulp.lpSum(
             self.employees[e].hourly_wage
@@ -276,11 +306,15 @@ class _RosterMip:
         stages.append(("cost", self._cost()))
         if self.night_max is not None:
             stages.append(("night_spread", self.night_max - self.night_min))
+        if self.hours_max is not None:
+            stages.append(("hours_spread", self.hours_max - self.hours_min))
         if any(employee.preferred_days_off for employee in self.employees):
             stages.append(("preference", self._preference_misses()))
         return stages
 
     def solve(self, params: SolveParams) -> RosterOutcome:
+        if params.cost_tolerance_percent > 0:
+            self._add_hours_spread()
         stages = self._stages()
         stage_params = with_time_share(params, len(stages))
         results: list[SolveResult] = []
@@ -292,7 +326,8 @@ class _RosterMip:
             if result.objective is None:
                 break
             snapshot = self._values()
-            self._row(expression <= result.objective + TIER_TOLERANCE, f"tier_{name}")
+            bound = _tier_bound(name, result.objective, params.cost_tolerance_percent)
+            self._row(expression <= bound, f"tier_{name}")
         return self._outcome(snapshot, tuple(results), len(stages))
 
     def _values(self) -> dict[str, float]:
@@ -322,6 +357,11 @@ class _RosterMip:
                 1 for e, day, _ in taken if day in self.employees[e].preferred_days_off
             ),
             changes=self._changes_from(taken) if self.repair is not None else None,
+            hours_spread=(
+                round(values.get(self.hours_max.name, 0.0) - values.get(self.hours_min.name, 0.0))
+                if self.hours_max is not None
+                else None
+            ),
         )
 
     def _taken(self, values: dict[str, float]) -> list[tuple[int, int, int]]:

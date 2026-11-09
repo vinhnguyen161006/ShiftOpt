@@ -5,10 +5,10 @@ Hướng dẫn cho Claude Code khi làm việc trong repo **ShiftOpt** — xếp
 Nguồn sự thật về yêu cầu, theo thứ tự ưu tiên:
 
 1. Đề bài của nhóm (mục 1).
-2. [docs/đặc tả.md](docs/đặc tả.md) — **bản nháp, chờ nhóm duyệt** (Claude soạn theo ủy quyền; quyết định D1–D20; luật Đ.98–111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025), NĐ 145/2020 chưa đối chiếu, ghi trong file). Khi đặc tả được duyệt, đặc tả thắng file này; hãy cập nhật file này theo đặc tả.
+2. [docs/đặc tả.md](docs/đặc tả.md) — **đã duyệt 2026-11-08** (người dùng ủy quyền cho Claude quyết định; quyết định D1–D24; luật Đ.98–111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025), NĐ 145/2020 chưa đối chiếu, ghi trong file). Đặc tả thắng file này; khi hai bên lệch, sửa file này theo đặc tả.
 3. Báo cáo nghiên cứu nền (nghiên cứu tham chiếu: dữ liệu, mô hình, pháp lý, solver). File không có trong repo (quyết định D17); mọi chỗ nó từng được dùng đã được chốt trong `docs/đặc tả.md` và các mục dưới.
 
-> **Trạng thái repo (2026-11-08, nhánh `main`):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine coverage 98%; CI và Makefile chặn dưới 80%. Mới trong nhánh: ingest doanh số tổng quát (đặc tả D19), giao diện tối, xếp lại lịch và gợi ý người thay (D20). Còn mở: duyệt tay UI trên trình duyệt, nhóm duyệt đặc tả và sai lệch nghiệm thu (mục 13). Việc còn lại và thứ tự làm: `docs/plan.md`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
+> **Trạng thái repo (2026-11-08, nhánh `main`):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine coverage 98%; CI và Makefile chặn dưới 80%. Mới trong nhánh: ingest doanh số tổng quát (đặc tả D19), giao diện tối, xếp lại lịch và gợi ý người thay (D20). Còn mở: duyệt tay UI trên trình duyệt, đối chiếu NĐ 145/2020 và sai lệch nghiệm thu (mục 13). Việc còn lại và thứ tự làm: `docs/plan.md`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
 
 ---
 
@@ -132,6 +132,7 @@ Tập: `E` nhân viên, `D` ngày, `S` kiểu ca, `H` giờ. Biến: `x[e,d,s]` 
 Mục tiêu: `min sum c_s x + M_u * sum u_h + lambda_F * F`.
 
 Thứ tự ưu tiên: thiếu người `M_u` ≫ chi phí lao động ≫ công bằng ≫ sở thích. Ưu tiên **giải lexicographic** (tối thiểu thiếu người trước, cố định, rồi tối thiểu chi phí) thay vì chọn `M` tùy tiện. Mọi trọng số là hằng có tên trong config, không magic number.
+Khi `cost_tolerance_percent` > 0 (mặc định 0, đặc tả D21): tầng chi phí được nới tới `optimum * (100 + tol) / 100`; sau tầng chênh ca đêm thêm tầng `hours_spread` (max - min giờ làm mỗi người). Tol = 0 giữ thứ tự cũ, không có tầng giờ làm. Dung sai đo trên giá trị tầng chi phí tìm được; nếu tầng đó chỉ FEASIBLE thì không phải tối ưu thật, dùng `kpi.labor_cost` để lấy chi phí thật.
 Khi repair (C6, lịch gốc + ngày khóa `from_day` + ca ghim): thiếu người ≫ số ca thay đổi so với lịch gốc ≫ chi phí lao động ≫ công bằng ≫ sở thích. Ngày trước `from_day` và ca ghim là ràng buộc cứng; người vắng không được xếp vào ngày vắng (đặc tả D20).
 
 ### 5.3 Bảng ràng buộc
@@ -335,7 +336,7 @@ engine/
     conftest.py             fixture three_shifts, build_instance
     test_smoke.py           khai báo thật: LaborRules, validate của dataclass
     test_time_grid.py, test_labor_law_vn.py, test_validation.py, test_kpi_and_staffing.py,
-    test_set_covering.py, test_roster_cpsat.py, test_roster_mip.py, test_roster_weighted.py, test_sensitivity.py
+    test_set_covering.py, test_roster_cpsat.py, test_roster_mip.py, test_roster_weighted.py, test_fairness_tolerance.py, test_sensitivity.py
   benchmarks/               run_curtois_qu.py, compare_solvers.py, run_roster_scale.py (--solver, --sizes-only), integrality_gap.py, weighted_vs_lexicographic.py
 frontend/
   package.json, package-lock.json, vite.config.ts, tsconfig.json, biome.json, index.html
@@ -362,7 +363,7 @@ frontend/
       what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
 data/                       demo/ (file mẫu: train.parquet gitignore, CSV mẫu), raw/ (gitignore), benchmarks/curtois_qu/ (script tải)
 docs/
-  đặc tả.md                 nguồn sự thật yêu cầu (bản nháp, chờ duyệt; quyết định D1–D20)
+  đặc tả.md                 nguồn sự thật yêu cầu (đã duyệt 2026-11-08; quyết định D1–D24)
   plan.md                   kế hoạch hoàn thiện: hiện trạng, việc còn lại theo ưu tiên, việc cần nhóm quyết
   kiến trúc.md              kiến trúc theo tầng, thuật toán từng khối, giới hạn đã biết
   model.md                  công thức mô hình (gồm repair, mục 6)

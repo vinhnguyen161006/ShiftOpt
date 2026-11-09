@@ -44,6 +44,9 @@ export type SweepPoint = Schemas["SweepPoint"];
 export type StaffingSweepRequest = Schemas["StaffingSweepRequest"];
 export type StaffingSweepResult = Schemas["StaffingSweepResult"];
 export type StaffingSweepPoint = Schemas["StaffingSweepPoint"];
+export type FairnessSweepRequest = Schemas["FairnessSweepRequest"];
+export type FairnessSweepResult = Schemas["FairnessSweepResult"];
+export type FairnessSweepPoint = Schemas["FairnessSweepPoint"];
 
 export type SalesIngestQuery =
   operations["ingest_sales_api_demand_profiles_ingest_post"]["parameters"]["query"];

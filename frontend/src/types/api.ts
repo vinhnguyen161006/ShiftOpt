@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analysis/fairness-sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fairness Sweep */
+        post: operations["fairness_sweep_api_analysis_fairness_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analysis/lp-duals": {
         parameters: {
             query?: never;
@@ -528,7 +545,7 @@ export interface components {
          * AnalysisKind
          * @enum {string}
          */
-        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals" | "staffing_sweep" | "baseline_compare";
+        AnalysisKind: "demand_sweep" | "marginal_cost" | "lp_duals" | "staffing_sweep" | "baseline_compare" | "fairness_sweep";
         /** AnalysisRunRead */
         AnalysisRunRead: {
             /**
@@ -544,7 +561,7 @@ export interface components {
             id: number;
             kind: components["schemas"]["AnalysisKind"];
             /** Result */
-            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | components["schemas"]["StaffingSweepResult"] | components["schemas"]["BaselineCompareResult"] | null;
+            result: components["schemas"]["DemandSweepResult"] | components["schemas"]["MarginalCostResult"] | components["schemas"]["LpDualsResult"] | components["schemas"]["StaffingSweepResult"] | components["schemas"]["BaselineCompareResult"] | components["schemas"]["FairnessSweepResult"] | null;
             status: components["schemas"]["RunStatus"];
         };
         /** AssignmentRead */
@@ -756,6 +773,41 @@ export interface components {
             /** Unavailable Days */
             unavailable_days?: number[];
         };
+        /** FairnessSweepPoint */
+        FairnessSweepPoint: {
+            /** Cost Increase Percent */
+            cost_increase_percent: number | null;
+            /** Hours Spread */
+            hours_spread: number | null;
+            /** Labor Cost */
+            labor_cost: number | null;
+            /** Night Spread */
+            night_spread: number | null;
+            /** Proven */
+            proven: boolean;
+            /** Solve Status */
+            solve_status: string;
+            /** Tolerance Percent */
+            tolerance_percent: number;
+            /** Understaffed Hours */
+            understaffed_hours: number | null;
+        };
+        /** FairnessSweepRequest */
+        FairnessSweepRequest: {
+            solve: components["schemas"]["SolveRequest"];
+            /** Tolerances */
+            tolerances?: number[];
+        };
+        /** FairnessSweepResult */
+        FairnessSweepResult: {
+            /**
+             * Label
+             * @default Each point is a full re-solve; a point not proven optimal is marked so
+             */
+            label: string;
+            /** Points */
+            points: components["schemas"]["FairnessSweepPoint"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -773,6 +825,8 @@ export interface components {
             coverage_ratio: number;
             /** Hard Violations */
             hard_violations: number;
+            /** Hours Spread */
+            hours_spread: number;
             /** Labor Cost */
             labor_cost: number;
             /** Night Premium Cost */
@@ -886,6 +940,11 @@ export interface components {
         RepairRequest: {
             /** Absences */
             absences?: components["schemas"]["AbsenceWrite"][];
+            /**
+             * Cost Tolerance Percent
+             * @default 0
+             */
+            cost_tolerance_percent: number;
             /** Demand Profile Id */
             demand_profile_id?: number | null;
             /** From Day */
@@ -1021,6 +1080,11 @@ export interface components {
         };
         /** SolveRequest */
         SolveRequest: {
+            /**
+             * Cost Tolerance Percent
+             * @default 0
+             */
+            cost_tolerance_percent: number;
             /** Demand Profile Id */
             demand_profile_id: number;
             /** Employee Ids */
@@ -1254,6 +1318,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DemandSweepRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fairness_sweep_api_analysis_fairness_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FairnessSweepRequest"];
             };
         };
         responses: {

@@ -81,6 +81,7 @@ def test_solve_params_carry_seed_and_workers() -> None:
         "relative_gap_limit": 0.01,
         "num_workers": 1,
         "random_seed": 7,
+        "cost_tolerance_percent": 0.0,
     }
 
 

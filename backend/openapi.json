@@ -51,7 +51,8 @@
           "marginal_cost",
           "lp_duals",
           "staffing_sweep",
-          "baseline_compare"
+          "baseline_compare",
+          "fairness_sweep"
         ],
         "title": "AnalysisKind",
         "type": "string"
@@ -109,6 +110,9 @@
               },
               {
                 "$ref": "#/components/schemas/BaselineCompareResult"
+              },
+              {
+                "$ref": "#/components/schemas/FairnessSweepResult"
               },
               {
                 "type": "null"
@@ -748,6 +752,133 @@
         "title": "EmployeeUpdate",
         "type": "object"
       },
+      "FairnessSweepPoint": {
+        "properties": {
+          "cost_increase_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Increase Percent"
+          },
+          "hours_spread": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours Spread"
+          },
+          "labor_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labor Cost"
+          },
+          "night_spread": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Night Spread"
+          },
+          "proven": {
+            "title": "Proven",
+            "type": "boolean"
+          },
+          "solve_status": {
+            "title": "Solve Status",
+            "type": "string"
+          },
+          "tolerance_percent": {
+            "title": "Tolerance Percent",
+            "type": "number"
+          },
+          "understaffed_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understaffed Hours"
+          }
+        },
+        "required": [
+          "tolerance_percent",
+          "solve_status",
+          "proven",
+          "labor_cost",
+          "cost_increase_percent",
+          "night_spread",
+          "hours_spread",
+          "understaffed_hours"
+        ],
+        "title": "FairnessSweepPoint",
+        "type": "object"
+      },
+      "FairnessSweepRequest": {
+        "properties": {
+          "solve": {
+            "$ref": "#/components/schemas/SolveRequest"
+          },
+          "tolerances": {
+            "items": {
+              "maximum": 10.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Tolerances",
+            "type": "array"
+          }
+        },
+        "required": [
+          "solve"
+        ],
+        "title": "FairnessSweepRequest",
+        "type": "object"
+      },
+      "FairnessSweepResult": {
+        "properties": {
+          "label": {
+            "default": "Each point is a full re-solve; a point not proven optimal is marked so",
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/FairnessSweepPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "title": "FairnessSweepResult",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -786,6 +917,10 @@
           },
           "hard_violations": {
             "title": "Hard Violations",
+            "type": "integer"
+          },
+          "hours_spread": {
+            "title": "Hours Spread",
             "type": "integer"
           },
           "labor_cost": {
@@ -849,6 +984,7 @@
           "night_premium_cost",
           "night_shift_stddev",
           "weekend_shift_stddev",
+          "hours_spread",
           "hard_violations",
           "staff_by_hour",
           "required_by_hour"
@@ -1095,6 +1231,13 @@
             "maxItems": 500,
             "title": "Absences",
             "type": "array"
+          },
+          "cost_tolerance_percent": {
+            "default": 0.0,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Cost Tolerance Percent",
+            "type": "number"
           },
           "demand_profile_id": {
             "anyOf": [
@@ -1455,6 +1598,13 @@
       },
       "SolveRequest": {
         "properties": {
+          "cost_tolerance_percent": {
+            "default": 0.0,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Cost Tolerance Percent",
+            "type": "number"
+          },
           "demand_profile_id": {
             "title": "Demand Profile Id",
             "type": "integer"
@@ -2165,6 +2315,47 @@
           }
         },
         "summary": "Demand Sweep",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/api/analysis/fairness-sweep": {
+      "post": {
+        "operationId": "fairness_sweep_api_analysis_fairness_sweep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FairnessSweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fairness Sweep",
         "tags": [
           "analysis"
         ]

@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -28,6 +29,7 @@ class RosterOutcome:
     preference_misses: int | None
     approximate: bool = False
     changes: int | None = None
+    hours_spread: int | None = None
 
 
 def solve_roster(
@@ -47,6 +49,12 @@ def solve_roster(
     Objective: lexicographic, one CP-SAT solve per tier: shortfall, labour cost with the night
     premium (Article 98), night-shift spread, then preference misses. Each tier is capped at the
     optimum of the tier before. Status is OPTIMAL only when every tier proves optimality.
+
+    With cost_tolerance_percent above 0 the labour cost tier is capped at its optimum plus that
+    percentage instead of the optimum, and a worked-hours spread tier is added after the night-shift
+    spread. The cap is taken from the cost value found by the solver: if that tier is only FEASIBLE,
+    the tolerance is measured from that value, not from the true optimum. Compute the actual cost of
+    the returned roster with kpi.labor_cost, which can exceed phases[cost].objective.
 
     symmetry_breaking orders employees that are identical in wage and carry no requests by their
     shift count; this keeps the optimum and only removes permutations of the same roster.
@@ -109,6 +117,15 @@ def symmetry_pairs(employees: tuple[Employee, ...]) -> list[tuple[int, int]]:
     ]
 
 
+def tier_cap(name: str, objective: float, cost_tolerance_percent: float) -> int:
+    """Upper bound kept for a tier after its optimum is found. Only the cost tier may rise, by
+    cost_tolerance_percent of its optimum, rounded down; with 0 the cap is the optimum itself.
+    Every other tier stays at its optimum."""
+    if name == "cost":
+        return math.floor(objective * (100 + cost_tolerance_percent) / 100)
+    return round(objective)
+
+
 def _aggregate_starts(instance: Instance, params: SolveParams) -> dict[tuple[int, str], int]:
     wages = sorted(employee.hourly_wage for employee in instance.employees)
     if not wages:
@@ -147,6 +164,8 @@ class _RosterModel:
         self.night_counts: list[Any] = []
         self.night_max: Any = None
         self.night_min: Any = None
+        self.hours_max: Any = None
+        self.hours_min: Any = None
         self.repair = repair
         self.baseline_keys: dict[tuple[int, int, int], int | None] = {}
         self.changes: Any = None
@@ -334,6 +353,27 @@ class _RosterModel:
     def _employee_shifts(self, e_index: int) -> Any:
         return self._sum(work for (e, _, _), work in self.work.items() if e == e_index)
 
+    def _employee_hours(self, e_index: int) -> Any:
+        return self._sum(
+            self.shifts[s_index].length * work
+            for (e, _, s_index), work in self.work.items()
+            if e == e_index
+        )
+
+    def _add_hours_spread(self) -> None:
+        if len(self.employees) < 2 or self.hours_max is not None:
+            return
+        bound = HOURS_PER_WEEK
+        totals = []
+        for e_index in range(len(self.employees)):
+            total = self.model.new_int_var(0, bound, f"hours_{e_index}")
+            self.model.add(total == self._employee_hours(e_index))
+            totals.append(total)
+        self.hours_max = self.model.new_int_var(0, bound, "hours_max")
+        self.hours_min = self.model.new_int_var(0, bound, "hours_min")
+        self.model.add_max_equality(self.hours_max, totals)
+        self.model.add_min_equality(self.hours_min, totals)
+
     def add_symmetry_breaking(self) -> None:
         for earlier, later in symmetry_pairs(self.employees):
             self.model.add(self._employee_shifts(earlier) >= self._employee_shifts(later))
@@ -373,6 +413,8 @@ class _RosterModel:
         stages.append(("cost", self._cost()))
         if self.night_max is not None:
             stages.append(("night_spread", self.night_max - self.night_min))
+        if self.hours_max is not None:
+            stages.append(("hours_spread", self.hours_max - self.hours_min))
         if any(employee.preferred_days_off for employee in self.employees):
             stages.append(("preference", self._preference_misses()))
         return stages
@@ -390,12 +432,14 @@ class _RosterModel:
         return self._outcome(solver, (result,), 1)
 
     def solve(self, params: SolveParams) -> RosterOutcome:
+        if params.cost_tolerance_percent > 0:
+            self._add_hours_spread()
         stages = self._stages()
         stage_params = with_time_share(params, len(stages))
         results: list[SolveResult] = []
         best = None
         hints: dict[Any, int] = self._repair_hints() if self.repair is not None else {}
-        for _, expression in stages:
+        for name, expression in stages:
             self.model.proto.clear_solution_hint()
             for variable, value in hints.items():
                 self.model.add_hint(variable, value)
@@ -405,7 +449,9 @@ class _RosterModel:
             if result.objective is None:
                 break
             best = solver
-            self.model.add(expression <= round(result.objective))
+            self.model.add(
+                expression <= tier_cap(name, result.objective, params.cost_tolerance_percent)
+            )
             hints = {variable: solver.value(variable) for variable in self.all_vars}
         return self._outcome(best, tuple(results), len(stages))
 
@@ -427,6 +473,11 @@ class _RosterModel:
             ),
             preference_misses=round(best.value(self._preference_misses())),
             changes=None if self.changes is None else round(best.value(self.changes)),
+            hours_spread=(
+                round(best.value(self.hours_max) - best.value(self.hours_min))
+                if self.hours_max is not None
+                else None
+            ),
         )
 
     def _solution(self, best: Any) -> Solution:

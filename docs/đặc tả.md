@@ -1,6 +1,8 @@
 # Đặc tả ShiftOpt
 
-**Trạng thái:** bản nháp. Claude soạn theo ủy quyền của người dùng. Nhóm chưa duyệt. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
+**Trạng thái:** đã duyệt ngày 2026-11-08. Người dùng (Vinh) ủy quyền cho Claude quyết định mọi mục ở mục 3 và phiếu duyệt; kết quả ghi ở phiếu duyệt. Các thành viên khác của nhóm chưa xem bản này: ai không đồng ý thì sửa dòng tương ứng ở phiếu. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
+
+**Chưa đóng:** Nghị định 145/2020 chưa đối chiếu văn bản gốc (mục 4). Điểm này không chặn duyệt vì code đang chặt hơn nguồn thứ cấp.
 
 **Nguồn luật.** Điều 98, 105, 106, 109, 110, 111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025) (mục 4). Nghị định 145/2020 chưa đối chiếu văn bản gốc.
 
@@ -12,7 +14,9 @@ Trong phạm vi bản đầu (CLAUDE.md mục 13–14):
 - Tối ưu lịch theo nhân viên (CP-SAT), validator độc lập, KPI, độ nhạy (quét λ, chi phí biên, dual LP xấp xỉ, quét giả định quy đổi).
 - Giao diện: nhập nhu cầu, mẫu ca, nhân viên, Optimize, lịch, cảnh báo tuân thủ, sửa tay, What-if, xuất CSV.
 
-Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, nhiều tuần, Gantt theo giờ, dự báo, PDF, xác thực, chấm công, Redis/Celery/WebSocket, Timefold, Gurobi bắt buộc.
+Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, Gantt theo giờ, PDF, xác thực, chấm công, Redis/Celery/WebSocket, Timefold, Gurobi bắt buộc.
+
+Mở rộng được phép làm có điều kiện (mức P2, chỉ khi việc bắt buộc đã xong; D21–D23): đánh đổi chi phí và công bằng, tuần nối với tuần trước, dự báo nhu cầu bằng baseline mùa vụ. Chưa làm thì không được ghi vào báo cáo như đã có.
 
 ## 2. Yêu cầu chức năng
 
@@ -26,10 +30,11 @@ Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, 
 | FR-6 | Sửa tay tạo lượt mới, chạy lại validator, lịch gốc không đổi. | `test_crud_api` / smoke flow |
 | FR-7 | KPI: coverage, giờ thiếu/thừa, hiệu suất, chi phí, phụ cấp đêm, độ lệch ca đêm và cuối tuần. Xuất CSV. | `test_kpi_and_staffing.py`, `test_schedule_views.py` |
 | FR-8 | Độ nhạy: quét λ ∈ [0,8; 1,3], chi phí biên 168 giờ bằng giải lại, dual LP có nhãn xấp xỉ, quét giả định quy đổi. | `test_sensitivity.py`, `test_worker.py` |
+| FR-9 | Xếp lại lịch (D20): lịch gốc bất biến; ngày khóa và ca ghim giữ nguyên; người vắng không được xếp vào ngày vắng; gợi ý người thay chỉ qua validator; báo nghỉ đột xuất là lối tắt của xếp lại. | `test_repair.py`, `test_replacement.py`, `test_repair_snapshot.py`, smoke flow |
 
-## 3. Quyết định đã chốt (bản nháp)
+## 3. Quyết định đã chốt
 
-Người chốt: Claude theo ủy quyền. Chờ nhóm xác nhận. Lý do ghi cạnh mỗi dòng.
+Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08. Lý do ghi cạnh mỗi dòng.
 
 | # | Câu hỏi | Giá trị | Lý do |
 |---|---|---|---|
@@ -43,7 +48,7 @@ Người chốt: Claude theo ủy quyền. Chờ nhóm xác nhận. Lý do ghi c
 | D8 | `p` (đơn vị doanh số chuẩn hóa mỗi người mỗi giờ) | 4,0 cho kịch bản cơ sở (truyền tường minh) | Với store 18, giờ đỉnh cần 8 người. Tải đỉnh 28,3. `DEFAULT_PRODUCTIVITY` trong code vẫn là 1,0; chưa đổi để không đổi hành vi smoke và test, cần đổi kèm chạy lại test |
 | D9 | Sàn `min_staff`, `night_min_staff` | 1 và 1 | Nguyên tắc 7 gợi ý 1–2 |
 | D10 | Doanh thu cho tỷ lệ chi phí lao động | Không mặc định; nhập trên UI | Không có dữ liệu doanh thu thật |
-| D11 | Trọng số `M_u`, `λ_F` | Không dùng trọng số; giải lexicographic 4 tầng | Tránh chọn `M` tùy tiện (CLAUDE.md 5.2) |
+| D11 | Trọng số `M_u`, `λ_F` | Không dùng trọng số; giải lexicographic 4 tầng (5 tầng khi `cost_tolerance_percent` > 0, xem D21) | Tránh chọn `M` tùy tiện (CLAUDE.md 5.2) |
 | D12 | So sánh CP-SAT với HiGHS | Trên mô hình tổng hợp có nghỉ ngầm, và trên mô hình theo nhân viên (HiGHS qua `roster_mip.py`, chỉ để đối chiếu; lõi sản phẩm vẫn là CP-SAT) | Đối chiếu có bảng kết quả ở `benchmarks.md` mục 2b; phạm vi 10–30 nhân viên, 3 seed, 60 giây |
 | D13 | Kịch bản cơ sở | Store 18, D7–D9, 3 ca 0/8/16 h, 30 nhân viên, 48 giờ | Dữ liệu thật, không sinh ngẫu nhiên |
 | D14 | Dataset tổng đài công khai | Bỏ, thay bằng D18 | — |
@@ -53,43 +58,56 @@ Người chốt: Claude theo ủy quyền. Chờ nhóm xác nhận. Lý do ghi c
 | D18 | Chế độ tổng đài (Erlang A/C) | Bỏ khỏi sản phẩm (người dùng quyết định 2026-11-07) | Nhóm không hỗ trợ tổng đài; giữ một chế độ bán lẻ |
 | D19 | Nguồn nhu cầu | Ingest file doanh số tổng quát, không gắn FreshRetailNet. Người dùng ingest file (CSV hoặc parquet) và chọn cột trên form; hệ thống gợi ý cột theo tên. FreshRetailNet là dữ liệu mẫu cho demo | Yêu cầu của người dùng: chỉ là ingest doanh số rồi suy ra nhu cầu; dữ liệu khác FreshRetailNet cũng phải chạy. Hồ sơ lưu tuần tải để quét giả định không cần file gốc |
 | D20 | Xếp lại lịch (repair) | Lịch gốc là bất biến. Repair tạo lượt mới: ngày trước `from_day` và ca ghim là cố định, người vắng không được xếp; tầng "thay đổi so với gốc" đặt sau thiếu người và trước chi phí. Gợi ý người thay chỉ dùng validator, không gọi solver. Báo nghỉ đột xuất (`/reroster`) là lối tắt của repair cho một người và các ngày vắng: `from_day` mặc định là ngày vắng đầu tiên, cùng validator và tầng mục tiêu | Giữ ổn định lịch đã công bố (nghiệp vụ người báo ốm); kiểm tra khả thi bằng tính đơn điệu của ràng buộc cứng, không để solver báo INFEASIBLE |
+| D21 | Đánh đổi chi phí và công bằng (plan F) | Cho phép. Thêm tham số `cost_tolerance_percent` (0 đến 10, mặc định 0; đã triển khai, xem `model.md` mục 7). Tolerance 0 giữ nguyên thứ tự hiện nay (chi phí đứng trước công bằng); tolerance lớn hơn 0 cho tầng công bằng tăng chi phí tối đa theo tỷ lệ đó. Thêm độ lệch giờ làm `H_max - H_min` cạnh chênh ca đêm | Mặc định không đổi hành vi nên không phá nghiệm thu cũ. Đúng mục 3 của đề tài về công bằng; chi phí tăng được đo và hiện trên UI |
+| D22 | Tuần không quấn vòng (plan H) | Cho phép làm ở mức P2. Thêm chế độ `linear` kèm trạng thái kỳ trước của từng nhân viên; mặc định vẫn `cyclic`. Chế độ `cyclic` phải cho kết quả y như cũ | Quấn vòng là xấp xỉ, giới hạn đã nêu ở mục 7. Chỉ làm khi A–F, J xong; chưa làm thì giữ nguyên ghi chú giới hạn |
+| D23 | Dự báo nhu cầu (plan I) | Cho phép làm ở mức P2, chỉ baseline mùa vụ (cùng giờ tuần trước, trung bình cùng giờ k tuần) là hàm thuần, không huấn luyện mô hình, không thêm thư viện. Đo bằng WAPE và bias, không dùng MAPE. Trước khi dùng split eval phải xác nhận khoảng ngày bằng `dt.min()/max()` | CLAUDE.md mục 10 cấm thêm thư viện dự báo; baseline không cần. Chỉ làm khi còn thời gian |
+| D24 | Playwright cho kiểm thử end-to-end | Không thêm. Dùng `backend/scripts/smoke_flow.py` và duyệt tay theo checklist trong `plan.md` | Tránh dependency mới khi smoke flow đã chạy hai lần liên tiếp đều pass |
 
 ## Phiếu duyệt
 
-Người duyệt: ______________ · Ngày duyệt: ______________ · Chữ ký: ______________
+Người duyệt: Vinh, ủy quyền cho Claude quyết định · Ngày duyệt: 2026-11-08 · Chữ ký: không (duyệt qua hội thoại)
 
-Đánh dấu "Đồng ý" hoặc ghi "Sửa" và nội dung sửa. Mọi "Sửa" phải đổi `LaborRules` hoặc config, rồi chạy lại benchmark (mục 3).
+Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "Sửa" phải đổi `LaborRules` hoặc config, rồi chạy lại benchmark (mục 3).
 
 | Mã | Quyết định | Đồng ý / Sửa | Ghi chú |
 |---|---|---|---|
-| D1 | Ca đêm tính theo luật hay hợp đồng | | |
-| D2 | "Ngày" bắt đầu lúc mấy giờ | | |
-| D3 | `K` ngày làm liên tiếp tối đa | | |
-| D4 | 48 hay 40 giờ/tuần | | |
-| D5 | Đ.110 áp cho cặp ca nào | | |
-| D6 | Nghỉ giữa giờ (Đ.109) | | |
-| D7 | `alpha` | | |
-| D8 | `p` (đơn vị doanh số chuẩn hóa mỗi người mỗi giờ) | | |
-| D9 | Sàn `min_staff`, `night_min_staff` | | |
-| D10 | Doanh thu cho tỷ lệ chi phí lao động | | |
-| D11 | Trọng số `M_u`, `λ_F` | | |
-| D12 | So sánh CP-SAT với HiGHS | | |
-| D13 | Kịch bản cơ sở | | |
-| D14 | Dataset tổng đài công khai | | |
-| D15 | Giết tiến trình con khi quá hạn | | |
-| D16 | Hợp đồng nhân viên | | |
-| D17 | Báo cáo nghiên cứu nền | | |
-| D18 | Chế độ tổng đài (Erlang A/C) | | |
-| D19 | Nguồn nhu cầu | | |
-| D20 | Xếp lại lịch (repair) | | |
+| D1 | Ca đêm tính theo luật hay hợp đồng | Đồng ý | Luật là sàn. |
+| D2 | "Ngày" bắt đầu lúc mấy giờ | Đồng ý | Khớp `time_grid.py`. |
+| D3 | `K` ngày làm liên tiếp tối đa | Đồng ý | Mỗi cửa sổ 7 ngày có một ngày nghỉ. |
+| D4 | 48 hay 40 giờ/tuần | Đồng ý | Kịch bản 40 giờ nằm ở What-if. |
+| D5 | Đ.110 áp cho cặp ca nào | Đồng ý | Công thức tổng quát, không hard-code `sigma - sigma' > 4`. |
+| D6 | Nghỉ giữa giờ (Đ.109) | Đồng ý | Chặt hơn luật, có chủ đích. |
+| D7 | `alpha` | Đồng ý | Gộp vào `p`. |
+| D8 | `p` (đơn vị doanh số chuẩn hóa mỗi người mỗi giờ) | Đồng ý | Truyền tường minh. Không đổi `DEFAULT_PRODUCTIVITY` (1,0) để khỏi đổi hành vi test. |
+| D9 | Sàn `min_staff`, `night_min_staff` | Đồng ý | Theo nguyên tắc 7 của CLAUDE.md. |
+| D10 | Doanh thu cho tỷ lệ chi phí lao động | Đồng ý | Không có dữ liệu thật. |
+| D11 | Trọng số `M_u`, `λ_F` | Đồng ý | Lexicographic, đã đo so với trọng số ở `benchmarks.md` mục 6. |
+| D12 | So sánh CP-SAT với HiGHS | Đồng ý | Phạm vi 10 đến 30 nhân viên, 3 seed, 60 giây; CP-SAT không chứng minh được tầng 1 ở 10 nhân viên (`benchmarks.md` 2b). |
+| D13 | Kịch bản cơ sở | Đồng ý | Xác nhận store 18, 30 nhân viên. |
+| D14 | Dataset tổng đài công khai | Đồng ý | Thay bằng D18. |
+| D15 | Giết tiến trình con khi quá hạn | Đồng ý | Giới hạn đã biết. |
+| D16 | Hợp đồng nhân viên | Đồng ý | Chỉ giờ tối đa riêng. |
+| D17 | Báo cáo nghiên cứu nền | Đồng ý | Đặc tả thay vai trò. |
+| D18 | Chế độ tổng đài (Erlang A/C) | Đồng ý | Quyết định của người dùng 2026-11-07. |
+| D19 | Nguồn nhu cầu | Đồng ý | Ingest tổng quát. |
+| D20 | Xếp lại lịch (repair) | Đồng ý | Tầng thay đổi đứng trước chi phí. |
+| D21 | Đánh đổi chi phí và công bằng (plan F) | Đồng ý | Mặc định 0 nên không đổi hành vi hiện nay. |
+| D22 | Tuần không quấn vòng (plan H) | Đồng ý | P2, mặc định vẫn cyclic. |
+| D23 | Dự báo nhu cầu (plan I) | Đồng ý | P2, chỉ baseline, không thêm thư viện. |
+| D24 | Playwright cho kiểm thử end-to-end | Đồng ý | Không thêm. |
 
-**Điểm code chặt hơn luật (cần nhóm xác nhận có chủ đích):**
+**Điểm code chặt hơn luật (đã xác nhận có chủ đích, 2026-11-08):**
 
 - Đ.105 khoản 2: code chỉ cho 8 giờ mỗi ngày, luật cho tới 10 giờ khi quy định theo tuần.
 - Đ.109 khoản 1: code mất một giờ phủ cho mọi ca cần nghỉ, luật chỉ yêu cầu 30 hoặc 45 phút.
 - Đ.111 khoản 1: code không có ngoại lệ bình quân 04 ngày nghỉ mỗi tháng.
 
-**Việc còn mở để nhóm quyết:** kịch bản cơ sở D13; sai lệch CLAUDE mục 13 dòng 4 (so sánh solver); dùng Playwright (CLAUDE mục 10); F, H, I (mỗi mục đổi đặc tả).
+**Các việc nhóm cần quyết trước đây, kết quả 2026-11-08:**
+
+- Kịch bản cơ sở D13: giữ store 18, 30 nhân viên.
+- Sai lệch CLAUDE mục 13 dòng 4 (so sánh solver): chấp nhận phạm vi đã đo ở D12; kết luận về solver không vượt phạm vi này.
+- Playwright: không thêm (D24).
+- F, H, I: cho phép có điều kiện (D21 đến D23). Khi làm xong từng mục, cập nhật CLAUDE.md mục 5.2, 14 cho khớp.
 
 ## 4. Ràng buộc pháp lý
 
@@ -143,4 +161,5 @@ Lấy từ CLAUDE.md mục 13. Kết quả đo nằm trong [benchmarks.md](bench
 - Kịch bản căng (8 nhân viên, sức chứa 384 < 468) không đạt tối ưu trong 60 giây: coverage 70,3%, gap 100%. Kết quả là `FEASIBLE`, không được gọi là tối ưu.
 - Chỉ đo một store, 3 seed, 1 và 8 worker; không suy ra cho store khác.
 - Nghị định 145/2020 chưa đối chiếu văn bản gốc. Các điều luật còn lại ở mục 4 đã đối chiếu.
+- Lịch tuần quấn vòng: ca Chủ nhật nối với thứ Hai cùng tuần, không nối với tuần trước (D22).
 - Chưa có chấm công; không đo adherence.

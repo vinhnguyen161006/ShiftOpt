@@ -5,6 +5,7 @@ import type {
   AnalysisRunRead,
   BaselineCompareRequest,
   DemandSweepRequest,
+  FairnessSweepRequest,
   MarginalCostRequest,
   StaffingSweepRequest,
 } from "../../../types/models";
@@ -36,6 +37,13 @@ export function useBaselineCompare() {
   return useMutation({
     mutationFn: (body: BaselineCompareRequest) =>
       apiFetch<AnalysisAccepted>("/analysis/baseline-compare", jsonInit("POST", body)),
+  });
+}
+
+export function useFairnessSweep() {
+  return useMutation({
+    mutationFn: (body: FairnessSweepRequest) =>
+      apiFetch<AnalysisAccepted>("/analysis/fairness-sweep", jsonInit("POST", body)),
   });
 }
 

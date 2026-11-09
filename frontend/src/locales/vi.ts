@@ -469,6 +469,10 @@ export const vi = {
       label: "Số ngày làm liên tiếp tối đa",
       hint: "6 bảo đảm ít nhất một ngày nghỉ trong mỗi 7 ngày.",
     },
+    costTolerance: {
+      label: "Dung sai chi phí (%)",
+      hint: "0 giữ thứ tự chi phí trước công bằng. Tối đa 10: chi phí được tăng tới mức này để ca đêm và giờ làm đều hơn.",
+    },
   },
   schedule: {
     eyebrow: "Xếp lịch",
@@ -682,6 +686,8 @@ export const vi = {
       efficiencySub: "cần / có",
       nightSpread: "Chênh ca đêm",
       nightSpreadSub: (weekend: string) => `độ lệch chuẩn; cuối tuần ${weekend}`,
+      hoursSpread: "Chênh giờ làm",
+      hoursSpreadSub: "max − min giờ mỗi người",
     },
     exports: {
       assignments: "CSV lịch",
@@ -796,6 +802,30 @@ export const vi = {
     noMarginalBody: "Chạy phân tích chi phí biên ở trên để tô bản đồ nhiệt 7 × 24.",
     marginalActive: (id: number) => `Đang giải lại 169 lần (phân tích ${id})`,
     baselinePanel: "So với baseline greedy",
+    fairness: {
+      panel: "Đánh đổi chi phí và công bằng",
+      noRunTitle: "Chưa quét dung sai",
+      noRunBody:
+        "Nhập các mức dung sai ở trên, có 0 làm mốc, để xem ca đêm và chênh giờ làm đổi thế nào khi trả thêm chi phí.",
+      active: (id: number) => `Đang giải lại ở từng mức dung sai (phân tích ${id})`,
+      title: "Chi phí và công bằng",
+      label: "Dung sai là phần trăm chi phí được phép tăng so với mức 0",
+      caption:
+        "Mỗi điểm là một lần giải lại đầy đủ với cùng giới hạn thời gian và seed. Mức 0 giữ thứ tự chi phí trước công bằng.",
+      nightChart: "Chênh ca đêm",
+      nightUnit: "số ca",
+      nightAria: "Chênh số ca đêm giữa nhân viên theo mức chi phí tăng thêm",
+      hoursChart: "Chênh giờ làm",
+      hoursUnit: "giờ",
+      hoursAria: "Chênh giờ làm giữa nhân viên theo mức chi phí tăng thêm",
+      noBaseline:
+        "Cần có mức 0 và mọi điểm đều có nghiệm để vẽ biểu đồ. Bảng bên dưới vẫn hiển thị các điểm đã giải.",
+      tableCaption: "Các điểm quét dung sai",
+      tolerance: "Dung sai (%)",
+      costIncrease: "Chi phí tăng (%)",
+      nightSpread: "Chênh ca đêm",
+      hoursSpread: "Chênh giờ làm",
+    },
     noBaselineTitle: "Chưa so với baseline",
     noBaselineBody:
       "Chạy so sánh baseline ở trên để xem CP-SAT và greedy trên cùng nhu cầu, cùng luật.",
@@ -840,6 +870,10 @@ export const vi = {
       runSweep: "Chạy quét nhu cầu",
       runStaffing: "Chạy quét giả định",
       runBaseline: "So với baseline greedy",
+      tolerances: "Các mức dung sai chi phí (%)",
+      tolerancesHint:
+        "Cách nhau bằng dấu phẩy, mỗi số từ 0 đến 10. Nên có 0 làm mốc so sánh. Tối đa 20.",
+      runFairness: "Quét dung sai chi phí",
       submitting: "Đang gửi...",
     },
     sweep: {
