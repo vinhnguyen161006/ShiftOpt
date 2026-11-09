@@ -13,6 +13,7 @@ export type StaffingMode = Schemas["StaffingMode"];
 export type EmployeeRead = Schemas["EmployeeRead"];
 export type UserRead = Schemas["UserRead"];
 export type EmployeeCreate = Schemas["EmployeeCreate"];
+export type EmployeeCsvRequest = Schemas["EmployeeCsvRequest"];
 export type ShiftTemplateRead = Schemas["ShiftTemplateRead"];
 export type ShiftTemplateCreate = Schemas["ShiftTemplateCreate"];
 export type LaborRulesRead = Schemas["LaborRulesRead"];

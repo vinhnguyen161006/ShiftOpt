@@ -3,9 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import get_settings
 from src.database import commit_unique
+from src.employees.csv_import import parse_employees_csv
 from src.employees.models import EmployeeRecord
-from src.employees.schemas import EmployeeCreate, EmployeeUpdate
-from src.exceptions import InstanceTooLargeError, NotFoundError
+from src.employees.schemas import EmployeeCreate, EmployeeCsvRequest, EmployeeUpdate
+from src.exceptions import ConflictError, InstanceTooLargeError, InvalidInputError, NotFoundError
 
 DUPLICATE_CODE = "employee code already exists"
 
@@ -39,6 +40,34 @@ async def create_employee(
     await commit_unique(session, DUPLICATE_CODE)
     await session.refresh(employee)
     return employee
+
+
+async def import_employees(
+    session: AsyncSession, owner_id: int, payload: EmployeeCsvRequest
+) -> list[EmployeeRecord]:
+    """Add every employee of a CSV file, or none: a bad row, a code already in use or going
+    over the employee limit rejects the whole file."""
+    try:
+        rows = parse_employees_csv(payload.csv_text)
+    except ValueError as error:
+        raise InvalidInputError(str(error)) from error
+    existing = set(
+        await session.scalars(
+            select(EmployeeRecord.code).where(EmployeeRecord.owner_id == owner_id)
+        )
+    )
+    taken = [row.code for row in rows if row.code in existing]
+    if taken:
+        raise ConflictError(f"employee codes already exist: {', '.join(taken)}")
+    limit = get_settings().max_employees
+    if len(existing) + len(rows) > limit:
+        raise InstanceTooLargeError(f"at most {limit} employees are allowed")
+    records = [EmployeeRecord(**row.model_dump(), owner_id=owner_id) for row in rows]
+    session.add_all(records)
+    await commit_unique(session, DUPLICATE_CODE)
+    for record in records:
+        await session.refresh(record)
+    return records
 
 
 async def update_employee(

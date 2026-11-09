@@ -7,6 +7,7 @@ import { errorMessage } from "../../../lib/api-client";
 import { vi } from "../../../locales/vi";
 import type { EmployeeRead } from "../../../types/models";
 import { useDeleteEmployee, useEmployees } from "../api/employees";
+import { EmployeeCsvForm } from "./EmployeeCsvForm";
 import { EmployeeForm } from "./EmployeeForm";
 import { EmployeeTable } from "./EmployeeTable";
 
@@ -17,6 +18,7 @@ export function EmployeesPage() {
   const remove = useDeleteEmployee();
   const [editing, setEditing] = useState<Editing>(undefined);
   const [deleting, setDeleting] = useState<EmployeeRead | undefined>(undefined);
+  const [importing, setImporting] = useState(false);
 
   const addButton = (
     <Button variant="primary" onClick={() => setEditing({})}>
@@ -30,7 +32,12 @@ export function EmployeesPage() {
         eyebrow={vi.employees.eyebrow}
         title={vi.employees.title}
         lead={vi.employees.lead}
-        actions={addButton}
+        actions={
+          <>
+            <Button onClick={() => setImporting(true)}>{vi.employees.importCsv}</Button>
+            {addButton}
+          </>
+        }
       />
       {employees.isPending && <Loading label={vi.employees.loading} />}
       {employees.isError && (
@@ -56,6 +63,9 @@ export function EmployeesPage() {
         onClose={() => setEditing(undefined)}
       >
         <EmployeeForm employee={editing?.employee} onDone={() => setEditing(undefined)} />
+      </Modal>
+      <Modal title={vi.employees.importCsv} open={importing} onClose={() => setImporting(false)}>
+        <EmployeeCsvForm onDone={() => setImporting(false)} />
       </Modal>
       <Modal
         title={vi.employees.deleteTitle}

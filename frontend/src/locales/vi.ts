@@ -426,6 +426,18 @@ export const vi = {
     emptyBody:
       "Solver giao ca cho các nhân viên này. Cần ít nhất bằng số người của giờ cao điểm, cộng thêm người để bù ngày nghỉ.",
     editTitle: (code: string) => `Sửa ${code}`,
+    importCsv: "Nhập CSV",
+    csv: {
+      file: "File CSV",
+      fileHint: "Dòng đầu là tên cột. Mỗi dòng sau là một nhân viên.",
+      content: "Nội dung CSV",
+      contentHint:
+        "Bắt buộc: code, name, hourly_wage. Không bắt buộc: max_weekly_hours, min_weekly_hours, unavailable_days, preferred_days_off. Ngày ghi T2..T7, CN (hoặc 0-6, 0 là thứ Hai), cách nhau bằng dấu cách. Một dòng lỗi hoặc trùng mã thì cả file không được thêm.",
+      example: `code,name,hourly_wage,max_weekly_hours,unavailable_days
+E31,Nguyễn An,100,40,T7 CN`,
+      submit: "Nhập nhân viên",
+      importing: "Đang nhập",
+    },
     deleteTitle: "Xóa nhân viên?",
     deleteBody: (name: string, code: string) =>
       `${name} (${code}) sẽ bị xóa. Các lịch đã giải giữ bản sao riêng của nhân viên này.`,
