@@ -45,10 +45,19 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     return undefined as T;
   }
   const body = await readBody(response);
+  if (response.status === 401 && !path.startsWith("/auth/")) {
+    redirectToLogin();
+  }
   if (!response.ok) {
     throw toApiError(response.status, body);
   }
   return body as T;
+}
+
+function redirectToLogin() {
+  if (window.location.pathname !== "/login") {
+    window.location.assign("/login");
+  }
 }
 
 async function readBody(response: Response): Promise<unknown> {

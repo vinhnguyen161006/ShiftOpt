@@ -11,6 +11,7 @@ export type CsvDemandRequest = Schemas["CsvDemandRequest"];
 export type DemandSource = Schemas["DemandSource"];
 export type StaffingMode = Schemas["StaffingMode"];
 export type EmployeeRead = Schemas["EmployeeRead"];
+export type UserRead = Schemas["UserRead"];
 export type EmployeeCreate = Schemas["EmployeeCreate"];
 export type ShiftTemplateRead = Schemas["ShiftTemplateRead"];
 export type ShiftTemplateCreate = Schemas["ShiftTemplateCreate"];

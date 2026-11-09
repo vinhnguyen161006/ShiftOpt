@@ -8,6 +8,7 @@ dependencies = [
     "asyncmy==0.2.16",
     "cryptography==50.0.2",
     "fastapi==0.156.4",
+    "google-auth==2.62.0",
     "pyarrow==26.0.0",
     "pydantic==2.14.1",
     "pydantic-settings==2.16.1",
@@ -65,6 +66,7 @@ runtime-evaluated-base-classes = [
 "src/**/router.py" = ["TC001", "TC002", "TC003"]
 "src/**/dependencies.py" = ["TC001", "TC002", "TC003"]
 "src/database.py" = ["TC002", "TC003"]
+"src/auth/google_oidc.py" = ["S310"]
 "migrations/versions/**" = ["E501"]
 "scripts/download_freshretailnet.py" = ["S310"]
 "scripts/seed_demo.py" = ["S310"]
@@ -80,3 +82,7 @@ exclude = ["^migrations/versions/"]
 [[tool.mypy.overrides]]
 module = ["asgi_lifespan.*", "asyncmy.*", "pyarrow.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["src.auth.google_oidc"]
+disallow_untyped_calls = false

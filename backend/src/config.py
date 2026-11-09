@@ -16,6 +16,15 @@ class Settings(BaseSettings):
     max_pending_jobs: int = 4
     max_analysis_seconds: float = 900.0
     max_upload_bytes: int = 200 * 1024 * 1024
+    session_ttl_hours: int = 12
+    cookie_secure: bool = False
+    allowed_emails: list[str] = Field(default_factory=list)
+    allowed_email_domains: list[str] = Field(default_factory=list)
+    min_password_length: int = 8
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+    post_login_redirect: str = "/demand"
 
 
 @lru_cache

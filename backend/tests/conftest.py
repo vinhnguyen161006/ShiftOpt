@@ -7,7 +7,11 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from src import main
+from src.auth.dependencies import current_user
+from src.auth.models import UserRecord
 from src.main import create_app
+
+STUB_USER = UserRecord(id=1, email="stub@example.com", password_hash=None, display_name="stub")
 
 
 @pytest.fixture
@@ -17,6 +21,7 @@ async def app(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FastAPI]:
 
     monkeypatch.setattr(main, "recover_interrupted_jobs", skip_recovery)
     application = create_app()
+    application.dependency_overrides[current_user] = lambda: STUB_USER
     async with LifespanManager(application):
         yield application
 

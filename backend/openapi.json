@@ -920,6 +920,29 @@
         "title": "LaborRulesRead",
         "type": "object"
       },
+      "LoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
       "LpDualsRequest": {
         "properties": {
           "hourly_wage": {
@@ -1084,6 +1107,36 @@
           "lp_dual_by_hour"
         ],
         "title": "MarginalCostResult",
+        "type": "object"
+      },
+      "RegisterRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "display_name"
+        ],
+        "title": "RegisterRequest",
         "type": "object"
       },
       "RepairRequest": {
@@ -2000,6 +2053,35 @@
         "title": "SweepPoint",
         "type": "object"
       },
+      "UserRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "created_at"
+        ],
+        "title": "UserRead",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -2091,6 +2173,24 @@
     "/api/analysis/baseline-compare": {
       "post": {
         "operationId": "baseline_compare_api_analysis_baseline_compare_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2132,6 +2232,24 @@
     "/api/analysis/demand-sweep": {
       "post": {
         "operationId": "demand_sweep_api_analysis_demand_sweep_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2173,6 +2291,24 @@
     "/api/analysis/lp-duals": {
       "post": {
         "operationId": "lp_duals_api_analysis_lp_duals_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2214,6 +2350,24 @@
     "/api/analysis/marginal-cost": {
       "post": {
         "operationId": "marginal_cost_api_analysis_marginal_cost_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2255,6 +2409,24 @@
     "/api/analysis/staffing-sweep": {
       "post": {
         "operationId": "staffing_sweep_api_analysis_staffing_sweep_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2305,6 +2477,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -2335,9 +2523,200 @@
         ]
       }
     },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout_api_auth_logout_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "me_api_auth_me_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "operationId": "register_api_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/demand-profiles": {
       "get": {
         "operationId": "list_profiles_api_demand_profiles_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -2352,6 +2731,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "List Profiles",
@@ -2361,6 +2750,24 @@
       },
       "post": {
         "operationId": "create_profile_api_demand_profiles_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2402,6 +2809,24 @@
     "/api/demand-profiles/from-csv": {
       "post": {
         "operationId": "create_profile_from_csv_api_demand_profiles_from_csv_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2615,6 +3040,22 @@
               "title": "Name",
               "type": "string"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "requestBody": {
@@ -2659,6 +3100,24 @@
     "/api/demand-profiles/ingest/inspect": {
       "post": {
         "operationId": "inspect_sales_upload_api_demand_profiles_ingest_inspect_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/octet-stream": {
@@ -2680,6 +3139,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Inspect Sales Upload",
@@ -2699,6 +3168,22 @@
             "schema": {
               "title": "Profile Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -2732,6 +3217,22 @@
             "schema": {
               "title": "Profile Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -2772,6 +3273,22 @@
             "schema": {
               "title": "Profile Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -2816,6 +3333,24 @@
     "/api/employees": {
       "get": {
         "operationId": "list_employees_api_employees_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -2830,6 +3365,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "List Employees",
@@ -2839,6 +3384,24 @@
       },
       "post": {
         "operationId": "create_employee_api_employees_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2889,6 +3452,22 @@
               "title": "Employee Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -2921,6 +3500,22 @@
             "schema": {
               "title": "Employee Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -2961,6 +3556,22 @@
             "schema": {
               "title": "Employee Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -3005,6 +3616,24 @@
     "/api/labor-rules": {
       "get": {
         "operationId": "get_labor_rules_api_labor_rules_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3015,6 +3644,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Get Labor Rules",
@@ -3026,6 +3665,24 @@
     "/api/schedules": {
       "get": {
         "operationId": "list_schedules_api_schedules_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3040,6 +3697,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "List Schedules",
@@ -3049,6 +3716,24 @@
       },
       "post": {
         "operationId": "create_schedule_api_schedules_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -3099,6 +3784,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3141,6 +3842,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3180,6 +3897,22 @@
             "schema": {
               "title": "Run Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -3223,6 +3956,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3265,6 +4014,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3304,6 +4069,22 @@
             "schema": {
               "title": "Run Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -3357,6 +4138,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3399,6 +4196,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3438,6 +4251,22 @@
             "schema": {
               "title": "Run Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -3525,6 +4354,22 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3571,6 +4416,22 @@
               "title": "Run Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "requestBody": {
@@ -3614,6 +4475,24 @@
     "/api/shift-templates": {
       "get": {
         "operationId": "list_templates_api_shift_templates_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3628,6 +4507,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "List Templates",
@@ -3637,6 +4526,24 @@
       },
       "post": {
         "operationId": "create_template_api_shift_templates_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -3687,6 +4594,22 @@
               "title": "Template Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
+            }
           }
         ],
         "responses": {
@@ -3719,6 +4642,22 @@
             "schema": {
               "title": "Template Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],
@@ -3759,6 +4698,22 @@
             "schema": {
               "title": "Template Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "shiftopt_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Shiftopt Session"
             }
           }
         ],

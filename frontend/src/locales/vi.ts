@@ -46,6 +46,31 @@ export const vi = {
     describe: (prefix: string, hour: string, required: number, assigned: number, status: string) =>
       `${prefix}${hour}: cần ${required}, có ${assigned} (${status})`,
   },
+  auth: {
+    loginTitle: "Đăng nhập",
+    registerTitle: "Tạo tài khoản",
+    loginLead: "Đăng nhập bằng email và mật khẩu ShiftOpt.",
+    registerLead: "Chỉ email được phép mới đăng ký được.",
+    email: "Email",
+    password: "Mật khẩu",
+    passwordHint: "Ít nhất 8 ký tự.",
+    displayName: "Tên hiển thị",
+    submitLogin: "Đăng nhập",
+    submitRegister: "Đăng ký",
+    switchToRegister: "Chưa có tài khoản? Đăng ký",
+    switchToLogin: "Đã có tài khoản? Đăng nhập",
+    checking: "Đang kiểm tra phiên đăng nhập...",
+    logout: "Đăng xuất",
+    or: "hoặc",
+    googleContinue: "Tiếp tục với Google",
+    googleErrors: {
+      not_configured: "Đăng nhập Google chưa được cấu hình trên máy chủ.",
+      not_allowed: "Tài khoản Google này không nằm trong danh sách được phép.",
+      google_denied: "Bạn đã hủy đăng nhập Google.",
+      google_failed: "Đăng nhập Google thất bại hoặc đã hết hạn. Hãy thử lại.",
+    },
+    greeting: (name: string) => `Xin chào, ${name}`,
+  },
   home: {
     nav: {
       product: "Sản phẩm",

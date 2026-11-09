@@ -12,7 +12,7 @@ Trong phạm vi bản đầu (CLAUDE.md mục 13–14):
 - Tối ưu lịch theo nhân viên (CP-SAT), validator độc lập, KPI, độ nhạy (quét λ, chi phí biên, dual LP xấp xỉ, quét giả định quy đổi).
 - Giao diện: nhập nhu cầu, mẫu ca, nhân viên, Optimize, lịch, cảnh báo tuân thủ, sửa tay, What-if, xuất CSV.
 
-Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, nhiều tuần, Gantt theo giờ, dự báo, PDF, xác thực, chấm công, Redis/Celery/WebSocket, Timefold, Gurobi bắt buộc.
+Ngoài phạm vi: đa địa điểm, ma trận kỹ năng, stochastic, robust, nhiều tuần, Gantt theo giờ, dự báo, PDF, phân quyền theo vai trò (xác thực đăng nhập có từ D25), chấm công, Redis/Celery/WebSocket, Timefold, Gurobi bắt buộc.
 
 ## 2. Yêu cầu chức năng
 
@@ -53,6 +53,7 @@ Người chốt: Claude theo ủy quyền. Chờ nhóm xác nhận. Lý do ghi c
 | D18 | Chế độ tổng đài (Erlang A/C) | Bỏ khỏi sản phẩm (người dùng quyết định 2026-11-07) | Nhóm không hỗ trợ tổng đài; giữ một chế độ bán lẻ |
 | D19 | Nguồn nhu cầu | Ingest file doanh số tổng quát, không gắn FreshRetailNet. Người dùng ingest file (CSV hoặc parquet) và chọn cột trên form; hệ thống gợi ý cột theo tên. FreshRetailNet là dữ liệu mẫu cho demo | Yêu cầu của người dùng: chỉ là ingest doanh số rồi suy ra nhu cầu; dữ liệu khác FreshRetailNet cũng phải chạy. Hồ sơ lưu tuần tải để quét giả định không cần file gốc |
 | D20 | Xếp lại lịch (repair) | Lịch gốc là bất biến. Repair tạo lượt mới: ngày trước `from_day` và ca ghim là cố định, người vắng không được xếp; tầng "thay đổi so với gốc" đặt sau thiếu người và trước chi phí. Gợi ý người thay chỉ dùng validator, không gọi solver. Báo nghỉ đột xuất (`/reroster`) là lối tắt của repair cho một người và các ngày vắng: `from_day` mặc định là ngày vắng đầu tiên, cùng validator và tầng mục tiêu | Giữ ổn định lịch đã công bố (nghiệp vụ người báo ốm); kiểm tra khả thi bằng tính đơn điệu của ràng buộc cứng, không để solver báo INFEASIBLE |
+| D25 | Đăng nhập và phạm vi tài khoản | Có đăng nhập: email + mật khẩu riêng của ShiftOpt (băm scrypt, thư viện chuẩn) và đăng nhập Google (OIDC, thư viện google-auth 2.62.0, PKCE + state + nonce, trạng thái chờ lưu trong bảng `oauth_transactions`, dùng một lần). Phiên lưu ở cookie HttpOnly phía server, không dùng JWT. Dữ liệu dùng chung cho mọi người đã đăng nhập, không thêm chủ sở hữu theo bản ghi. Chỉ email hoặc domain trong `SHIFTOPT_ALLOWED_EMAILS` / `SHIFTOPT_ALLOWED_EMAIL_DOMAINS` mới đăng ký hoặc đăng nhập được; danh sách rỗng thì không ai đăng ký được. Không có quên mật khẩu qua email, xác minh email, vai trò hay 2FA trong bản này | Người dùng quyết định 2026-11-09. Người dùng quyết định 2026-11-09 (đăng nhập Google chọn google-auth). Đổi phạm vi mục 1 ("xác thực" trước đây ngoài phạm vi). Không làm giới hạn tần suất đăng nhập và kiểm tra Origin trong bản này |
 
 ## Phiếu duyệt
 
@@ -82,6 +83,7 @@ Người duyệt: ______________ · Ngày duyệt: ______________ · Chữ ký: 
 | D18 | Chế độ tổng đài (Erlang A/C) | | |
 | D19 | Nguồn nhu cầu | | |
 | D20 | Xếp lại lịch (repair) | | |
+| D25 | Đăng nhập và phạm vi tài khoản | | |
 
 **Điểm code chặt hơn luật (cần nhóm xác nhận có chủ đích):**
 

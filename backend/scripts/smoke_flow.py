@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 import time
 import uuid
@@ -222,9 +223,23 @@ def check_sweep(client: httpx.Client, profile_id: int, shift_ids: list[int]) -> 
     expect(all(point["solve_status"] for point in points), "sweep point without status")
 
 
+def sign_in(client: httpx.Client, email: str, password: str) -> None:
+    credentials = {"email": email, "password": password}
+    registered = client.post("/api/auth/register", json={**credentials, "display_name": "Smoke"})
+    if registered.status_code == 409:
+        login = client.post("/api/auth/login", json=credentials)
+        expect(login.status_code == 200, f"login failed with status {login.status_code}")
+        return
+    expect(registered.status_code == 201, f"sign-up failed with status {registered.status_code}")
+
+
 def run_flow(base_url: str) -> None:
     tag = uuid.uuid4().hex[:6]
+    email = os.environ.get("SHIFTOPT_DEMO_EMAIL", "")
+    password = os.environ.get("SHIFTOPT_DEMO_PASSWORD", "")
+    expect(bool(email and password), "set SHIFTOPT_DEMO_EMAIL and SHIFTOPT_DEMO_PASSWORD")
     with httpx.Client(base_url=base_url, timeout=60) as client:
+        sign_in(client, email, password)
         profile_id, shift_ids = seed(client, tag)
         run = check_optimize(client, profile_id, shift_ids)
         check_manual_edit(client, run, tag)

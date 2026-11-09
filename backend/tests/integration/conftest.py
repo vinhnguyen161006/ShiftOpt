@@ -4,14 +4,25 @@ from typing import Any
 import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
+from src.auth.dependencies import current_user
+from src.auth.models import UserRecord
 from src.config import get_settings
 from src.main import create_app
 from tests.integration.helpers import DAY_DEMAND
 
-TABLES = ("analysis_runs", "solve_runs", "demand_profiles", "employees", "shift_templates")
+TABLES = (
+    "auth_sessions",
+    "users",
+    "analysis_runs",
+    "solve_runs",
+    "demand_profiles",
+    "employees",
+    "shift_templates",
+)
+STUB_USER = UserRecord(id=1, email="stub@example.com", password_hash=None, display_name="stub")
 
 
 @pytest.fixture
@@ -19,11 +30,31 @@ async def app(database_url: str, monkeypatch: pytest.MonkeyPatch) -> AsyncIterat
     monkeypatch.setenv("SHIFTOPT_DATABASE_URL", database_url)
     get_settings.cache_clear()
     application = create_app()
+    application.dependency_overrides[current_user] = lambda: STUB_USER
     async with LifespanManager(application):
         async with application.state.engine.begin() as connection:
             for table in TABLES:
                 await connection.execute(text(f"DELETE FROM {table}"))
         yield application
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+async def anonymous_client(
+    database_url: str, monkeypatch: pytest.MonkeyPatch
+) -> AsyncIterator[AsyncClient]:
+    monkeypatch.setenv("SHIFTOPT_DATABASE_URL", database_url)
+    monkeypatch.setenv("SHIFTOPT_ALLOWED_EMAILS", '["ada@example.com"]')
+    get_settings.cache_clear()
+    application = create_app()
+    async with LifespanManager(application):
+        async with application.state.engine.begin() as connection:
+            for table in TABLES:
+                await connection.execute(text(f"DELETE FROM {table}"))
+        async with AsyncClient(
+            transport=ASGITransport(app=application), base_url="http://test"
+        ) as http:
+            yield http
     get_settings.cache_clear()
 
 
