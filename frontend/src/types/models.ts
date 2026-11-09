@@ -47,6 +47,8 @@ export type StaffingSweepPoint = Schemas["StaffingSweepPoint"];
 export type FairnessSweepRequest = Schemas["FairnessSweepRequest"];
 export type FairnessSweepResult = Schemas["FairnessSweepResult"];
 export type FairnessSweepPoint = Schemas["FairnessSweepPoint"];
+export type PreSolveWarningRead = Schemas["PreSolveWarningRead"];
+export type PreviewWarningsRead = Schemas["PreviewWarningsRead"];
 
 export type SalesIngestQuery =
   operations["ingest_sales_api_demand_profiles_ingest_post"]["parameters"]["query"];

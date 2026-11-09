@@ -6,6 +6,7 @@ from typing import Any
 
 from shiftopt import kpi
 from shiftopt.constraints.labor_law_vn import LaborRules
+from shiftopt.diagnostics import diagnose
 from shiftopt.domain import Assignment, Instance, Solution
 from shiftopt.replacement import suggest_replacements
 from shiftopt.schedule_diff import diff_solutions
@@ -26,6 +27,8 @@ from src.schedules.schemas import (
     ComplianceRead,
     KpiRead,
     ManualEditRequest,
+    PreSolveWarningRead,
+    PreviewWarningsRead,
     RepairRequest,
     ReplacementRead,
     RerosterRequest,
@@ -108,6 +111,16 @@ def check_limits(payload: SolveSettings) -> None:
         )
     if payload.num_workers > settings.solve_workers:
         raise InstanceTooLargeError(f"num_workers must not exceed {settings.solve_workers}")
+
+
+async def preview_warnings(session: AsyncSession, payload: SolveRequest) -> PreviewWarningsRead:
+    instance = instance_from_snapshot(await snapshot_for(session, payload))
+    return PreviewWarningsRead(
+        warnings=[
+            PreSolveWarningRead(kind=item.kind, detail=item.detail, employee_id=item.employee_id)
+            for item in diagnose(instance)
+        ]
+    )
 
 
 async def snapshot_for(session: AsyncSession, payload: SolveRequest) -> Snapshot:

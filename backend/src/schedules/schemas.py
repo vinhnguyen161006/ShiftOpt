@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from shiftopt.diagnostics import WarningKind
 
 from src.schedules.models import RunStatus
 
@@ -27,6 +28,16 @@ class SolveRequest(SolveSettings):
 class JobAccepted(BaseModel):
     job_id: int
     status: RunStatus
+
+
+class PreSolveWarningRead(BaseModel):
+    kind: WarningKind
+    detail: str
+    employee_id: str | None
+
+
+class PreviewWarningsRead(BaseModel):
+    warnings: list[PreSolveWarningRead]
 
 
 class AssignmentRead(BaseModel):

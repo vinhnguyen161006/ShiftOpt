@@ -442,6 +442,14 @@ export const vi = {
     },
   },
   solve: {
+    warnings: {
+      title: "Cảnh báo trước khi giải: lịch có thể thiếu người",
+      noAvailableDays: (id: string) => `Nhân viên ${id} không còn ngày làm nào`,
+      capacityBelowDemand:
+        "Tổng giờ làm tối đa của cả đội không đủ cho nhu cầu. Lịch sẽ thiếu người ở một số giờ.",
+      noNightShift:
+        "Có nhu cầu ban đêm nhưng không mẫu ca nào phủ giờ đêm. Thêm mẫu ca đêm để phủ.",
+    },
     profile: "Hồ sơ nhu cầu",
     chooseProfile: "Chọn hồ sơ",
     employees: "Nhân viên",

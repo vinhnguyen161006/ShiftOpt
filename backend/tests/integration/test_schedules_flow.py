@@ -249,3 +249,14 @@ async def test_reroster_refuses_a_run_that_violates_the_law(
         json={"employee_code": "E1", "absent_days": [5]},
     )
     assert refused.status_code == 409
+
+
+async def test_preview_warnings_answers_without_creating_a_run(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    before = await client.get("/api/schedules")
+    response = await client.post("/api/schedules/preview-warnings", json=solve_body(seeded))
+
+    assert response.status_code == 200
+    assert isinstance(response.json()["warnings"], list)
+    assert (await client.get("/api/schedules")).json() == before.json()

@@ -283,6 +283,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/preview-warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Warnings */
+        post: operations["preview_warnings_api_schedules_preview_warnings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schedules/{run_id}": {
         parameters: {
             query?: never;
@@ -936,6 +953,19 @@ export interface components {
             /** Proven By Hour */
             proven_by_hour: boolean[];
         };
+        /** PreSolveWarningRead */
+        PreSolveWarningRead: {
+            /** Detail */
+            detail: string;
+            /** Employee Id */
+            employee_id: string | null;
+            kind: components["schemas"]["WarningKind"];
+        };
+        /** PreviewWarningsRead */
+        PreviewWarningsRead: {
+            /** Warnings */
+            warnings: components["schemas"]["PreSolveWarningRead"][];
+        };
         /** RepairRequest */
         RepairRequest: {
             /** Absences */
@@ -1266,6 +1296,11 @@ export interface components {
             /** Legal Basis */
             legal_basis: string;
         };
+        /**
+         * WarningKind
+         * @enum {string}
+         */
+        WarningKind: "no_available_days" | "capacity_below_demand" | "no_night_shift";
     };
     responses: never;
     parameters: never;
@@ -1964,6 +1999,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_warnings_api_schedules_preview_warnings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewWarningsRead"];
                 };
             };
             /** @description Validation Error */

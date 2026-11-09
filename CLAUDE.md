@@ -331,6 +331,7 @@ engine/
     sensitivity/            lp_duals.py, parametric.py, scenarios.py
     validation.py           kiểm tra hậu nghiệm mọi ràng buộc cứng, độc lập với solver
     replacement.py          gợi ý người thay: ứng viên đi qua validator, không gọi solver
+    diagnostics.py          cảnh báo trước khi giải (điều kiện cần, không gọi solver), dùng cho preview-warnings
     kpi.py
   tests/
     conftest.py             fixture three_shifts, build_instance

@@ -1222,6 +1222,51 @@
         "title": "MarginalCostResult",
         "type": "object"
       },
+      "PreSolveWarningRead": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "employee_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WarningKind"
+          }
+        },
+        "required": [
+          "kind",
+          "detail",
+          "employee_id"
+        ],
+        "title": "PreSolveWarningRead",
+        "type": "object"
+      },
+      "PreviewWarningsRead": {
+        "properties": {
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/PreSolveWarningRead"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "warnings"
+        ],
+        "title": "PreviewWarningsRead",
+        "type": "object"
+      },
       "RepairRequest": {
         "properties": {
           "absences": {
@@ -2229,6 +2274,15 @@
         ],
         "title": "ViolationRead",
         "type": "object"
+      },
+      "WarningKind": {
+        "enum": [
+          "no_available_days",
+          "capacity_below_demand",
+          "no_night_shift"
+        ],
+        "title": "WarningKind",
+        "type": "string"
       }
     }
   },
@@ -3273,6 +3327,47 @@
           }
         },
         "summary": "Create Schedule",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/preview-warnings": {
+      "post": {
+        "operationId": "preview_warnings_api_schedules_preview_warnings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewWarningsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Warnings",
         "tags": [
           "schedules"
         ]

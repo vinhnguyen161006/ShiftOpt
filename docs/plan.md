@@ -151,7 +151,7 @@ CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi p
 
 | # | Việc | Ghi chú |
 |---|---|---|
-| G1 | Cảnh báo trước khi giải: nhân viên không còn ngày khả dụng, tổng sức chứa < tổng nhu cầu, không ai làm được ca đêm | Rẻ, giúp hiểu vì sao thiếu |
+| G1 | **Xong 2026-11-09**: `engine/src/shiftopt/diagnostics.py` (ba cảnh báo, điều kiện cần); `POST /schedules/preview-warnings`; hiện trên form Optimize và What-if (không chặn nút) | Rẻ, giúp hiểu vì sao thiếu |
 | G2 | Giải thích giờ thiếu: với mỗi giờ thiếu, liệt kê ràng buộc chặn (hết người, chạm 48 giờ, nghỉ 12 giờ) | Dùng lại hạ tầng độ nhạy |
 | G3 | Trần ngân sách tuần, giờ tối thiểu theo hợp đồng | Ràng buộc tuyến tính |
 | G4 | Đánh dấu kết quả cũ khi đầu vào đổi (hash đầu vào trong `solve_runs`) | Cần migration Alembic |
