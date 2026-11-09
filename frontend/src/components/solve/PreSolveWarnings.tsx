@@ -24,6 +24,10 @@ function warningText(warning: PreSolveWarningRead): string {
       return vi.solve.warnings.capacityBelowDemand;
     case "no_night_shift":
       return vi.solve.warnings.noNightShift;
+    case "min_hours_unreachable":
+      return vi.solve.warnings.minHoursUnreachable(warning.employee_id ?? "");
+    case "budget_below_demand":
+      return vi.solve.warnings.budgetBelowDemand;
   }
 }
 

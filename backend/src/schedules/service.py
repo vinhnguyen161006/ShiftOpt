@@ -7,7 +7,7 @@ from typing import Any
 from shiftopt import kpi
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.diagnostics import diagnose
-from shiftopt.domain import Assignment, Instance, Solution
+from shiftopt.domain import PERCENT_BASE, Assignment, Instance, Solution
 from shiftopt.replacement import suggest_replacements
 from shiftopt.schedule_diff import diff_solutions
 from shiftopt.solvers.base import ModelInvalidError
@@ -132,7 +132,8 @@ async def snapshot_for(session: AsyncSession, payload: SolveRequest) -> Snapshot
         max_weekly_hours=payload.max_weekly_hours,
         max_consecutive_days=payload.max_consecutive_days,
     )
-    snapshot = build_snapshot(profile.required_staff, templates, employees, rules)
+    budget = None if payload.weekly_budget is None else payload.weekly_budget * PERCENT_BASE
+    snapshot = build_snapshot(profile.required_staff, templates, employees, rules, budget)
     try:
         instance_from_snapshot(snapshot)
     except ValueError as error:
@@ -279,6 +280,7 @@ def get_kpi(run: SolveRun) -> KpiRead:
         night_shift_stddev=measures.night_shift_stddev,
         weekend_shift_stddev=measures.weekend_shift_stddev,
         hours_spread=measures.hours_spread,
+        min_hours_shortfall=measures.min_hours_shortfall,
         hard_violations=len(validate(instance, solution)),
         staff_by_hour=list(kpi.staff_by_hour(instance, solution)),
         required_by_hour=list(instance.demand),

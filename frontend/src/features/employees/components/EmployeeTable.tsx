@@ -32,6 +32,12 @@ export function EmployeeTable({ employees, onEdit, onDelete }: EmployeeTableProp
           render: (employee) => employee.max_weekly_hours ?? vi.employees.table.lawLimit,
         },
         {
+          key: "min_hours",
+          label: vi.employees.table.minHours,
+          align: "end",
+          render: (employee) => employee.min_weekly_hours ?? "-",
+        },
+        {
           key: "unavailable",
           label: vi.employees.table.cannotWork,
           render: (employee) => dayList(employee.unavailable_days),

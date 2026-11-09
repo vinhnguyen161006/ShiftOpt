@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from shiftopt.constraints.labor_law_vn import LaborRules
-from shiftopt.domain import Employee, Instance, ShiftType
+from shiftopt.domain import PERCENT_BASE, Employee, Instance, ShiftType
 from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_DAY, is_night_hour
 
 
@@ -10,6 +10,8 @@ class WarningKind(StrEnum):
     NO_AVAILABLE_DAYS = "no_available_days"
     CAPACITY_BELOW_DEMAND = "capacity_below_demand"
     NO_NIGHT_SHIFT = "no_night_shift"
+    MIN_HOURS_UNREACHABLE = "min_hours_unreachable"
+    BUDGET_BELOW_DEMAND = "budget_below_demand"
 
 
 @dataclass(frozen=True)
@@ -31,6 +33,10 @@ def diagnose(instance: Instance) -> tuple[PreSolveWarning, ...]:
     coverage further, so when this bound is below the total demand in person-hours, shortfall is
     certain. Shifts longer than max_daily_hours are excluded, as the roster model excludes them.
     no_night_shift: night demand exists but no allowed shift covers any night hour (Article 106).
+    min_hours_unreachable: an employee's contract minimum exceeds the most hours they can work.
+    The minimum is soft, so the roster stays feasible and the shortfall is reported.
+    budget_below_demand: every covered person-hour costs at least the lowest wage times
+    PERCENT_BASE, so a weekly budget below demand times that rate leaves some hour uncovered.
     """
     rules = instance.rules
     allowed = _allowed_shifts(instance)
@@ -59,7 +65,34 @@ def diagnose(instance: Instance) -> tuple[PreSolveWarning, ...]:
                 "night demand exists but no allowed shift covers any night hour",
             )
         )
+    warnings.extend(
+        PreSolveWarning(
+            WarningKind.MIN_HOURS_UNREACHABLE,
+            f"employee {employee.id} has a minimum of {employee.min_weekly_hours} hours but can "
+            f"work at most {_capacity(employee, allowed, rules)}",
+            employee.id,
+        )
+        for employee in instance.employees
+        if employee.min_weekly_hours is not None
+        and employee.min_weekly_hours > _capacity(employee, allowed, rules)
+    )
+    floor = _cheapest_coverage(instance)
+    if instance.weekly_budget is not None and instance.weekly_budget < floor:
+        warnings.append(
+            PreSolveWarning(
+                WarningKind.BUDGET_BELOW_DEMAND,
+                f"weekly budget {instance.weekly_budget} is below the cheapest possible cost "
+                f"{floor} of covering demand",
+            )
+        )
     return tuple(warnings)
+
+
+def _cheapest_coverage(instance: Instance) -> int:
+    if not instance.employees:
+        return 0
+    cheapest = min(employee.hourly_wage for employee in instance.employees)
+    return sum(instance.demand) * cheapest * PERCENT_BASE
 
 
 def _allowed_shifts(instance: Instance) -> tuple[ShiftType, ...]:

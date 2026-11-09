@@ -83,6 +83,7 @@ class _RosterMip:
         self.night_min: Any = None
         self.hours_max: Any = None
         self.hours_min: Any = None
+        self.min_gaps: list[Any] = []
         self.baseline_keys: dict[tuple[int, int, int], int | None] = {}
         self.changes: Any = None
         self._build()
@@ -105,6 +106,8 @@ class _RosterMip:
         self._create_shift_variables()
         self._add_one_shift_per_day()
         self._add_weekly_hours()
+        self._add_budget()
+        self._add_min_hours()
         self._add_rest_between_shifts()
         self._add_consecutive_days()
         self._add_weekly_rest()
@@ -226,6 +229,19 @@ class _RosterMip:
             self._row(self.night_max >= nights, "night_max")
             self._row(self.night_min <= nights, "night_min")
 
+    def _add_budget(self) -> None:
+        if self.instance.weekly_budget is not None:
+            self._row(self._cost() <= self.instance.weekly_budget, "budget")
+
+    def _add_min_hours(self) -> None:
+        for e_index, employee in enumerate(self.employees):
+            minimum = employee.min_weekly_hours
+            if minimum is None:
+                continue
+            gap = self._var(f"min_gap_{e_index}", upper=minimum)
+            self._row(self._employee_hours(e_index) + gap >= minimum, "min_hours")
+            self.min_gaps.append(gap)
+
     def _employee_hours(self, e_index: int) -> Any:
         return pulp.lpSum(
             self.shifts[s_index].length * work
@@ -301,6 +317,8 @@ class _RosterMip:
 
     def _stages(self) -> list[tuple[str, Any]]:
         stages: list[tuple[str, Any]] = [("shortfall", pulp.lpSum(self.shortfall))]
+        if self.min_gaps:
+            stages.append(("min_hours", pulp.lpSum(self.min_gaps)))
         if self.changes is not None:
             stages.append(("changes", self.changes))
         stages.append(("cost", self._cost()))
@@ -360,6 +378,11 @@ class _RosterMip:
             hours_spread=(
                 round(values.get(self.hours_max.name, 0.0) - values.get(self.hours_min.name, 0.0))
                 if self.hours_max is not None
+                else None
+            ),
+            min_hours_shortfall=(
+                round(sum(values.get(gap.name, 0.0) for gap in self.min_gaps))
+                if self.min_gaps
                 else None
             ),
         )

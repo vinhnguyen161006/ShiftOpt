@@ -199,7 +199,7 @@ function RunView({ runId }: { runId: number }) {
       {hasSchedule && (
         <>
           <Panel title={vi.schedule.laborCost} labelledBy="cost-title">
-            {kpi.data && <CostSummary kpi={kpi.data} />}
+            {kpi.data && <CostSummary kpi={kpi.data} weeklyBudget={data.weekly_budget} />}
           </Panel>
           <Modal
             title={vi.schedule.reroster.modalTitle(data.id)}

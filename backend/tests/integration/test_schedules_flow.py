@@ -260,3 +260,17 @@ async def test_preview_warnings_answers_without_creating_a_run(
     assert response.status_code == 200
     assert isinstance(response.json()["warnings"], list)
     assert (await client.get("/api/schedules")).json() == before.json()
+
+
+async def test_tight_budget_leaves_hours_short_but_run_still_succeeds(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    body = {**solve_body(seeded), "weekly_budget": 1}
+    accepted = await client.post("/api/schedules", json=body)
+    assert accepted.status_code == 202
+    run = await poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+
+    assert run["status"] == "succeeded", run["error"]
+    assert run["weekly_budget"] == 1
+    assert run["understaffed_hours"] > 0
+    assert run["hard_violations"] == 0

@@ -153,7 +153,7 @@ CLAUDE.md mục 5.2 đặt chi phí trên công bằng. F2 cho phép tăng chi p
 |---|---|---|
 | G1 | **Xong 2026-11-09**: `engine/src/shiftopt/diagnostics.py` (ba cảnh báo, điều kiện cần); `POST /schedules/preview-warnings`; hiện trên form Optimize và What-if (không chặn nút) | Rẻ, giúp hiểu vì sao thiếu |
 | G2 | Giải thích giờ thiếu: với mỗi giờ thiếu, liệt kê ràng buộc chặn (hết người, chạm 48 giờ, nghỉ 12 giờ) | Dùng lại hạ tầng độ nhạy |
-| G3 | Trần ngân sách tuần, giờ tối thiểu theo hợp đồng | Ràng buộc tuyến tính |
+| G3 | **Xong 2026-11-09**: `Employee.min_weekly_hours` (mềm, tầng `min_hours`), `Instance.weekly_budget` (cứng, `OVER_BUDGET` trong validator), migration `5b8d1f3a7c20`, trường ngân sách trong form giải, cột giờ tối thiểu trong nhân viên. Đặc tả D16 sửa, D25, D26 mới | Ràng buộc tuyến tính |
 | G4 | Đánh dấu kết quả cũ khi đầu vào đổi (hash đầu vào trong `solve_runs`) | Cần migration Alembic |
 | G5 | Gợi ý người thay khi báo nghỉ | **Đã làm** (D20) |
 

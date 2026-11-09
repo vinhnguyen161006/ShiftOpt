@@ -53,7 +53,7 @@ Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08. Lý 
 | D13 | Kịch bản cơ sở | Store 18, D7–D9, 3 ca 0/8/16 h, 30 nhân viên, 48 giờ | Dữ liệu thật, không sinh ngẫu nhiên |
 | D14 | Dataset tổng đài công khai | Bỏ, thay bằng D18 | — |
 | D15 | Giết tiến trình con khi quá hạn | Không làm; ghi là giới hạn đã biết | CP-SAT tự dừng theo time limit |
-| D16 | Hợp đồng nhân viên | Chỉ thêm giờ tối đa riêng; không thêm loại hợp đồng | Đủ cho bán thời gian; MVP mục 8.1 |
+| D16 | Hợp đồng nhân viên | Giờ tối đa riêng (cứng) và giờ tối thiểu riêng (mềm, xem D25); không thêm loại hợp đồng | Đủ cho bán thời gian; MVP mục 8.1. Sửa 2026-11-09 để thêm giờ tối thiểu |
 | D17 | Báo cáo nghiên cứu nền | Không có trong repo; đặc tả thay vai trò nguồn | File không tồn tại |
 | D18 | Chế độ tổng đài (Erlang A/C) | Bỏ khỏi sản phẩm (người dùng quyết định 2026-11-07) | Nhóm không hỗ trợ tổng đài; giữ một chế độ bán lẻ |
 | D19 | Nguồn nhu cầu | Ingest file doanh số tổng quát, không gắn FreshRetailNet. Người dùng ingest file (CSV hoặc parquet) và chọn cột trên form; hệ thống gợi ý cột theo tên. FreshRetailNet là dữ liệu mẫu cho demo | Yêu cầu của người dùng: chỉ là ingest doanh số rồi suy ra nhu cầu; dữ liệu khác FreshRetailNet cũng phải chạy. Hồ sơ lưu tuần tải để quét giả định không cần file gốc |
@@ -61,6 +61,8 @@ Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08. Lý 
 | D21 | Đánh đổi chi phí và công bằng (plan F) | Cho phép. Thêm tham số `cost_tolerance_percent` (0 đến 10, mặc định 0; đã triển khai, xem `model.md` mục 7). Tolerance 0 giữ nguyên thứ tự hiện nay (chi phí đứng trước công bằng); tolerance lớn hơn 0 cho tầng công bằng tăng chi phí tối đa theo tỷ lệ đó. Thêm độ lệch giờ làm `H_max - H_min` cạnh chênh ca đêm | Mặc định không đổi hành vi nên không phá nghiệm thu cũ. Đúng mục 3 của đề tài về công bằng; chi phí tăng được đo và hiện trên UI |
 | D22 | Tuần không quấn vòng (plan H) | Cho phép làm ở mức P2. Thêm chế độ `linear` kèm trạng thái kỳ trước của từng nhân viên; mặc định vẫn `cyclic`. Chế độ `cyclic` phải cho kết quả y như cũ | Quấn vòng là xấp xỉ, giới hạn đã nêu ở mục 7. Chỉ làm khi A–F, J xong; chưa làm thì giữ nguyên ghi chú giới hạn |
 | D23 | Dự báo nhu cầu (plan I) | Cho phép làm ở mức P2, chỉ baseline mùa vụ (cùng giờ tuần trước, trung bình cùng giờ k tuần) là hàm thuần, không huấn luyện mô hình, không thêm thư viện. Đo bằng WAPE và bias, không dùng MAPE. Trước khi dùng split eval phải xác nhận khoảng ngày bằng `dt.min()/max()` | CLAUDE.md mục 10 cấm thêm thư viện dự báo; baseline không cần. Chỉ làm khi còn thời gian |
+| D25 | Giờ tối thiểu theo hợp đồng (plan G3) | `Employee.min_weekly_hours`, mềm: tổng giờ dưới mức tối thiểu là tầng riêng ngay sau thiếu người, trước chi phí. Không là vi phạm cứng, nên repair và gợi ý người thay vẫn đơn điệu. Giá trị lớn hơn giờ tối đa bị từ chối khi nhập | Người dùng chọn mềm 2026-11-09: mô hình không bao giờ INFEASIBLE vì hợp đồng không đạt được; UI báo số giờ thiếu |
+| D26 | Ngân sách lương tuần (plan G3) | `weekly_budget` tùy chọn trên mỗi lượt giải, lưu trong snapshot, là trần cứng cho chi phí lao động. Độ phủ vẫn mềm nên ngân sách chặt làm tăng giờ thiếu. Validator có vi phạm `OVER_BUDGET` cho cả lịch | Người dùng chọn trần cứng theo lượt 2026-11-09. Validator kiểm tra nên lịch sửa tay vượt ngân sách bị từ chối |
 | D24 | Playwright cho kiểm thử end-to-end | Không thêm. Dùng `backend/scripts/smoke_flow.py` và duyệt tay theo checklist trong `plan.md` | Tránh dependency mới khi smoke flow đã chạy hai lần liên tiếp đều pass |
 
 ## Phiếu duyệt
@@ -86,7 +88,7 @@ Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "
 | D13 | Kịch bản cơ sở | Đồng ý | Xác nhận store 18, 30 nhân viên. |
 | D14 | Dataset tổng đài công khai | Đồng ý | Thay bằng D18. |
 | D15 | Giết tiến trình con khi quá hạn | Đồng ý | Giới hạn đã biết. |
-| D16 | Hợp đồng nhân viên | Đồng ý | Chỉ giờ tối đa riêng. |
+| D16 | Hợp đồng nhân viên | Sửa | Thêm giờ tối thiểu mềm (D25), duyệt 2026-11-09. |
 | D17 | Báo cáo nghiên cứu nền | Đồng ý | Đặc tả thay vai trò. |
 | D18 | Chế độ tổng đài (Erlang A/C) | Đồng ý | Quyết định của người dùng 2026-11-07. |
 | D19 | Nguồn nhu cầu | Đồng ý | Ingest tổng quát. |
@@ -95,6 +97,8 @@ Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "
 | D22 | Tuần không quấn vòng (plan H) | Đồng ý | P2, mặc định vẫn cyclic. |
 | D23 | Dự báo nhu cầu (plan I) | Đồng ý | P2, chỉ baseline, không thêm thư viện. |
 | D24 | Playwright cho kiểm thử end-to-end | Đồng ý | Không thêm. |
+| D25 | Giờ tối thiểu theo hợp đồng (plan G3) | Đồng ý | Mềm, tầng sau thiếu người. |
+| D26 | Ngân sách lương tuần (plan G3) | Đồng ý | Trần cứng theo lượt. |
 
 **Điểm code chặt hơn luật (đã xác nhận có chủ đích, 2026-11-08):**
 

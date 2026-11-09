@@ -69,13 +69,13 @@ export function ViolationList({ compliance }: ViolationListProps) {
             caption={`${basisLabel(group.legalBasis)}: ${kindLabel(group.kind)}`}
             rows={group.violations}
             rowKey={(violation) =>
-              `${violation.employee_code}-${violation.day}-${violation.detail}`
+              `${violation.employee_code ?? ""}-${violation.day}-${violation.detail}`
             }
             columns={[
               {
                 key: "employee",
                 label: vi.compliance.employee,
-                render: (violation) => violation.employee_code,
+                render: (violation) => violation.employee_code ?? vi.compliance.wholeRoster,
               },
               {
                 key: "day",

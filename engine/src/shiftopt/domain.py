@@ -54,12 +54,15 @@ class Employee:
     unavailable_days: frozenset[int] = frozenset()
     preferred_days_off: frozenset[int] = frozenset()
     max_weekly_hours: int | None = None
+    min_weekly_hours: int | None = None
 
     def __post_init__(self) -> None:
         if self.hourly_wage <= 0:
             raise ValueError(f"employee {self.id}: hourly_wage must be positive")
         if self.max_weekly_hours is not None and self.max_weekly_hours <= 0:
             raise ValueError(f"employee {self.id}: max_weekly_hours must be positive")
+        if self.min_weekly_hours is not None and self.min_weekly_hours <= 0:
+            raise ValueError(f"employee {self.id}: min_weekly_hours must be positive")
         for days in (self.unavailable_days, self.preferred_days_off):
             if any(not 0 <= day < DAYS_PER_WEEK for day in days):
                 raise ValueError(f"employee {self.id}: request days must be in [0, 7)")
@@ -79,12 +82,15 @@ class Instance:
     """One weekly scheduling problem. The roster repeats every week (cyclic horizon).
 
     demand holds the required head count for each of the 168 hours of the week, Monday 00:00 first.
+    weekly_budget caps the labour cost of the roster, in hundredths of the wage unit like
+    kpi.labor_cost; None means no cap. min_weekly_hours on an employee is a soft contract target.
     """
 
     demand: tuple[int, ...]
     employees: tuple[Employee, ...]
     shift_types: tuple[ShiftType, ...]
     rules: LaborRules = field(default_factory=LaborRules)
+    weekly_budget: int | None = None
 
     def __post_init__(self) -> None:
         if len(self.demand) != HOURS_PER_WEEK:
@@ -95,6 +101,14 @@ class Instance:
             raise ValueError("shift type names must be unique")
         if len({employee.id for employee in self.employees}) != len(self.employees):
             raise ValueError("employee ids must be unique")
+        if self.weekly_budget is not None and self.weekly_budget < 0:
+            raise ValueError("weekly_budget must be non-negative")
+        for employee in self.employees:
+            cap = employee.weekly_cap(self.rules)
+            if employee.min_weekly_hours is not None and employee.min_weekly_hours > cap:
+                raise ValueError(
+                    f"employee {employee.id}: min_weekly_hours exceeds the weekly cap of {cap}"
+                )
 
     def shift_by_name(self, name: str) -> ShiftType:
         """Look up a shift type; raise KeyError when the name is unknown."""

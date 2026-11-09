@@ -18,6 +18,7 @@ const FIELD_IDS: Record<string, string> = {
   name: "employee-name",
   hourly_wage: "employee-wage",
   max_weekly_hours: "employee-max-hours",
+  min_weekly_hours: "employee-min-hours",
   unavailable_days: "employee-unavailable",
   preferred_days_off: "employee-preferred",
 };
@@ -29,6 +30,9 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
   const [wage, setWage] = useState(employee ? String(employee.hourly_wage) : "");
   const [maxHours, setMaxHours] = useState(
     employee?.max_weekly_hours == null ? "" : String(employee.max_weekly_hours),
+  );
+  const [minHours, setMinHours] = useState(
+    employee?.min_weekly_hours == null ? "" : String(employee.min_weekly_hours),
   );
   const [unavailable, setUnavailable] = useState(employee?.unavailable_days ?? []);
   const [preferred, setPreferred] = useState(employee?.preferred_days_off ?? []);
@@ -45,6 +49,7 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
           name,
           hourly_wage: toNumber(wage),
           max_weekly_hours: maxHours.trim() === "" ? null : toNumber(maxHours),
+          min_weekly_hours: minHours.trim() === "" ? null : toNumber(minHours),
           unavailable_days: unavailable,
           preferred_days_off: preferred,
         },
@@ -121,6 +126,25 @@ export function EmployeeForm({ employee, onDone }: EmployeeFormProps) {
               step={1}
               value={maxHours}
               onChange={(event) => setMaxHours(event.target.value)}
+            />
+          )}
+        </Field>
+        <Field
+          id={FIELD_IDS.min_weekly_hours}
+          label={vi.employees.form.minHours}
+          hint={vi.employees.form.minHoursHint}
+          error={errors.get("min_weekly_hours")}
+        >
+          {(control) => (
+            <input
+              {...control}
+              className="input"
+              type="number"
+              min={1}
+              max={48}
+              step={1}
+              value={minHours}
+              onChange={(event) => setMinHours(event.target.value)}
             />
           )}
         </Field>

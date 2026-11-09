@@ -378,6 +378,7 @@ export const vi = {
       name: "Họ tên",
       wage: "Lương/giờ",
       maxHours: "Giờ tối đa/tuần",
+      minHours: "Giờ tối thiểu/tuần",
       lawLimit: "Theo luật (48)",
       cannotWork: "Không làm được",
       prefersOff: "Muốn nghỉ",
@@ -391,6 +392,9 @@ export const vi = {
       maxHours: "Giờ tối đa mỗi tuần",
       maxHoursHint:
         "Không bắt buộc. Để trống là theo luật (48). Giá trị thấp hơn là giới hạn cứng cho người này.",
+      minHours: "Giờ tối thiểu mỗi tuần",
+      minHoursHint:
+        "Không bắt buộc. Mục tiêu mềm theo hợp đồng: solver cố đạt ngay sau khi phủ nhu cầu, nếu không đạt sẽ báo số giờ thiếu.",
       cannotWork: "Không làm được vào",
       cannotWorkHint: "Ràng buộc cứng: solver không bao giờ xếp ca vào các ngày này.",
       wouldLikeOff: "Muốn nghỉ vào",
@@ -449,6 +453,10 @@ export const vi = {
         "Tổng giờ làm tối đa của cả đội không đủ cho nhu cầu. Lịch sẽ thiếu người ở một số giờ.",
       noNightShift:
         "Có nhu cầu ban đêm nhưng không mẫu ca nào phủ giờ đêm. Thêm mẫu ca đêm để phủ.",
+      minHoursUnreachable: (id: string) =>
+        `Nhân viên ${id} không thể đạt giờ tối thiểu theo hợp đồng với các ngày làm được`,
+      budgetBelowDemand:
+        "Ngân sách thấp hơn chi phí rẻ nhất để phủ toàn bộ nhu cầu. Lịch chắc chắn thiếu người.",
     },
     profile: "Hồ sơ nhu cầu",
     chooseProfile: "Chọn hồ sơ",
@@ -469,6 +477,10 @@ export const vi = {
       hint: "Dùng 1 cùng seed cố định để chạy lại ra đúng kết quả.",
     },
     seed: { label: "Seed ngẫu nhiên", hint: "Được lưu cùng lượt giải." },
+    weeklyBudget: {
+      label: "Ngân sách lương tuần",
+      hint: "Không bắt buộc, theo đơn vị tiền lương. Là trần cứng cho chi phí; nếu chặt, lịch sẽ thiếu người thay vì vượt ngân sách. Để trống là không giới hạn.",
+    },
     weeklyHours: {
       label: "Giờ tối đa mỗi tuần",
       hint: "Điều 105: 48. Giảm xuống để thử kịch bản 40 giờ.",
@@ -680,6 +692,8 @@ export const vi = {
       nightSub: "Điều 98, giờ 22:00–06:00",
       share: "Tỷ lệ chi phí lao động",
       shareSub: "trên doanh thu tuần giả định",
+      budget: "Ngân sách tuần",
+      budgetSub: "trần cứng của lượt này",
       revenue: "Doanh thu tuần giả định (giả định của nhóm)",
       revenueHint: "Chỉ dùng để tính tỷ lệ chi phí lao động. Cùng đơn vị tiền với lương.",
     },
@@ -696,6 +710,8 @@ export const vi = {
       nightSpreadSub: (weekend: string) => `độ lệch chuẩn; cuối tuần ${weekend}`,
       hoursSpread: "Chênh giờ làm",
       hoursSpreadSub: "max − min giờ mỗi người",
+      minHours: "Thiếu giờ hợp đồng",
+      minHoursSub: "tổng giờ dưới mức tối thiểu",
     },
     exports: {
       assignments: "CSV lịch",
@@ -704,6 +720,7 @@ export const vi = {
     },
   },
   compliance: {
+    wholeRoster: "Cả lịch",
     noneTitle: "0 vi phạm cứng",
     noneBody:
       "Validator độc lập đã kiểm lại lịch này theo mọi quy tắc cứng (Điều 105, 109, 110, 111, số ngày làm liên tiếp, ngày không làm được) và không thấy vi phạm.",
@@ -726,6 +743,7 @@ export const vi = {
       missing_break: "thiếu giờ nghỉ giữa ca",
       break_outside_window: "giờ nghỉ nằm ngoài khung cho phép",
       unavailable_day: "xếp ca vào ngày không làm được",
+      over_budget: "chi phí vượt ngân sách tuần",
     } as Record<string, string>,
     basis: {
       "Input data": "Dữ liệu đầu vào",
@@ -735,6 +753,7 @@ export const vi = {
       "Article 109": "Điều 109",
       "Article 110": "Điều 110",
       "Article 111": "Điều 111",
+      Budget: "Ngân sách tuần",
     } as Record<string, string>,
     manual: {
       intro: (id: number) =>
