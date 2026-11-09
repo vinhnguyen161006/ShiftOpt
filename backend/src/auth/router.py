@@ -6,8 +6,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import service
-from src.auth.dependencies import SESSION_COOKIE, current_user
-from src.auth.models import UserRecord
+from src.auth.dependencies import SESSION_COOKIE, CurrentUserDep
 from src.auth.schemas import LoginRequest, RegisterRequest, UserRead
 from src.config import get_settings
 from src.database import get_session
@@ -17,7 +16,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-CurrentUserDep = Annotated[UserRecord, Depends(current_user)]
 
 
 def set_session_cookie(response: Response, token: str) -> None:

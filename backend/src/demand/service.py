@@ -24,16 +24,18 @@ from src.exceptions import InvalidInputError, NotFoundError, UploadTooLargeError
 DUPLICATE_NAME = "demand profile name already exists"
 
 
-async def list_profiles(session: AsyncSession) -> list[DemandProfile]:
+async def list_profiles(session: AsyncSession, owner_id: int) -> list[DemandProfile]:
     result = await session.scalars(
-        select(DemandProfile).order_by(DemandProfile.created_at.desc(), DemandProfile.id.desc())
+        select(DemandProfile)
+        .where(DemandProfile.owner_id == owner_id)
+        .order_by(DemandProfile.created_at.desc(), DemandProfile.id.desc())
     )
     return list(result)
 
 
-async def get_profile(session: AsyncSession, profile_id: int) -> DemandProfile:
+async def get_profile(session: AsyncSession, owner_id: int, profile_id: int) -> DemandProfile:
     profile = await session.get(DemandProfile, profile_id)
-    if profile is None:
+    if profile is None or profile.owner_id != owner_id:
         raise NotFoundError(f"demand profile {profile_id} not found")
     return profile
 
@@ -45,18 +47,21 @@ async def _persist(session: AsyncSession, profile: DemandProfile) -> DemandProfi
     return profile
 
 
-async def create_profile(session: AsyncSession, payload: DemandProfileCreate) -> DemandProfile:
+async def create_profile(
+    session: AsyncSession, owner_id: int, payload: DemandProfileCreate
+) -> DemandProfile:
     profile = DemandProfile(
         **payload.model_dump(),
+        owner_id=owner_id,
         source_metadata={},
     )
     return await _persist(session, profile)
 
 
 async def update_profile(
-    session: AsyncSession, profile_id: int, payload: DemandProfileUpdate
+    session: AsyncSession, owner_id: int, profile_id: int, payload: DemandProfileUpdate
 ) -> DemandProfile:
-    profile = await get_profile(session, profile_id)
+    profile = await get_profile(session, owner_id, profile_id)
     for field, value in payload.model_dump().items():
         setattr(profile, field, value)
     await commit_unique(session, DUPLICATE_NAME)
@@ -64,8 +69,8 @@ async def update_profile(
     return profile
 
 
-async def delete_profile(session: AsyncSession, profile_id: int) -> None:
-    profile = await get_profile(session, profile_id)
+async def delete_profile(session: AsyncSession, owner_id: int, profile_id: int) -> None:
+    profile = await get_profile(session, owner_id, profile_id)
     await session.delete(profile)
     await session.commit()
 
@@ -87,7 +92,7 @@ async def inspect_upload(data: bytearray) -> SalesInspection:
 
 
 async def ingest_sales(
-    session: AsyncSession, query: SalesIngestQuery, data: bytearray
+    session: AsyncSession, owner_id: int, query: SalesIngestQuery, data: bytearray
 ) -> DemandProfile:
     """Derive a profile from an uploaded sales file. The stored profile keeps the weekly load, so
     the staffing sweep can re-derive head counts later without the file. The SHA-256 of the file
@@ -99,6 +104,7 @@ async def ingest_sales(
         derive_demand, bytes(data), mapping, conversion, LaborRules(), digest
     )
     profile = DemandProfile(
+        owner_id=owner_id,
         name=query.name,
         source=DemandSource.SALES,
         mode=StaffingMode.LINEAR,
@@ -111,13 +117,14 @@ async def ingest_sales(
 
 
 async def create_profile_from_csv(
-    session: AsyncSession, payload: CsvDemandRequest
+    session: AsyncSession, owner_id: int, payload: CsvDemandRequest
 ) -> DemandProfile:
     try:
         required = parse_demand_csv(payload.csv_text)
     except ValueError as error:
         raise InvalidInputError(str(error)) from error
     profile = DemandProfile(
+        owner_id=owner_id,
         name=payload.name,
         source=DemandSource.CSV,
         mode=StaffingMode.LINEAR,

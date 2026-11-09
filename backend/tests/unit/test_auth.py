@@ -3,7 +3,7 @@ from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
 
 from src import main
-from src.auth import passwords, service
+from src.auth import passwords, service, starter
 from src.config import get_settings
 from src.exceptions import ForbiddenError, InvalidInputError
 from src.main import create_app
@@ -59,6 +59,26 @@ def test_empty_allowlist_denies_everyone(monkeypatch: pytest.MonkeyPatch) -> Non
     with pytest.raises(ForbiddenError):
         service.ensure_email_allowed("ada@example.com")
     get_settings.cache_clear()
+
+
+def test_open_signup_allows_any_email(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SHIFTOPT_ALLOWED_EMAILS", raising=False)
+    monkeypatch.delenv("SHIFTOPT_ALLOWED_EMAIL_DOMAINS", raising=False)
+    monkeypatch.setenv("SHIFTOPT_OPEN_SIGNUP", "true")
+    get_settings.cache_clear()
+    service.ensure_email_allowed("anyone@gmail.com")
+    get_settings.cache_clear()
+
+
+def test_starter_data_belongs_to_the_new_account() -> None:
+    employees = starter.starter_employees(7)
+    templates = starter.starter_templates(7)
+    assert len({employee.code for employee in employees}) == starter.EMPLOYEE_COUNT
+    owners = {e.owner_id for e in employees} | {t.owner_id for t in templates}
+    assert owners == {7}
+    part_time = {e.code: e.max_weekly_hours for e in employees if e.max_weekly_hours is not None}
+    assert part_time == {starter.PART_TIME_CODE: starter.PART_TIME_WEEKLY_HOURS}
+    assert [(t.name, t.start_hour) for t in templates] == list(starter.SHIFT_TEMPLATES)
 
 
 def test_password_length_enforced(monkeypatch: pytest.MonkeyPatch) -> None:

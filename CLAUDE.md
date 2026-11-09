@@ -5,7 +5,7 @@ Hướng dẫn cho Claude Code khi làm việc trong repo **ShiftOpt** — xếp
 Nguồn sự thật về yêu cầu, theo thứ tự ưu tiên:
 
 1. Đề bài của nhóm (mục 1).
-2. [docs/đặc tả.md](docs/đặc tả.md) — **đã duyệt 2026-11-08** (người dùng ủy quyền cho Claude quyết định; bổ sung D25–D27 ngày 2026-11-09; quyết định D1–D27; luật Đ.98–111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025), NĐ 145/2020 chưa đối chiếu, ghi trong file). Đặc tả thắng file này; khi hai bên lệch, sửa file này theo đặc tả.
+2. [docs/đặc tả.md](docs/đặc tả.md) — **đã duyệt 2026-11-08** (người dùng ủy quyền cho Claude quyết định; bổ sung D25–D28 ngày 2026-11-09; quyết định D1–D28; luật Đ.98–111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025), NĐ 145/2020 chưa đối chiếu, ghi trong file). Đặc tả thắng file này; khi hai bên lệch, sửa file này theo đặc tả.
 3. Báo cáo nghiên cứu nền (nghiên cứu tham chiếu: dữ liệu, mô hình, pháp lý, solver). File không có trong repo (quyết định D17); mọi chỗ nó từng được dùng đã được chốt trong `docs/đặc tả.md` và các mục dưới.
 
 > **Trạng thái repo (2026-11-09, nhánh `main`):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine 236 test, coverage 98%; CI và Makefile chặn dưới 80%. Đã có: ingest doanh số tổng quát (đặc tả D19), giao diện tối, xếp lại lịch và gợi ý người thay (D20), bản ILP HiGHS của mô hình theo nhân viên, baseline greedy, dung sai chi phí (D21), cảnh báo trước khi giải, giải thích giờ thiếu, ngân sách tuần và giờ tối thiểu (D25, D26), nhãn kết quả cũ (D27). Còn mở: duyệt tay UI trên trình duyệt, đối chiếu NĐ 145/2020 và sai lệch nghiệm thu (mục 13). Việc còn lại và thứ tự làm: `docs/plan.md`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
@@ -87,6 +87,7 @@ Phân rã hai pha là chiến lược giảm kích thước khi instance lớn: 
 - **MySQL 8** (InnoDB, `utf8mb4`) cho dữ liệu ứng dụng (nhân viên, mẫu ca, nhu cầu, lượt giải, kết quả). SQLAlchemy 2 + Alembic, driver `PyMySQL` hoặc `asyncmy` (ghim version). Lịch, log solver, tham số lưu ở cột `JSON`. Không dùng SQLite thay MySQL trong test. Ghi chú Alembic: DDL của MySQL không transactional, migration lỗi giữa chừng không tự rollback; review tay kỹ.
 - **Job giải = hàng trong bảng `solve_runs`; job độ nhạy = hàng trong `analysis_runs`.** API tạo job, chạy giải trong tiến trình con (`ProcessPoolExecutor`), frontend poll theo `job_id`. Khi backend khởi động lại, job đang `running` được đánh dấu `failed` với lý do rõ ràng. **Không thêm Redis/Celery, không WebSocket** ở bản đầu.
 - **Hai phiên bản lịch không bao giờ trộn:** mỗi lượt giải là bất biến. Sửa tay lịch tạo bản mới và chạy lại validator. Lượt lưu `source_inputs` và `input_hash`; `GET /schedules/{id}/staleness` so hash với dữ liệu hiện tại để hiện nhãn "đầu vào đã đổi" (đặc tả D27). Nhãn không đổi lượt, không tự giải lại.
+- **Dữ liệu theo tài khoản (đặc tả D28):** mọi bảng làm việc có `owner_id`; service nhận `owner_id` và lọc theo nó, dữ liệu của người khác trả 404. Lượt sửa tay và xếp lại giữ chủ của lượt gốc. Đăng ký tạo sẵn 30 nhân viên và 3 mẫu ca (`auth/starter.py`) trong cùng transaction. Không có vai trò hay chia sẻ.
 
 ---
 
@@ -307,7 +308,7 @@ backend/
   Dockerfile                build từ root (cần ../engine); multi-stage, uv + python ghim tag + digest, user non-root
   openapi.json              sinh bởi scripts/export_openapi.py; CI kiểm tra khớp code
   alembic.ini, migrations/  Alembic async; versions/ có migration baseline
-  scripts/                  export_openapi, seed_demo (dữ liệu demo cho Compose), smoke_flow (kiểm API end-to-end, không chạy trên stack demo), download_freshretailnet (file mẫu, SHA-256 ghim), baseline_store18 (kịch bản cơ sở một store, `--store`), rank_stores và run_experiments (chọn store, thực nghiệm CP-SAT với greedy)
+  scripts/                  export_openapi, seed_demo (tạo tài khoản demo cho Compose; dữ liệu mẫu đến từ đăng ký), smoke_flow (kiểm API end-to-end, không chạy trên stack demo), download_freshretailnet (file mẫu, SHA-256 ghim), baseline_store18 (kịch bản cơ sở một store, `--store`), rank_stores và run_experiments (chọn store, thực nghiệm CP-SAT với greedy)
   src/
     main.py                 create_app (uvicorn --factory), lifespan (engine + session factory), /health
     config.py               Settings (BaseSettings, tiền tố SHIFTOPT_), get_settings
@@ -374,7 +375,7 @@ frontend/
       what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, StaffingSweepView, BaselineCompare, FairnessSweepView, AnalysisStatus
 data/                       demo/ (file mẫu: train.parquet gitignore, CSV mẫu), raw/ (gitignore), benchmarks/curtois_qu/ (script tải)
 docs/
-  đặc tả.md                 nguồn sự thật yêu cầu (đã duyệt 2026-11-08, bổ sung 2026-11-09; quyết định D1–D27)
+  đặc tả.md                 nguồn sự thật yêu cầu (đã duyệt 2026-11-08, bổ sung 2026-11-09; quyết định D1–D28)
   plan.md                   kế hoạch hoàn thiện: hiện trạng, việc còn lại theo ưu tiên, việc cần nhóm quyết
   kiến trúc.md              kiến trúc theo tầng, thuật toán từng khối, giới hạn đã biết
   model.md                  công thức mô hình (gồm repair, mục 6)
@@ -463,7 +464,7 @@ Backend (trong `backend/`, copy `.env.example` thành `.env`):
 
 Frontend (trong `frontend/`): `npm ci` · `npm run dev` (proxy `/api` sang `localhost:8000`) · `npm run lint` · `npm run format` · `npm run typecheck` · `npm run gen:api` · `npm run ci` (Biome + tsc + build).
 
-Ở root: `python scripts/check_conventions.py`; `make install|conventions|lint|typecheck|test|openapi|up|down`. Toàn bộ stack: `cp .env.example .env` rồi `docker compose up -d --build`; service `migrate` chạy `alembic upgrade head` một lần, `backend` chỉ khởi động sau khi nó xong; `seed` chạy `scripts/seed_demo.py` (30 nhân viên, 3 mẫu ca; nhu cầu tạo bằng ingest trên web), chỉ nạp bảng đang trống; UI ở `http://localhost:3000`. Không chạy `smoke_flow` trên stack demo vì nó thêm dữ liệu kiểm thử. Pre-commit: `pre-commit install` (hook: ruff engine + backend, uv-lock, check_conventions).
+Ở root: `python scripts/check_conventions.py`; `make install|conventions|lint|typecheck|test|openapi|up|down`. Toàn bộ stack: `cp .env.example .env` rồi `docker compose up -d --build`; service `migrate` chạy `alembic upgrade head` một lần, `backend` chỉ khởi động sau khi nó xong; `seed` chạy `scripts/seed_demo.py`: đăng ký tài khoản `SHIFTOPT_DEMO_EMAIL` (có sẵn 30 nhân viên, 3 mẫu ca như mọi tài khoản mới; nhu cầu tạo bằng ingest trên web), hoặc đăng nhập nếu đã có; UI ở `http://localhost:3000`. Không chạy `smoke_flow` trên stack demo vì nó thêm dữ liệu kiểm thử. Pre-commit: `pre-commit install` (hook: ruff engine + backend, uv-lock, check_conventions).
 
 Autogenerate migration cần một database rỗng. Khi chưa có MySQL, có thể sinh bằng SQLite tạm (`SHIFTOPT_DATABASE_URL="sqlite+aiosqlite:///./boot.db" uv run --with aiosqlite alembic revision --autogenerate -m "<msg>"`), sau đó **review tay** cho MySQL: thay `sa.text('(CURRENT_TIMESTAMP)')` bằng `sa.func.now()`, kiểm tra mọi `String` có độ dài, bỏ dòng `# ###`, rồi chạy `alembic upgrade head` và `alembic check` trên MySQL thật (CI làm bước này).
 
@@ -512,7 +513,7 @@ Rút từ khuyến nghị của báo cáo nghiên cứu nền; điều chỉnh k
 | Chỉnh tay bằng form, kiểm tra lại ràng buộc | Kéo-thả, Gantt theo giờ |
 | Không huấn luyện mô hình dự báo | TFT / TimesNet, intraday re-forecasting |
 | Xuất CSV | Xuất PDF |
-| Không phân quyền theo vai trò (đăng nhập email/mật khẩu và Google có từ D25) | Tổ chức, vai trò, nhật ký duyệt |
+| Không phân quyền theo vai trò; mỗi tài khoản có dữ liệu riêng, không chia sẻ (D28) | Tổ chức, vai trò, nhật ký duyệt |
 | Không đo adherence với chấm công | Tích hợp chấm công |
 | Không Redis/Celery, không WebSocket | — |
 | Không Timefold, không Gurobi bắt buộc | Gurobi qua license học thuật như backend tùy chọn |

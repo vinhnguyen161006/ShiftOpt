@@ -57,3 +57,12 @@ async def commit_unique(session: AsyncSession, message: str) -> None:
     except IntegrityError as error:
         await session.rollback()
         raise ConflictError(message) from error
+
+
+async def flush_unique(session: AsyncSession, message: str) -> None:
+    """Flush pending rows so they get ids, turning a unique-key clash into a ConflictError."""
+    try:
+        await session.flush()
+    except IntegrityError as error:
+        await session.rollback()
+        raise ConflictError(message) from error

@@ -82,16 +82,21 @@ def solve_params(payload: SolveSettings) -> dict[str, float]:
     }
 
 
-async def _templates(session: AsyncSession, ids: list[int]) -> list[ShiftTemplate]:
-    found = list(await session.scalars(select(ShiftTemplate).where(ShiftTemplate.id.in_(ids))))
+async def _templates(session: AsyncSession, owner_id: int, ids: list[int]) -> list[ShiftTemplate]:
+    query = select(ShiftTemplate).where(
+        ShiftTemplate.owner_id == owner_id, ShiftTemplate.id.in_(ids)
+    )
+    found = list(await session.scalars(query))
     missing = set(ids) - {template.id for template in found}
     if missing:
         raise NotFoundError(f"shift templates {sorted(missing)} not found")
     return found
 
 
-async def _employees(session: AsyncSession, ids: list[int] | None) -> list[EmployeeRecord]:
-    query = select(EmployeeRecord)
+async def _employees(
+    session: AsyncSession, owner_id: int, ids: list[int] | None
+) -> list[EmployeeRecord]:
+    query = select(EmployeeRecord).where(EmployeeRecord.owner_id == owner_id)
     if ids is not None:
         query = query.where(EmployeeRecord.id.in_(ids))
         found = list(await session.scalars(query))
@@ -119,8 +124,10 @@ def check_limits(payload: SolveSettings) -> None:
         raise InstanceTooLargeError(f"num_workers must not exceed {settings.solve_workers}")
 
 
-async def preview_warnings(session: AsyncSession, payload: SolveRequest) -> PreviewWarningsRead:
-    instance = instance_from_snapshot(await snapshot_for(session, payload))
+async def preview_warnings(
+    session: AsyncSession, owner_id: int, payload: SolveRequest
+) -> PreviewWarningsRead:
+    instance = instance_from_snapshot(await snapshot_for(session, owner_id, payload))
     return PreviewWarningsRead(
         warnings=[
             PreSolveWarningRead(kind=item.kind, detail=item.detail, employee_id=item.employee_id)
@@ -129,11 +136,11 @@ async def preview_warnings(session: AsyncSession, payload: SolveRequest) -> Prev
     )
 
 
-async def snapshot_for(session: AsyncSession, payload: SolveRequest) -> Snapshot:
+async def snapshot_for(session: AsyncSession, owner_id: int, payload: SolveRequest) -> Snapshot:
     check_limits(payload)
-    profile = await get_profile(session, payload.demand_profile_id)
-    templates = await _templates(session, payload.shift_template_ids)
-    employees = await _employees(session, payload.employee_ids)
+    profile = await get_profile(session, owner_id, payload.demand_profile_id)
+    templates = await _templates(session, owner_id, payload.shift_template_ids)
+    employees = await _employees(session, owner_id, payload.employee_ids)
     rules = LaborRules(
         max_weekly_hours=payload.max_weekly_hours,
         max_consecutive_days=payload.max_consecutive_days,
@@ -158,10 +165,11 @@ def source_inputs(payload: SolveRequest) -> dict[str, Any]:
     }
 
 
-async def create_run(session: AsyncSession, payload: SolveRequest) -> SolveRun:
+async def create_run(session: AsyncSession, owner_id: int, payload: SolveRequest) -> SolveRun:
     await ensure_job_capacity(session)
-    snapshot = await snapshot_for(session, payload)
+    snapshot = await snapshot_for(session, owner_id, payload)
     run = SolveRun(
+        owner_id=owner_id,
         demand_profile_id=payload.demand_profile_id,
         status=RunStatus.QUEUED,
         params=solve_params(payload),
@@ -249,16 +257,18 @@ async def _finish(jobs: JobContext, run_id: int, fields: dict[str, Any]) -> None
         await session.commit()
 
 
-async def get_run(session: AsyncSession, run_id: int) -> SolveRun:
+async def get_run(session: AsyncSession, owner_id: int, run_id: int) -> SolveRun:
     run = await session.get(SolveRun, run_id)
-    if run is None:
+    if run is None or run.owner_id != owner_id:
         raise NotFoundError(f"solve run {run_id} not found")
     return run
 
 
-async def list_runs(session: AsyncSession) -> list[SolveRun]:
+async def list_runs(session: AsyncSession, owner_id: int) -> list[SolveRun]:
     result = await session.scalars(
-        select(SolveRun).order_by(SolveRun.created_at.desc(), SolveRun.id.desc())
+        select(SolveRun)
+        .where(SolveRun.owner_id == owner_id)
+        .order_by(SolveRun.created_at.desc(), SolveRun.id.desc())
     )
     return list(result)
 
@@ -369,6 +379,7 @@ async def create_manual_edit(
     solution = solution_from_rows(rows)
     violations = validate(instance, solution)
     run = SolveRun(
+        owner_id=base.owner_id,
         demand_profile_id=base.demand_profile_id,
         parent_run_id=base.id,
         status=RunStatus.FAILED if violations else RunStatus.SUCCEEDED,
@@ -446,7 +457,7 @@ async def create_repair_run(
     demand_profile_id = base.demand_profile_id
     demand = None
     if payload.demand_profile_id is not None:
-        profile = await get_profile(session, payload.demand_profile_id)
+        profile = await get_profile(session, base.owner_id, payload.demand_profile_id)
         demand = profile.required_staff
         demand_profile_id = profile.id
     snapshot = repair_snapshot(
@@ -459,6 +470,7 @@ async def create_repair_run(
     )
     _check_locked(snapshot)
     run = SolveRun(
+        owner_id=base.owner_id,
         demand_profile_id=demand_profile_id,
         parent_run_id=base.id,
         status=RunStatus.QUEUED,
@@ -497,7 +509,7 @@ async def create_reroster(
 async def changes_for(session: AsyncSession, run: SolveRun) -> ScheduleChangesRead:
     if run.parent_run_id is None:
         raise NotFoundError(f"solve run {run.id} has no parent run to compare with")
-    parent = await get_run(session, run.parent_run_id)
+    parent = await get_run(session, run.owner_id, run.parent_run_id)
     if parent.assignments is None or run.assignments is None:
         raise ConflictError(f"solve run {run.id} or its parent has no schedule")
     diff = diff_solutions(
@@ -549,7 +561,7 @@ async def get_staleness(session: AsyncSession, run: SolveRun) -> StalenessRead:
         {**run.source_inputs, "time_limit_seconds": 1.0, "num_workers": 1}
     )
     try:
-        current = await snapshot_for(session, request)
+        current = await snapshot_for(session, run.owner_id, request)
     except NotFoundError:
         return StalenessRead(state="stale", reason="input_deleted")
     except (InvalidInputError, InstanceTooLargeError):

@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import google_oidc
 from src.auth.models import AuthSessionRecord, OAuthTransactionRecord, UserRecord
 from src.auth.passwords import hash_password, verify_password
+from src.auth.starter import add_starter_data
 from src.config import get_settings
-from src.database import commit_unique
+from src.database import commit_unique, flush_unique
 from src.exceptions import (
     ConflictError,
     ForbiddenError,
@@ -49,7 +50,11 @@ def normalize_email(email: str) -> str:
 def ensure_email_allowed(email: str) -> None:
     settings = get_settings()
     domain = email.rpartition("@")[2]
-    if email in settings.allowed_emails or domain in settings.allowed_email_domains:
+    if (
+        settings.open_signup
+        or email in settings.allowed_emails
+        or domain in settings.allowed_email_domains
+    ):
         return
     raise ForbiddenError(EMAIL_NOT_ALLOWED)
 
@@ -75,10 +80,17 @@ async def register(
         password_hash=hash_password(password),
         display_name=display_name.strip(),
     )
-    session.add(user)
+    await add_account(session, user)
     await commit_unique(session, DUPLICATE_EMAIL)
     await session.refresh(user)
     return user
+
+
+async def add_account(session: AsyncSession, user: UserRecord) -> None:
+    """Insert a new account together with its starter data, in one transaction."""
+    session.add(user)
+    await flush_unique(session, DUPLICATE_EMAIL)
+    add_starter_data(session, user.id)
 
 
 async def authenticate(session: AsyncSession, email: str, password: str) -> UserRecord:
@@ -215,7 +227,7 @@ async def upsert_google_user(
                 google_sub=subject,
                 display_name=display_name_for(name, email),
             )
-            session.add(user)
+            await add_account(session, user)
         elif user.google_sub is None:
             user.google_sub = subject
         elif user.google_sub != subject:

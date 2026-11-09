@@ -1,6 +1,6 @@
 # Đặc tả ShiftOpt
 
-**Trạng thái:** đã duyệt ngày 2026-11-08. Người dùng (Vinh) ủy quyền cho Claude quyết định mọi mục ở mục 3 và phiếu duyệt; kết quả ghi ở phiếu duyệt. Bổ sung ngày 2026-11-09: sửa D16, thêm D25–D27, theo câu trả lời của người dùng. Các thành viên khác của nhóm chưa xem bản này: ai không đồng ý thì sửa dòng tương ứng ở phiếu. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
+**Trạng thái:** đã duyệt ngày 2026-11-08. Người dùng (Vinh) ủy quyền cho Claude quyết định mọi mục ở mục 3 và phiếu duyệt; kết quả ghi ở phiếu duyệt. Bổ sung ngày 2026-11-09: sửa D16, thêm D25–D28, theo câu trả lời của người dùng. Các thành viên khác của nhóm chưa xem bản này: ai không đồng ý thì sửa dòng tương ứng ở phiếu. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
 
 **Chưa đóng:** Nghị định 145/2020 chưa đối chiếu văn bản gốc (mục 4). Điểm này không chặn duyệt vì code đang chặt hơn nguồn thứ cấp.
 
@@ -37,7 +37,7 @@ Mở rộng được phép làm có điều kiện (D21–D23): đánh đổi ch
 
 ## 3. Quyết định đã chốt
 
-Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08 (D1–D24); người dùng chọn D25–D27 ngày 2026-11-09. Lý do ghi cạnh mỗi dòng.
+Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08 (D1–D24); người dùng chọn D25–D28 ngày 2026-11-09. Lý do ghi cạnh mỗi dòng.
 
 | # | Câu hỏi | Giá trị | Lý do |
 |---|---|---|---|
@@ -67,6 +67,7 @@ Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08 (D1�
 | D25 | Giờ tối thiểu theo hợp đồng (plan G3) | `Employee.min_weekly_hours`, mềm: tổng giờ dưới mức tối thiểu là tầng riêng ngay sau thiếu người, trước chi phí. Không là vi phạm cứng, nên repair và gợi ý người thay vẫn đơn điệu. Giá trị lớn hơn giờ tối đa bị từ chối khi nhập | Người dùng chọn mềm 2026-11-09: mô hình không bao giờ INFEASIBLE vì hợp đồng không đạt được; UI báo số giờ thiếu |
 | D26 | Ngân sách lương tuần (plan G3) | `weekly_budget` tùy chọn trên mỗi lượt giải, lưu trong snapshot, là trần cứng cho chi phí lao động. Độ phủ vẫn mềm nên ngân sách chặt làm tăng giờ thiếu. Validator có vi phạm `OVER_BUDGET` cho cả lịch | Người dùng chọn trần cứng theo lượt 2026-11-09. Validator kiểm tra nên lịch sửa tay vượt ngân sách bị từ chối |
 | D27 | Kết quả cũ (plan G4) | Mỗi lượt giải lưu `source_inputs` (id hồ sơ nhu cầu, mẫu ca, nhân viên và tham số luật đã dùng) và `input_hash` (SHA-256 của snapshot không có phần repair, khóa sắp xếp). `GET /schedules/{id}/staleness` dựng lại snapshot từ dữ liệu hiện tại và so hash: `current`, `stale` (đổi hoặc bị xóa) hoặc `unknown` (lượt cũ chưa có hash, hoặc lượt xếp lại đổi hồ sơ nhu cầu). Lượt sửa tay và xếp lại kế thừa hash của lượt cha. Chỉ là nhãn: lượt vẫn bất biến | Người dùng chọn so snapshot 2026-11-09. Nhân viên thêm sau khi giải làm lượt "mọi nhân viên" thành `stale`, đúng nghĩa vì lịch không có người đó. Đổi tên nhân viên không làm lượt cũ vì tên không nằm trong snapshot |
+| D28 | Dữ liệu theo tài khoản | Hồ sơ nhu cầu, nhân viên, mẫu ca, lượt giải và lượt phân tích có `owner_id`; mọi truy vấn lọc theo người đăng nhập, dữ liệu của người khác trả 404. Mã nhân viên, tên mẫu ca, tên hồ sơ là duy nhất trong một tài khoản. Tài khoản mới nhận sẵn 30 nhân viên và 3 mẫu ca. Dữ liệu có trước gán cho tài khoản `SHIFTOPT_DEMO_EMAIL`. Không có vai trò hay chia sẻ dữ liệu | Người dùng chọn 2026-11-09: mỗi tài khoản có dữ liệu làm việc riêng |
 | D24 | Playwright cho kiểm thử end-to-end | Không thêm. Dùng `backend/scripts/smoke_flow.py` và duyệt tay theo checklist trong `plan.md` | Tránh dependency mới khi smoke flow đã chạy hai lần liên tiếp đều pass |
 
 ## Phiếu duyệt
@@ -104,6 +105,7 @@ Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "
 | D25 | Giờ tối thiểu theo hợp đồng (plan G3) | Đồng ý | Mềm, tầng sau thiếu người. |
 | D26 | Ngân sách lương tuần (plan G3) | Đồng ý | Trần cứng theo lượt. |
 | D27 | Đánh dấu kết quả cũ (plan G4) | Đồng ý | So hash snapshot. |
+| D28 | Dữ liệu theo tài khoản | Đồng ý | Tách theo `owner_id`, dữ liệu mẫu khi đăng ký. |
 
 **Điểm code chặt hơn luật (đã xác nhận có chủ đích, 2026-11-08):**
 
