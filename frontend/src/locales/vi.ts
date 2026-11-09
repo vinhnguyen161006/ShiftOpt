@@ -556,6 +556,7 @@ export const vi = {
     repairButton: "Xếp lại",
     repairTitle: (id: number) => `Xếp lại từ lượt ${id}`,
     replacementsPanel: "Gợi ý người thay",
+    shortfallPanel: "Vì sao còn giờ thiếu người",
     repair: {
       intro: (id: number) =>
         `Xếp lại từ lượt ${id}. Các ngày trước ngày bắt đầu xếp lại giữ nguyên lịch gốc (khóa); ca được ghim luôn có mặt; ngày nghỉ đột xuất không xếp ca. Kết quả là lượt mới và được validator kiểm lại.`,
@@ -633,6 +634,16 @@ export const vi = {
       optimalSub: "đã chứng minh tối ưu với instance và giới hạn thời gian này",
       feasibleSub: (gap: string) => `gap ${gap}, chưa chứng minh tối ưu`,
       noProven: "chưa có kết quả được chứng minh",
+    },
+    stale: {
+      title: "Đầu vào đã đổi sau lượt này",
+      reasons: {
+        input_changed: "Hồ sơ nhu cầu, mẫu ca hoặc nhân viên của lượt này đã được sửa.",
+        input_deleted: "Một đầu vào của lượt này đã bị xóa.",
+        input_invalid: "Đầu vào hiện tại không còn dựng được instance của lượt này.",
+      } as Record<string, string>,
+      fallback: "Đầu vào của lượt này không còn khớp với dữ liệu hiện tại.",
+      hint: "Lịch vẫn đúng với đầu vào lúc giải. Giải lại để có lịch theo dữ liệu mới.",
     },
     notice: {
       queued: "Đang chờ",
@@ -721,6 +732,21 @@ export const vi = {
   },
   compliance: {
     wholeRoster: "Cả lịch",
+    shortfall: {
+      intro:
+        "Với mỗi giờ thiếu người, thử xếp thêm từng nhân viên vào một ca phủ giờ đó và đếm luật nào chặn.",
+      loading: "Đang phân tích giờ thiếu",
+      hour: "Giờ",
+      missing: "Thiếu",
+      reasons: "Luật chặn (số nhân viên)",
+      free: "Còn xếp được",
+      none: "không ai",
+      uncoverable: "Không mẫu ca nào phủ giờ này",
+      freeNotice:
+        "Một số giờ còn nhân viên xếp được mà solver chưa dùng. Lượt này chưa chứng minh tối ưu trong thời gian giới hạn; tăng thời gian giải có thể xếp thêm.",
+      caption: "Giờ thiếu người và lý do",
+      count: (kind: string, basis: string, employees: number) => `${kind} (${basis}): ${employees}`,
+    },
     noneTitle: "0 vi phạm cứng",
     noneBody:
       "Validator độc lập đã kiểm lại lịch này theo mọi quy tắc cứng (Điều 105, 109, 110, 111, số ngày làm liên tiếp, ngày không làm được) và không thấy vi phạm.",

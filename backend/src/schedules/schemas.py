@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from shiftopt.diagnostics import WarningKind
@@ -88,6 +88,27 @@ class RepairRequest(SolveSettings):
     absences: list[AbsenceWrite] = Field(default_factory=list, max_length=500)
     pinned: list[AssignmentWrite] = Field(default_factory=list, max_length=2000)
     demand_profile_id: int | None = None
+
+
+class StalenessRead(BaseModel):
+    state: Literal["current", "stale", "unknown"]
+    reason: str | None
+
+
+class ShortfallReasonRead(BaseModel):
+    kind: str
+    legal_basis: str
+    employees: int
+
+
+class ShortfallHourRead(BaseModel):
+    hour: int = Field(ge=0, le=167)
+    day: int = Field(ge=0, le=6)
+    hour_of_day: int = Field(ge=0, le=23)
+    shortfall: int
+    uncoverable: bool
+    reasons: list[ShortfallReasonRead]
+    free_employee_codes: list[str]
 
 
 class ReplacementRead(BaseModel):

@@ -1684,6 +1684,84 @@
         "title": "ShiftTypeRead",
         "type": "object"
       },
+      "ShortfallHourRead": {
+        "properties": {
+          "day": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "free_employee_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Free Employee Codes",
+            "type": "array"
+          },
+          "hour": {
+            "maximum": 167.0,
+            "minimum": 0.0,
+            "title": "Hour",
+            "type": "integer"
+          },
+          "hour_of_day": {
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Hour Of Day",
+            "type": "integer"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ShortfallReasonRead"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "shortfall": {
+            "title": "Shortfall",
+            "type": "integer"
+          },
+          "uncoverable": {
+            "title": "Uncoverable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hour",
+          "day",
+          "hour_of_day",
+          "shortfall",
+          "uncoverable",
+          "reasons",
+          "free_employee_codes"
+        ],
+        "title": "ShortfallHourRead",
+        "type": "object"
+      },
+      "ShortfallReasonRead": {
+        "properties": {
+          "employees": {
+            "title": "Employees",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "legal_basis": {
+            "title": "Legal Basis",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "legal_basis",
+          "employees"
+        ],
+        "title": "ShortfallReasonRead",
+        "type": "object"
+      },
       "SolveRequest": {
         "properties": {
           "cost_tolerance_percent": {
@@ -2174,6 +2252,36 @@
           "points"
         ],
         "title": "StaffingSweepResult",
+        "type": "object"
+      },
+      "StalenessRead": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "state": {
+            "enum": [
+              "current",
+              "stale",
+              "unknown"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reason"
+        ],
+        "title": "StalenessRead",
         "type": "object"
       },
       "SweepPoint": {
@@ -3969,6 +4077,94 @@
           }
         },
         "summary": "Create Reroster",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/shortfall": {
+      "get": {
+        "operationId": "get_shortfall_api_schedules__run_id__shortfall_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShortfallHourRead"
+                  },
+                  "title": "Response Get Shortfall Api Schedules  Run Id  Shortfall Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Shortfall",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/{run_id}/staleness": {
+      "get": {
+        "operationId": "get_staleness_api_schedules__run_id__staleness_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StalenessRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Staleness",
         "tags": [
           "schedules"
         ]

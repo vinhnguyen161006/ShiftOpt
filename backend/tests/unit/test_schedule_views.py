@@ -11,6 +11,7 @@ from src.schedules.service import (
     coverage_csv,
     get_compliance,
     get_kpi,
+    get_shortfall,
     kpi_csv,
 )
 
@@ -88,3 +89,30 @@ def test_run_without_schedule_has_no_views() -> None:
 
     with pytest.raises(ConflictError):
         get_compliance(run)
+
+
+def test_shortfall_explains_the_break_hour_with_its_legal_basis() -> None:
+    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day", "break_offset": 4}])
+
+    rows = get_shortfall(run)
+
+    assert [(item.hour, item.day, item.hour_of_day, item.shortfall) for item in rows] == [
+        (12, 0, 12, 1)
+    ]
+    reasons = {item.kind: (item.legal_basis, item.employees) for item in rows[0].reasons}
+    assert reasons["multiple_shifts_per_day"] == ("Roster rule", 1)
+    assert rows[0].free_employee_codes == []
+    assert not rows[0].uncoverable
+
+
+def test_shortfall_needs_a_schedule() -> None:
+    run = SolveRun(
+        id=8,
+        status=RunStatus.FAILED,
+        params={"time_limit_seconds": 10.0},
+        instance_snapshot=_snapshot(),
+        assignments=None,
+    )
+
+    with pytest.raises(ConflictError):
+        get_shortfall(run)

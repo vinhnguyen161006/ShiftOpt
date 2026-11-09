@@ -274,3 +274,52 @@ async def test_tight_budget_leaves_hours_short_but_run_still_succeeds(
     assert run["weekly_budget"] == 1
     assert run["understaffed_hours"] > 0
     assert run["hard_violations"] == 0
+
+
+async def _finished_run(client: AsyncClient, seeded: dict[str, Any]) -> dict[str, Any]:
+    accepted = await client.post("/api/schedules", json=solve_body(seeded))
+    return await poll(client, f"/api/schedules/{accepted.json()['job_id']}")
+
+
+async def test_staleness_is_current_until_an_input_changes(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    run = await _finished_run(client, seeded)
+    url = f"/api/schedules/{run['id']}/staleness"
+
+    assert (await client.get(url)).json() == {"state": "current", "reason": None}
+
+    employee = (await client.get("/api/employees")).json()[0]
+    changed = {
+        "code": employee["code"],
+        "name": employee["name"],
+        "hourly_wage": employee["hourly_wage"] + 1,
+    }
+    assert (await client.put(f"/api/employees/{employee['id']}", json=changed)).status_code == 200
+
+    assert (await client.get(url)).json() == {"state": "stale", "reason": "input_changed"}
+
+
+async def test_staleness_reports_a_deleted_input(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    run = await _finished_run(client, seeded)
+
+    deleted = await client.delete(f"/api/shift-templates/{seeded['shift_ids'][0]}")
+    assert deleted.status_code == 204
+
+    response = await client.get(f"/api/schedules/{run['id']}/staleness")
+    assert response.json() == {"state": "stale", "reason": "input_deleted"}
+
+
+async def test_manual_edit_inherits_staleness_from_its_parent(
+    client: AsyncClient, seeded: dict[str, Any]
+) -> None:
+    run = await _finished_run(client, seeded)
+    edit = await client.post(
+        f"/api/schedules/{run['id']}/edits", json={"assignments": run["assignments"]}
+    )
+    assert edit.status_code in (200, 201)
+
+    response = await client.get(f"/api/schedules/{edit.json()['id']}/staleness")
+    assert response.json() == {"state": "current", "reason": None}

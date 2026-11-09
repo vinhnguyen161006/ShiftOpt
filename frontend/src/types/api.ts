@@ -487,6 +487,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/{run_id}/shortfall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Shortfall */
+        get: operations["get_shortfall_api_schedules__run_id__shortfall_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/schedules/{run_id}/staleness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Staleness */
+        get: operations["get_staleness_api_schedules__run_id__staleness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shift-templates": {
         parameters: {
             query?: never;
@@ -1116,6 +1150,32 @@ export interface components {
             /** Start Hour */
             start_hour: number;
         };
+        /** ShortfallHourRead */
+        ShortfallHourRead: {
+            /** Day */
+            day: number;
+            /** Free Employee Codes */
+            free_employee_codes: string[];
+            /** Hour */
+            hour: number;
+            /** Hour Of Day */
+            hour_of_day: number;
+            /** Reasons */
+            reasons: components["schemas"]["ShortfallReasonRead"][];
+            /** Shortfall */
+            shortfall: number;
+            /** Uncoverable */
+            uncoverable: boolean;
+        };
+        /** ShortfallReasonRead */
+        ShortfallReasonRead: {
+            /** Employees */
+            employees: number;
+            /** Kind */
+            kind: string;
+            /** Legal Basis */
+            legal_basis: string;
+        };
         /** SolveRequest */
         SolveRequest: {
             /**
@@ -1262,6 +1322,16 @@ export interface components {
             label: string;
             /** Points */
             points: components["schemas"]["StaffingSweepPoint"][];
+        };
+        /** StalenessRead */
+        StalenessRead: {
+            /** Reason */
+            reason: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "current" | "stale" | "unknown";
         };
         /** SweepPoint */
         SweepPoint: {
@@ -2401,6 +2471,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_shortfall_api_schedules__run_id__shortfall_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortfallHourRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_staleness_api_schedules__run_id__staleness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StalenessRead"];
                 };
             };
             /** @description Validation Error */
