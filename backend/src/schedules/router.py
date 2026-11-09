@@ -13,6 +13,7 @@ from src.schedules.schemas import (
     ReplacementRead,
     RerosterRequest,
     ScheduleChangesRead,
+    ShortfallHourRead,
     SolveRequest,
     SolveRunRead,
 )
@@ -111,6 +112,11 @@ async def get_replacements(
     limit: int = Query(default=5, ge=1, le=20),
 ) -> list[ReplacementRead]:
     return service.get_replacements(run, employee_code, day, limit)
+
+
+@router.get("/{run_id}/shortfall", response_model=list[ShortfallHourRead])
+async def get_shortfall(run: ValidRun) -> list[ShortfallHourRead]:
+    return service.get_shortfall(run)
 
 
 @router.post("/{run_id}/reroster", response_model=JobAccepted, status_code=status.HTTP_202_ACCEPTED)

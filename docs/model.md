@@ -184,3 +184,12 @@ Decisions D25 and D26 in `đặc tả.md`.
 - Symmetry breaking groups employees by wage, maximum hours and minimum hours.
 - Greedy baseline: skips an employee whose shift would push the running cost above the budget.
 - Pre-solve warnings: MIN_HOURS_UNREACHABLE when m_e exceeds the most hours the employee can work; BUDGET_BELOW_DEMAND when B is below total demand times the lowest wage times 100.
+
+## 9. Explaining understaffed hours (G2)
+
+`shiftopt.shortfall.explain_shortfall(instance, solution)` is a post-hoc diagnosis, not part of the model, and it does not call a solver.
+
+- For each hour h with demand above the staff on the floor, each employee who is not working at h (an employee on a rest break counts as not working) is tried with one extra assignment: every allowed shift (length at most max_daily_hours) that covers h and starts on the day of h or the day before, with a break placed away from h.
+- Each candidate is checked with `validate` on that employee alone, keeping only the violation kinds that the candidate adds, plus OVER_BUDGET when the roster cost plus the shift cost exceeds the weekly budget. An employee is free if some candidate adds nothing. Otherwise the candidate with the fewest new kinds gives the reasons, and `blocked` counts employees per kind.
+- If no allowed shift covers h, the hour is marked uncoverable.
+- When the shortfall tier of the solve is OPTIMAL, no employee can be free, since a legal extra shift would lower the shortfall. With a FEASIBLE solve, free employees mean the solver had not found that improvement in the time limit. The UI says so.

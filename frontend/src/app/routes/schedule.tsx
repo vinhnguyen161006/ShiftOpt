@@ -7,6 +7,7 @@ import { Modal } from "../../components/ui/Modal";
 import { useCompliance } from "../../features/compliance/api/compliance";
 import { ManualEditor } from "../../features/compliance/components/ManualEditor";
 import { ReplacementList } from "../../features/compliance/components/ReplacementList";
+import { ShortfallExplanation } from "../../features/compliance/components/ShortfallExplanation";
 import { ViolationList } from "../../features/compliance/components/ViolationList";
 import { useDemandProfiles } from "../../features/demand/api/demand";
 import { useEmployees } from "../../features/employees/api/employees";
@@ -173,6 +174,11 @@ function RunView({ runId }: { runId: number }) {
           {compliance.isPending && <Loading label={vi.schedule.checking} />}
           {compliance.isError && <Notice kind="error" title={errorMessage(compliance.error)} />}
           {compliance.data && <ViolationList compliance={compliance.data} />}
+        </Panel>
+      )}
+      {hasSchedule && (data.understaffed_hours ?? 0) > 0 && (
+        <Panel title={vi.schedule.shortfallPanel} labelledBy="shortfall-title">
+          <ShortfallExplanation run={data} />
         </Panel>
       )}
       {hasSchedule && (

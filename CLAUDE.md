@@ -335,6 +335,7 @@ engine/
     validation.py           kiểm tra hậu nghiệm mọi ràng buộc cứng, độc lập với solver
     replacement.py          gợi ý người thay: ứng viên đi qua validator, không gọi solver
     diagnostics.py          cảnh báo trước khi giải (điều kiện cần, không gọi solver), dùng cho preview-warnings
+    shortfall.py            giải thích từng giờ thiếu người: thử thêm một ca, validator báo luật chặn; không gọi solver
     kpi.py
   tests/
     conftest.py             fixture three_shifts, build_instance

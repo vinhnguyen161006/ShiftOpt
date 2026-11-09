@@ -90,6 +90,22 @@ class RepairRequest(SolveSettings):
     demand_profile_id: int | None = None
 
 
+class ShortfallReasonRead(BaseModel):
+    kind: str
+    legal_basis: str
+    employees: int
+
+
+class ShortfallHourRead(BaseModel):
+    hour: int = Field(ge=0, le=167)
+    day: int = Field(ge=0, le=6)
+    hour_of_day: int = Field(ge=0, le=23)
+    shortfall: int
+    uncoverable: bool
+    reasons: list[ShortfallReasonRead]
+    free_employee_codes: list[str]
+
+
 class ReplacementRead(BaseModel):
     employee_code: str
     shift_name: str

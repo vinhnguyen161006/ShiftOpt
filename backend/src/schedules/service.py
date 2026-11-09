@@ -10,7 +10,9 @@ from shiftopt.diagnostics import diagnose
 from shiftopt.domain import PERCENT_BASE, Assignment, Instance, Solution
 from shiftopt.replacement import suggest_replacements
 from shiftopt.schedule_diff import diff_solutions
+from shiftopt.shortfall import explain_shortfall
 from shiftopt.solvers.base import ModelInvalidError
+from shiftopt.time_grid import HOURS_PER_DAY
 from shiftopt.validation import LEGAL_BASIS, validate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +35,8 @@ from src.schedules.schemas import (
     ReplacementRead,
     RerosterRequest,
     ScheduleChangesRead,
+    ShortfallHourRead,
+    ShortfallReasonRead,
     SolveRequest,
     SolveSettings,
     ViolationRead,
@@ -513,6 +517,25 @@ def get_replacements(
             prefers_off=item.prefers_off,
         )
         for item in candidates
+    ]
+
+
+def get_shortfall(run: SolveRun) -> list[ShortfallHourRead]:
+    instance, solution = _schedule(run)
+    return [
+        ShortfallHourRead(
+            hour=item.hour,
+            day=item.hour // HOURS_PER_DAY,
+            hour_of_day=item.hour % HOURS_PER_DAY,
+            shortfall=item.shortfall,
+            uncoverable=item.uncoverable,
+            reasons=[
+                ShortfallReasonRead(kind=kind.value, legal_basis=LEGAL_BASIS[kind], employees=count)
+                for kind, count in item.blocked
+            ],
+            free_employee_codes=list(item.free_employees),
+        )
+        for item in explain_shortfall(instance, solution)
     ]
 
 
