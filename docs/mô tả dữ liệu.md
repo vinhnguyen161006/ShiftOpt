@@ -1,6 +1,6 @@
 # Mô tả dữ liệu
 
-Cập nhật: 2026-11-07. Các con số lấy từ `backend/` chạy trên file đã tải về; cách tái chạy ở mục 6.
+Cập nhật: 2026-11-09. Các con số lấy từ `backend/` chạy trên file đã tải về; cách tái chạy ở mục 7.
 
 ## 1. Nguồn
 
@@ -12,7 +12,7 @@ Số liệu quy mô: 898 store (thực chất là kho tiền phương) ở 18 th
 
 ## 2. Hai file dùng trong dự án
 
-Đặt trong `data/raw/freshretailnet50k/data/` (đã gitignore). SHA-256 được ghim trong `backend/scripts/download_freshretailnet.py`.
+`train.parquet` đặt ở `data/demo/`, `eval.parquet` ở `data/raw/freshretailnet50k/data/` (cả hai đã gitignore). SHA-256 được ghim trong `backend/scripts/download_freshretailnet.py`.
 
 | File | Số dòng | Khoảng ngày (đã kiểm bằng `dt.min()/max()`) | Vai trò |
 |---|---|---|---|

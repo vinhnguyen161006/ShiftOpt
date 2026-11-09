@@ -5,10 +5,10 @@ Hướng dẫn cho Claude Code khi làm việc trong repo **ShiftOpt** — xếp
 Nguồn sự thật về yêu cầu, theo thứ tự ưu tiên:
 
 1. Đề bài của nhóm (mục 1).
-2. [docs/đặc tả.md](docs/đặc tả.md) — **đã duyệt 2026-11-08** (người dùng ủy quyền cho Claude quyết định; quyết định D1–D24; luật Đ.98–111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025), NĐ 145/2020 chưa đối chiếu, ghi trong file). Đặc tả thắng file này; khi hai bên lệch, sửa file này theo đặc tả.
+2. [docs/đặc tả.md](docs/đặc tả.md) — **đã duyệt 2026-11-08** (người dùng ủy quyền cho Claude quyết định; bổ sung D25–D27 ngày 2026-11-09; quyết định D1–D27; luật Đ.98–111 đã đối chiếu với VBHN 125/VBHN-VPQH (2025), NĐ 145/2020 chưa đối chiếu, ghi trong file). Đặc tả thắng file này; khi hai bên lệch, sửa file này theo đặc tả.
 3. Báo cáo nghiên cứu nền (nghiên cứu tham chiếu: dữ liệu, mô hình, pháp lý, solver). File không có trong repo (quyết định D17); mọi chỗ nó từng được dùng đã được chốt trong `docs/đặc tả.md` và các mục dưới.
 
-> **Trạng thái repo (2026-11-08, nhánh `main`):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine coverage 98%; CI và Makefile chặn dưới 80%. Mới trong nhánh: ingest doanh số tổng quát (đặc tả D19), giao diện tối, xếp lại lịch và gợi ý người thay (D20). Còn mở: duyệt tay UI trên trình duyệt, đối chiếu NĐ 145/2020 và sai lệch nghiệm thu (mục 13). Việc còn lại và thứ tự làm: `docs/plan.md`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
+> **Trạng thái repo (2026-11-09, nhánh `main`):** code nghiệp vụ đã triển khai đầy đủ (engine, backend, frontend, benchmark, Compose, CI). Không còn stub `TODO`. Engine 236 test, coverage 98%; CI và Makefile chặn dưới 80%. Đã có: ingest doanh số tổng quát (đặc tả D19), giao diện tối, xếp lại lịch và gợi ý người thay (D20), bản ILP HiGHS của mô hình theo nhân viên, baseline greedy, dung sai chi phí (D21), cảnh báo trước khi giải, giải thích giờ thiếu, ngân sách tuần và giờ tối thiểu (D25, D26), nhãn kết quả cũ (D27). Còn mở: duyệt tay UI trên trình duyệt, đối chiếu NĐ 145/2020 và sai lệch nghiệm thu (mục 13). Việc còn lại và thứ tự làm: `docs/plan.md`. Cấu trúc ở mục 11, quy ước và lệnh ở mục 12.
 
 ---
 
@@ -96,7 +96,7 @@ Phân rã hai pha là chiến lược giảm kích thước khi instance lớn: 
 
 Hugging Face `Dingdong-Inc/FreshRetailNet-50K`, CC BY 4.0, arXiv:2505.16319. 50.000 chuỗi store–product × 90 ngày, 898 "store" (thực chất kho tiền phương, bán kính 3 km, giao 30 phút) ở 18 thành phố, tháng 3–6/2024. Số SKU ghi 865 (dataset card) hoặc 863 (arXiv): **ghi "~863–865 SKU" khi trích dẫn.**
 
-Cột dùng: `store_id`, `city_id`, `dt`, `hours_sale` (list 24 giá trị, đã chuẩn hóa toàn cục), `hours_stock_status` (cờ hết hàng từng giờ), `holiday_flag`, `activity_flag`, `discount`, `precpt` (mưa). Các cột danh mục sản phẩm có thể bỏ. Split eval 7 ngày chỉ là **suy luận** (350.000 / 50.000); xác nhận bằng `dt.min()/max()` trước khi dựa vào.
+Cột dùng: `store_id`, `city_id`, `dt`, `hours_sale` (list 24 giá trị, đã chuẩn hóa toàn cục), `hours_stock_status` (cờ hết hàng từng giờ), `holiday_flag`, `activity_flag`, `discount`, `precpt` (mưa). Các cột danh mục sản phẩm có thể bỏ. Split eval 7 ngày đã xác nhận bằng `dt.min()/max()`: train 2024-03-28 → 2024-06-25, eval 2024-06-26 → 2024-07-02 (`docs/mô tả dữ liệu.md` mục 2).
 
 File mẫu `train.parquet` tải bằng `scripts.download_freshretailnet` vào `data/demo/` (gitignore); `eval.parquet` vào `data/raw/` (gitignore). Không có file trung gian: hồ sơ lưu tuần tải 168 giờ trong DB (cột `demand_profiles.sales_load`). `data/demo/doanh_so_mau.csv` là file mẫu không phải FreshRetailNet, dùng để kiểm chứng ingest tổng quát.
 
@@ -134,7 +134,7 @@ Mục tiêu: `min sum c_s x + M_u * sum u_h + lambda_F * F`.
 Thứ tự ưu tiên: thiếu người `M_u` ≫ chi phí lao động ≫ công bằng ≫ sở thích. Ưu tiên **giải lexicographic** (tối thiểu thiếu người trước, cố định, rồi tối thiểu chi phí) thay vì chọn `M` tùy tiện. Mọi trọng số là hằng có tên trong config, không magic number.
 Giờ tối thiểu theo hợp đồng (`min_weekly_hours`, mềm, D25): nếu có nhân viên nào đặt, thêm tầng `min_hours` (tổng giờ dưới mức tối thiểu) ngay sau `shortfall`, trước `changes` và chi phí. Ngân sách tuần (`weekly_budget`, cứng, D26) là ràng buộc `chi phí <= ngân sách`; vì độ phủ vẫn mềm nên mô hình không bao giờ INFEASIBLE vì ngân sách, và validator có vi phạm `OVER_BUDGET`.
 Khi `cost_tolerance_percent` > 0 (mặc định 0, đặc tả D21): tầng chi phí được nới tới `optimum * (100 + tol) / 100`; sau tầng chênh ca đêm thêm tầng `hours_spread` (max - min giờ làm mỗi người). Tol = 0 giữ thứ tự cũ, không có tầng giờ làm. Dung sai đo trên giá trị tầng chi phí tìm được; nếu tầng đó chỉ FEASIBLE thì không phải tối ưu thật, dùng `kpi.labor_cost` để lấy chi phí thật.
-Khi repair (C6, lịch gốc + ngày khóa `from_day` + ca ghim): thiếu người ≫ số ca thay đổi so với lịch gốc ≫ chi phí lao động ≫ công bằng ≫ sở thích. Ngày trước `from_day` và ca ghim là ràng buộc cứng; người vắng không được xếp vào ngày vắng (đặc tả D20).
+Khi repair (C6, lịch gốc + ngày khóa `from_day` + ca ghim): thiếu người ≫ giờ tối thiểu (nếu có) ≫ số ca thay đổi so với lịch gốc ≫ chi phí lao động ≫ công bằng ≫ sở thích. Ngày trước `from_day` và ca ghim là ràng buộc cứng; người vắng không được xếp vào ngày vắng (đặc tả D20).
 
 ### 5.3 Bảng ràng buộc
 
@@ -214,9 +214,10 @@ Bắt buộc (1–3), kịch bản (4) nên có, (5–6) là mở rộng:
 6. **Lịch dạng lưới** (hàng = nhân viên, cột = ngày, ô màu theo loại ca); chế độ Gantt theo giờ là mức mở rộng.
 7. **Cảnh báo tuân thủ**: vi phạm Đ.105 / 110 / 111, phát hiện cả khi người dùng sửa tay.
 8. Bảng chi phí: tổng lương, phụ cấp đêm, % chi phí lao động.
-9. **What-if**: thanh trượt λ, so sánh hai kịch bản cạnh nhau, heatmap chi phí biên theo giờ.
+9. **What-if**: thanh trượt λ, so sánh hai kịch bản cạnh nhau, heatmap chi phí biên theo giờ, so với baseline greedy, quét dung sai chi phí (đánh đổi chi phí và công bằng, D21).
 10. Xuất CSV (PDF là mức mở rộng).
-11. Xếp lại (repair) từ lịch đã công bố: ngày khóa, người vắng, ca ghim; gợi ý người thay. Mỗi lần xếp lại là lượt mới, validator kiểm lại (đặc tả D20).
+11. Xếp lại (repair) từ lịch đã công bố: ngày khóa, người vắng, ca ghim; báo nghỉ đột xuất; gợi ý người thay. Mỗi lần xếp lại là lượt mới, validator kiểm lại (đặc tả D20).
+12. Cảnh báo trước khi giải (điều kiện cần, không chặn nút), giải thích từng giờ thiếu người, nhãn "đầu vào đã đổi" trên lượt cũ (đặc tả D27). Ngân sách tuần (cứng) và giờ tối thiểu theo hợp đồng (mềm) là tùy chọn (D25, D26).
 
 Kéo-thả chỉnh tay là mức mở rộng, và nếu làm thì phải kiểm tra lại ràng buộc sau mỗi thao tác.
 
@@ -260,7 +261,8 @@ Kéo-thả chỉnh tay là mức mở rộng, và nếu làm thì phải kiểm 
 | Understaffed / Overstaffed hours | `sum_h max(0, r_h - staff_h)` / `sum_h max(0, staff_h - r_h)` |
 | Schedule efficiency | `sum_h r_h / sum_h staff_h` |
 | Labor cost, labor cost % | Tổng lương + phụ cấp đêm; % so với doanh thu giả định (tham số) |
-| Công bằng | Độ lệch chuẩn số ca đêm / cuối tuần giữa nhân viên |
+| Công bằng | Độ lệch chuẩn số ca đêm / cuối tuần giữa nhân viên; chênh giờ làm `max_e H_e - min_e H_e` |
+| Giờ thiếu hợp đồng | `sum_e max(0, min_weekly_hours_e - H_e)` (đặc tả D25) |
 | Kỹ thuật | Thời gian giải, gap, số vi phạm cứng (phải = 0) |
 | Dự báo (nếu có) | WAPE / MAPE trên tập eval của FreshRetailNet |
 
@@ -305,7 +307,7 @@ backend/
   Dockerfile                build từ root (cần ../engine); multi-stage, uv + python ghim tag + digest, user non-root
   openapi.json              sinh bởi scripts/export_openapi.py; CI kiểm tra khớp code
   alembic.ini, migrations/  Alembic async; versions/ có migration baseline
-  scripts/                  export_openapi, seed_demo (dữ liệu demo cho Compose), smoke_flow (kiểm API end-to-end, không chạy trên stack demo), download_freshretailnet (file mẫu, SHA-256 ghim), baseline_store18 (kịch bản cơ sở một store, `--store`)
+  scripts/                  export_openapi, seed_demo (dữ liệu demo cho Compose), smoke_flow (kiểm API end-to-end, không chạy trên stack demo), download_freshretailnet (file mẫu, SHA-256 ghim), baseline_store18 (kịch bản cơ sở một store, `--store`), rank_stores và run_experiments (chọn store, thực nghiệm CP-SAT với greedy)
   src/
     main.py                 create_app (uvicorn --factory), lifespan (engine + session factory), /health
     config.py               Settings (BaseSettings, tiền tố SHIFTOPT_), get_settings
@@ -315,8 +317,8 @@ backend/
     demand/                 router, schemas, models (DemandProfile), service, sales_ingest, csv_import
     employees/              router, schemas, models (EmployeeRecord), service
     shifts/                 router, schemas, models (ShiftTemplate), service
-    schedules/              router, schemas, models (SolveRun, RunStatus), service (giải, sửa tay, repair, gợi ý người thay), dependencies, snapshot (instance JSON, khóa `repair`), worker (child process)
-    analysis/               router, schemas, models (AnalysisRun), service: sweep, chi phí biên, dual LP, worker (child process)
+    schedules/              router, schemas, models (SolveRun, RunStatus; `source_inputs`, `input_hash`), service (giải, sửa tay, repair, báo nghỉ, gợi ý người thay, cảnh báo trước khi giải, giải thích giờ thiếu, staleness), dependencies, snapshot (instance JSON, khóa `repair`, `input_hash`), worker (child process)
+    analysis/               router, schemas, models (AnalysisRun), service: quét nhu cầu, quét giả định, chi phí biên, dual LP, so với greedy, quét dung sai; worker (child process)
     rules/                  router, schemas: GET /labor-rules trả LaborRules mặc định cho UI cảnh báo sớm
   tests/
     conftest.py             fixture app (LifespanManager), client (ASGITransport), database_url
@@ -328,7 +330,7 @@ engine/
     domain.py               dataclass bất biến: ShiftType, Employee, Instance, Assignment, Solution
     time_grid.py            hằng số giờ/ngày/tuần, quấn vòng mod 168, giờ đêm
     staffing/               linear.py, latent_demand.py
-    models/                 set_covering_pulp.py, implicit_breaks.py, roster_cpsat.py, roster_mip.py (ILP, HiGHS, đối chiếu)
+    models/                 set_covering_pulp.py, implicit_breaks.py, implicit_breaks_cpsat.py, roster_cpsat.py, roster_mip.py (ILP, HiGHS, đối chiếu)
     constraints/            labor_law_vn.py (LaborRules), sequences.py, fairness.py
     solvers/                base.py (SolveStatus, SolveParams, SolveResult), cpsat.py, pulp_backend.py
     sensitivity/            lp_duals.py, parametric.py, scenarios.py
@@ -336,13 +338,16 @@ engine/
     replacement.py          gợi ý người thay: ứng viên đi qua validator, không gọi solver
     diagnostics.py          cảnh báo trước khi giải (điều kiện cần, không gọi solver), dùng cho preview-warnings
     shortfall.py            giải thích từng giờ thiếu người: thử thêm một ca, validator báo luật chặn; không gọi solver
+    baseline.py             heuristic tham lam để so sánh, không bao giờ báo OPTIMAL
+    experiments.py          dựng kịch bản thực nghiệm (λ, bớt người, bộ ca)
+    schedule_diff.py        so lịch với lịch cha (giữ, thêm, bỏ)
+    benchmarks/curtois_qu.py  đọc và giải instance Curtois & Qu
     kpi.py
   tests/
     conftest.py             fixture three_shifts, build_instance
     test_smoke.py           khai báo thật: LaborRules, validate của dataclass
-    test_time_grid.py, test_labor_law_vn.py, test_validation.py, test_kpi_and_staffing.py,
-    test_set_covering.py, test_roster_cpsat.py, test_roster_mip.py, test_roster_weighted.py, test_fairness_tolerance.py, test_sensitivity.py
-  benchmarks/               run_curtois_qu.py, compare_solvers.py, run_roster_scale.py (--solver, --sizes-only), integrality_gap.py, weighted_vs_lexicographic.py
+    test_*.py               một file mỗi module: validation, roster_cpsat, roster_mip, repair, replacement, baseline, diagnostics, shortfall, budget_min_hours, fairness_tolerance, sensitivity, ...
+  benchmarks/               run_curtois_qu.py, compare_solvers.py, run_roster_scale.py (--solver, --sizes-only), integrality_gap.py, weighted_vs_lexicographic.py, cost_tolerance.py (chạy bằng `python -m benchmarks.<tên>`)
 frontend/
   package.json, package-lock.json, vite.config.ts, tsconfig.json, biome.json, index.html
   Dockerfile, nginx.conf, .dockerignore
@@ -351,9 +356,9 @@ frontend/
     app/                    providers.tsx (TanStack Query), router.tsx ("/" = trang chủ, app ở /demand...), layout.tsx (header theo trang chủ), routes/*.tsx (ghép feature; schedule.tsx, what-if.tsx ghép nhiều feature)
     assets/fonts/           Barlow + Barlow Condensed (woff2, OFL)
     components/ui/          BrandMark, Corners, Button, Table, Modal (<dialog>), Slider, Field, DayPicker, Feedback (Notice, ErrorSummary, EmptyState, Loading), Layout (PageHeader, Panel, KpiStrip), Workspace (WorkspacePanel, WorkspaceBlock), HourBars (cột nhân sự theo giờ)
-    components/solve/       SolveRequestForm: form SolveRequest dùng chung cho Schedule và What-if
+    components/solve/       SolveRequestForm (form SolveRequest dùng chung cho Schedule và What-if), PreSolveWarnings (cảnh báo trước khi giải)
     config/env.ts
-    lib/                    api-client.ts (apiFetch, ApiError + lỗi theo ô từ 422), form.ts, time.ts, labor-rules.ts
+    lib/                    api-client.ts (apiFetch, ApiError + lỗi theo ô từ 422), form.ts, time.ts, labor-rules.ts, number.ts, debounce.ts, run-kind.ts, theme.ts
     locales/vi.ts           toàn bộ text giao diện tiếng Việt (file duy nhất được có ký tự ngoài ASCII)
     styles/                 global.css (nạp fonts, tokens, components + bố cục trang app), fonts.css, tokens.css, components.css
     types/api.ts            sinh từ backend/openapi.json (npm run gen:api), không sửa tay
@@ -364,11 +369,12 @@ frontend/
       employees/            api, EmployeesPage, EmployeeTable, EmployeeForm
       shift-templates/      api, ShiftTemplatesPage, ShiftTemplateList, ShiftTemplateForm, ShiftStrip
       schedule/             api (poll), NewRunForm, RunsTable, RunWorkspace (panel kết quả như trang chủ), SolveStatusPanel (SolveNotice, SolveDetails), ScheduleGrid (đánh dấu ô đổi và ngày khóa khi repair), RepairForm, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
-      compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới), ReplacementList (gợi ý người thay, áp dụng qua sửa tay)
-      what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, AnalysisStatus
+      compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới), ReplacementList (gợi ý người thay, áp dụng qua sửa tay), ShortfallExplanation (vì sao còn giờ thiếu)
+      reroster/             api, RerosterForm (báo nghỉ đột xuất), ChangesSummary (so với lượt cha)
+      what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, StaffingSweepView, BaselineCompare, FairnessSweepView, AnalysisStatus
 data/                       demo/ (file mẫu: train.parquet gitignore, CSV mẫu), raw/ (gitignore), benchmarks/curtois_qu/ (script tải)
 docs/
-  đặc tả.md                 nguồn sự thật yêu cầu (đã duyệt 2026-11-08; quyết định D1–D24)
+  đặc tả.md                 nguồn sự thật yêu cầu (đã duyệt 2026-11-08, bổ sung 2026-11-09; quyết định D1–D27)
   plan.md                   kế hoạch hoàn thiện: hiện trạng, việc còn lại theo ưu tiên, việc cần nhóm quyết
   kiến trúc.md              kiến trúc theo tầng, thuật toán từng khối, giới hạn đã biết
   model.md                  công thức mô hình (gồm repair, mục 6)
@@ -376,6 +382,7 @@ docs/
   benchmarks.md             số đo: Curtois & Qu, so sánh solver, quy mô, kịch bản store
   demo.md                   kịch bản demo trước lớp
   báo cáo.md, slides.md     báo cáo và slide bảo vệ
+  experiments/, images/     CSV thực nghiệm (scenario_results, store_ranking) và ảnh chụp UI
 scripts/check_conventions.py   cưỡng chế "không comment" + "code chỉ ASCII"; bỏ qua file sinh (GENERATED_PATHS)
 docker-compose.yml, .env.example, .dockerignore, Makefile
 .github/workflows/ci.yml
@@ -515,7 +522,7 @@ Rút từ khuyến nghị của báo cáo nghiên cứu nền; điều chỉnh k
 ## 15. Điểm cần cẩn trọng khi viết báo cáo hoặc tài liệu
 
 - Số SKU FreshRetailNet mâu thuẫn giữa dataset card (865) và arXiv (863).
-- Split eval 7 ngày chỉ là suy luận số học cho tới khi kiểm bằng code.
+- Split eval 7 ngày đã kiểm bằng code (`docs/mô tả dữ liệu.md` mục 2); chưa dùng để đánh giá mô hình nào.
 - Số liệu bài báo FreshRetailNet (WAPE, uplift khuyến mãi, đỉnh hết hàng 26% lúc 20h) lấy từ bản v5; đối chiếu lại nếu dùng phiên bản arXiv khác.
 - Số liệu Mittelmann trong báo cáo nghiên cứu lấy qua nguồn thứ cấp; nếu trích, ghi nguồn và ngày, không dùng làm số đo của nhóm.
 - Tính năng của các hãng WFM ngoài Deputy và NICE chưa được kiểm chứng riêng; không trích tính năng của hãng cụ thể khi chưa kiểm trên trang của hãng.

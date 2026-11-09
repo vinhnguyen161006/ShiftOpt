@@ -1,19 +1,19 @@
 # Xếp ca nhân viên cho dịch vụ có nhu cầu biến động: báo cáo cuối
 
-Cập nhật: 2026-11-05. Trạng thái: bản để nhóm duyệt. Mọi số liệu truy được tới lệnh và bảng nguồn ghi trong ngoặc. Kết luận hiệu năng chỉ áp cho các instance đã đo.
+Cập nhật: 2026-11-09. Trạng thái: bản để nhóm duyệt. Mọi số liệu truy được tới lệnh và bảng nguồn ghi trong ngoặc. Kết luận hiệu năng chỉ áp cho các instance đã đo.
 
 ## 1. Bài toán
 
 Xếp ca cho nhân viên sao cho số người có mặt đáp ứng nhu cầu theo giờ, trong ràng buộc pháp lý về giờ làm, nghỉ giữa ca, nghỉ hằng tuần và số ngày làm liên tiếp. Phạm vi bản đầu: một địa điểm, lịch tuần 7×24, một loại kỹ năng ([đặc tả.md](đặc%20tả.md) mục 1).
 
-Đầu ra: lịch xếp ca, KPI, danh sách vi phạm, và phân tích độ nhạy khi nhu cầu hoặc giả định quy đổi thay đổi.
+Đầu ra: lịch xếp ca, KPI, danh sách vi phạm, và phân tích độ nhạy khi nhu cầu hoặc giả định quy đổi thay đổi. Ngoài ra hệ thống hỗ trợ vận hành: xếp lại khi có người vắng, gợi ý người thay, cảnh báo trước khi giải, giải thích giờ thiếu, ngân sách tuần, giờ tối thiểu theo hợp đồng và nhãn kết quả cũ (mục 6d).
 
 ## 2. Mô hình
 
 Hai tầng:
 
 - **Tổng hợp (Dantzig, phủ tập).** Số người theo kiểu ca, `min sum c_s x_s`, `sum a_ts x_s >= r_t`, `x` nguyên không âm. Giải bằng PuLP + HiGHS. Dùng để benchmark, lấy dual LP xấp xỉ, và đối chiếu với chi phí biên. Nghỉ giữa ca được mô hình hóa như mất một giờ phủ (Bechtold–Jacobs đơn giản).
-- **Theo nhân viên (CP-SAT).** Biến `x[e,d,s]` Boolean, nghỉ giữa giờ `b[e,d,s,k]`, thiếu người `u_h`, cửa sổ nghỉ 24 giờ `v[e,t]`. Hàm mục tiêu lexicographic bốn tầng: thiếu người, chi phí lương có phụ cấp đêm, chênh lệch ca đêm, vi phạm sở thích. Mỗi tầng một lần giải, tầng sau bị khóa bởi tối ưu tầng trước. `OPTIMAL` chỉ khi mọi tầng `OPTIMAL` ([model.md](model.md) mục 2).
+- **Theo nhân viên (CP-SAT).** Biến `x[e,d,s]` Boolean, nghỉ giữa giờ `b[e,d,s,k]`, thiếu người `u_h`, cửa sổ nghỉ 24 giờ `v[e,t]`. Hàm mục tiêu lexicographic theo tầng: thiếu người, giờ tối thiểu theo hợp đồng (chỉ khi có), chi phí lương có phụ cấp đêm, chênh lệch ca đêm, chênh giờ làm (chỉ khi có dung sai chi phí), vi phạm sở thích. Mỗi tầng một lần giải, tầng sau bị khóa bởi tối ưu tầng trước. `OPTIMAL` chỉ khi mọi tầng `OPTIMAL` ([model.md](model.md) mục 2).
 
 Chọn lexicographic thay vì trọng số phạt `M` tùy ý (quyết định D11). Coverage là mềm, có biến thiếu người, nên mô hình luôn khả thi và UI chỉ rõ giờ thiếu.
 
@@ -21,7 +21,7 @@ Validator độc lập (`validation.py`) kiểm lại mọi nghiệm trên trụ
 
 ### Công thức ILP theo nhân viên
 
-Mô hình theo nhân viên được viết thành quy hoạch nguyên đầy đủ và giải theo hai cách: CP-SAT (lõi sản phẩm) và HiGHS qua PuLP (`roster_mip.py`, để so sánh). Hai bản dùng cùng tám nhóm ràng buộc; chi tiết và ánh xạ sang hàm trong code ở [model.md](model.md) mục 2a.
+Mô hình theo nhân viên được viết thành quy hoạch nguyên đầy đủ và giải theo hai cách: CP-SAT (lõi sản phẩm) và HiGHS qua PuLP (`roster_mip.py`, để so sánh). Hai bản dùng cùng các nhóm ràng buộc C1–C11; chi tiết và ánh xạ sang hàm trong code ở [model.md](model.md) mục 2a.
 
 | Ký hiệu | Ràng buộc | Điều luật |
 |---|---|---|
@@ -33,8 +33,11 @@ Mô hình theo nhân viên được viết thành quy hoạch nguyên đầy đ�
 | C6 | Mỗi ca cần nghỉ có đúng một giờ nghỉ | Điều 109 |
 | C7 | Phủ nhu cầu theo giờ, thiếu người là biến mềm `u_h` | đề bài |
 | C8 | Chênh lệch ca đêm giữa các nhân viên | công bằng |
+| C9 | Tổng chi phí không vượt ngân sách tuần (tùy chọn) | đặc tả D26 |
+| C10 | Giờ dưới mức tối thiểu theo hợp đồng, biến mềm | đặc tả D25 |
+| C11 | Chênh giờ làm giữa các nhân viên (chỉ khi có dung sai chi phí) | đặc tả D21 |
 
-Mục tiêu giải theo tầng: thiếu người, rồi (khi sửa lịch) số ca thay đổi, rồi chi phí lương có phụ cấp đêm, rồi chênh lệch ca đêm, rồi sở thích. Mỗi tầng là một lần giải và được khóa bằng tối ưu của tầng trước.
+Mục tiêu giải theo tầng: thiếu người, rồi giờ tối thiểu (khi có), rồi (khi sửa lịch) số ca thay đổi, rồi chi phí lương có phụ cấp đêm, rồi chênh lệch ca đêm, rồi chênh giờ làm (khi có dung sai), rồi sở thích. Mỗi tầng là một lần giải và được khóa bằng tối ưu của tầng trước.
 
 ## 3. Ràng buộc pháp lý
 
@@ -47,9 +50,9 @@ Hai ca pháp lý của nghiệm thu được kiểm bằng test: ca 14h–22h r�
 ## 4. Dữ liệu và giả định
 
 - **Nguồn nhu cầu.** FreshRetailNet-50K (`Dingdong-Inc/FreshRetailNet-50K`, CC BY 4.0, arXiv:2505.16319). Đây là doanh số chuẩn hóa của kho tiền phương thương mại điện tử, **không phải dữ liệu nhân sự và không phải cửa hàng vật lý 24/7**. Số SKU ghi là ~863–865 (dataset card ghi 865, arXiv ghi 863; mâu thuẫn chưa giải quyết).
-- **Split.** Đã xác nhận bằng `dt.min()/max()` trong task 6.1: train 2024-03-28 đến 2024-06-25 (90 ngày), eval 2024-06-26 đến 2024-07-02 (7 ngày). Nhu cầu lấy từ train; eval giữ lại làm tập đánh giá. Chưa tính WAPE/MAPE vì chưa có mô hình dự báo.
+- **Split.** Đã xác nhận bằng `dt.min()/max()` ([mô tả dữ liệu.md](mô%20tả%20dữ%20liệu.md) mục 2): train 2024-03-28 đến 2024-06-25 (90 ngày), eval 2024-06-26 đến 2024-07-02 (7 ngày). Nhu cầu lấy từ train; eval giữ lại làm tập đánh giá. Chưa tính WAPE/MAPE vì chưa có mô hình dự báo.
 - **Nhu cầu ẩn.** Ô hết hàng (`hours_stock_status = 1`) được thay bằng trung bình doanh số cùng sản phẩm, cùng thứ, cùng giờ trên các ngày không hết hàng. Store 18: 90159 ô được thay; 1008 ô không có ngày không hết hàng để học nên giữ giá trị quan sát.
-- **Quy đổi.** `r = max(sàn, ceil(alpha·D/p))`. Giả định của nhóm: `alpha = 1,0`, `p = 4,0` (giờ đỉnh cần 8 người với store 18), sàn 1 và 1. Giờ đêm được đặt bằng sàn đêm trước khi quy đổi ([đặc tả.md](đặc%20tả.md) mục 3).
+- **Quy đổi.** `r = max(sàn, ceil(alpha·D/p))`. Giả định của nhóm, đã duyệt (đặc tả D7–D9): `alpha = 1,0`, `p = 4,0` (giờ đỉnh cần 8 người với store 18), sàn 1 và 1. Giờ đêm được đặt bằng sàn đêm trước khi quy đổi ([đặc tả.md](đặc%20tả.md) mục 3).
 - **Phạm vi.** Chỉ hỗ trợ bán lẻ / kho; chế độ tổng đài (Erlang A/C) đã bỏ (D18).
 
 ## 5. Kết quả benchmark
@@ -78,15 +81,28 @@ Lõi sản phẩm vẫn là CP-SAT. Số ràng buộc của HiGHS lớn hơn đ�
 
 ### Integrality gap
 
-Gap giữa nghiệm nới lỏng và nghiệm nguyên ([benchmarks.md](benchmarks.md) mục 5). Mô hình tổng hợp: 40% ở instance đều, 21% ở instance đỉnh, 0% ở instance ca cách đều. Mô hình theo nhân viên: tầng chi phí dưới 0,4%, tầng thiếu người 6–15%. Dual LP của mô hình tổng hợp vì vậy chỉ là xấp xỉ, đúng như nhãn trên giao diện.
+Gap giữa nghiệm nới lỏng và nghiệm nguyên ([benchmarks.md](benchmarks.md) mục 7). Mô hình tổng hợp: 40% ở instance đều, 21% ở instance đỉnh, 0% ở instance ca cách đều. Mô hình theo nhân viên: tầng chi phí dưới 0,4%, tầng thiếu người 6–15%. Dual LP của mô hình tổng hợp vì vậy chỉ là xấp xỉ, đúng như nhãn trên giao diện.
 
 ### Mục tiêu có trọng số và lexicographic
 
-Trọng số thiếu người đặt thấp hơn ngưỡng sẽ không xếp ai, vì một giờ-người phục vụ thêm không bù được chi phí một ca (khoảng 10 000 mỗi giờ). Với 12 nhân viên, trọng số 10⁵ đổi 9 giờ thiếu lấy tiết kiệm 4,5% chi phí ([benchmarks.md](benchmarks.md) mục 6). Lexicographic không cần chọn trọng số, nên không có nguy cơ mất độ phủ âm thầm, nhưng mỗi tầng phải giải riêng và chia thời gian.
+Trọng số thiếu người đặt thấp hơn ngưỡng sẽ không xếp ai, vì một giờ-người phục vụ thêm không bù được chi phí một ca (khoảng 10 000 mỗi giờ). Với 12 nhân viên, trọng số 10⁵ đổi 9 giờ thiếu lấy tiết kiệm 4,5% chi phí ([benchmarks.md](benchmarks.md) mục 8). Lexicographic không cần chọn trọng số, nên không có nguy cơ mất độ phủ âm thầm, nhưng mỗi tầng phải giải riêng và chia thời gian.
 
 ## 6b. Tối ưu so với baseline greedy
 
 Greedy (`engine/src/shiftopt/baseline.py`) là heuristic để so sánh: không báo `OPTIMAL`, và mọi lần gán đều được kiểm bằng validator. Trên ba store đã chọn (18, 84, 578), với 30 giây mỗi lượt CP-SAT, greedy thường thiếu người nhiều hơn. Chi phí thấp hơn của greedy vì vậy không phải lợi thế. Chỉ khi cùng số giờ thiếu (store 578 với nhu cầu tăng 10–30% hoặc khi bớt 5 người), CP-SAT rẻ hơn từ 0 đến 5,7%. Với báo nghỉ, `repair` đổi ít phân công hơn greedy chạy lại từ đầu (4–13 so với 16–52). Chi tiết và giới hạn: [benchmarks.md](benchmarks.md) mục 5.
+
+## 6c. Đánh đổi chi phí và công bằng
+
+Thứ tự mặc định đặt chi phí trước công bằng, nên lịch rẻ nhất có thể dồn ca đêm vào người lương thấp. Tham số `cost_tolerance_percent` (0–10%, mặc định 0, đặc tả D21) cho tầng chi phí tăng tối đa tỷ lệ đó so với tối ưu của nó, rồi thêm tầng chênh giờ làm sau chênh ca đêm ([model.md](model.md) mục 7). Trên dữ liệu sinh với lương lệch 100/120/150, 20 nhân viên, dung sai 2–10% kéo chênh ca đêm từ 6 xuống 1 và chênh giờ làm từ 48 xuống 24, chi phí tăng 2–10% ([benchmarks.md](benchmarks.md) mục 6). Mọi điểm chỉ `FEASIBLE` trong 60 giây, nên đây là xu hướng quan sát được, không phải tối ưu đã chứng minh. Giao diện What-if có quét dung sai với hai biểu đồ và bảng.
+
+## 6d. Hỗ trợ vận hành
+
+- **Xếp lại (repair) và báo nghỉ đột xuất** (đặc tả D20): khóa các ngày trước `from_day`, ghim ca, người vắng không được xếp; tầng "số ca thay đổi" ngay sau thiếu người. Tập ca bị khóa được validator kiểm trước, nên solver luôn có lời giải ([model.md](model.md) mục 6).
+- **Gợi ý người thay:** thử từng người còn trống, chỉ giữ người không gây vi phạm, không gọi solver.
+- **Cảnh báo trước khi giải:** năm điều kiện cần (không còn ngày làm, sức chứa dưới nhu cầu, không ca đêm, giờ tối thiểu không đạt được, ngân sách dưới chi phí phủ rẻ nhất). Không chặn nút Optimize.
+- **Giải thích giờ thiếu:** với mỗi giờ thiếu, thử thêm một ca cho từng người rảnh, báo luật chặn. Khi tầng thiếu người `OPTIMAL` thì không ai còn xếp được ([model.md](model.md) mục 9).
+- **Ngân sách tuần và giờ tối thiểu** (đặc tả D25, D26): ngân sách là trần cứng, ngân sách chặt làm tăng giờ thiếu chứ không làm mô hình vô nghiệm; giờ tối thiểu là mục tiêu mềm ([model.md](model.md) mục 8).
+- **Nhãn kết quả cũ** (đặc tả D27): mỗi lượt lưu hash của ảnh chụp đầu vào; sửa hay xóa hồ sơ nhu cầu, mẫu ca, nhân viên sau khi giải thì lượt cũ hiện "Đầu vào đã đổi". Lượt không bị sửa.
 
 ## 7. Độ nhạy
 
@@ -94,23 +110,27 @@ Greedy (`engine/src/shiftopt/baseline.py`) là heuristic để so sánh: không 
 - **Dual LP** từ bản relax của cùng mô hình, luôn gắn nhãn xấp xỉ, integrality gap có thể lớn. Dual không bao giờ lấy từ CP-SAT hoặc MIP.
 - **Quét λ** trong {0,8; …; 1,3}: `z(λ)` không giảm. Điểm không `OPTIMAL` được đánh dấu `proven = False`.
 - **Quét giả định quy đổi** (`alpha`, `p`, sàn): chạy lại được qua API `staffing-sweep` và trên UI (what-if).
+- **So với baseline greedy** và **quét dung sai chi phí**: hai phân tích nữa trên trang What-if (mục 6b, 6c).
 - Hệ số khuyến mãi 1,43 là gợi ý từ bài báo (v5), không phải ước lượng của nhóm; ngày lễ và mưa không có hệ số mặc định.
 
 ## 8. Nghiệm thu
 
 Đối chiếu từng dòng của CLAUDE.md mục 13. Tóm tắt:
 
-- **Đạt:** ràng buộc cứng; hiệu năng 20–40 nhân viên; pháp lý (kiểm bằng test); tái lập; coverage engine 98,21%.
-- **Đạt có điều kiện:** coverage 98% ở kịch bản cơ sở (kịch bản dư sức chứa).
-- **Sai lệch:** so sánh solver trên mô hình tổng hợp, không trên mô hình theo nhân viên.
+- **Đạt:** ràng buộc cứng; hiệu năng 20–40 nhân viên; pháp lý (kiểm bằng test); tái lập; coverage engine 98,13% (236 test).
+- **Đạt có điều kiện:** coverage 98% ở kịch bản cơ sở (kịch bản dư sức chứa); so sánh solver trên cả mô hình tổng hợp và mô hình theo nhân viên, trong phạm vi 10–30 nhân viên, 3 seed, 60 giây (đặc tả D12).
 - **Chờ:** độ nhạy và UI cần người duyệt trên trình duyệt. Smoke flow trên Compose chạy đạt.
 
-Backend chạy 102 test trên MySQL 8.4.10 thật, không skip. Migration `3a7c9e1f2b40` khớp model (`alembic check` sạch).
+Backend có 168 test: 131 unit, 37 integration chạy trên MySQL 8.4.10 trong CI, không skip. Migration head `8c4a2e9d6f31` khớp model (`alembic check` sạch).
 
 ## 9. Hạn chế
 
-- Chỉ một store, 3 seed, 1 và 8 worker. Không suy ra cho store khác.
+- Kịch bản cơ sở chỉ đo store 18 (3 seed); so với greedy đo 3 store. Không suy ra cho store khác.
 - Coverage khi thiếu người chỉ đo ở một kịch bản; solver không chứng minh tối ưu trong 60 giây khi thiếu nhân viên.
+- Tuần quấn vòng: ca Chủ nhật nối với thứ Hai cùng tuần, không nối với tuần trước (đặc tả D22, chưa làm).
+- Giờ tối thiểu theo hợp đồng là mềm: lịch có thể để một người dưới mức tối thiểu.
+- Quét dung sai chi phí mới đo trên dữ liệu sinh, mọi điểm `FEASIBLE`.
+- Giải thích giờ thiếu chỉ thử thêm một ca cho một người, không xét đổi chéo.
 - Nghỉ giữa giờ xấp xỉ bằng một giờ phủ, bảo thủ.
 - Nghị định 145/2020 chưa đối chiếu văn bản gốc.
 - Nhu cầu là doanh số kho tiền phương, không phải nhu cầu nhân sự; mọi quy đổi là giả định của nhóm.
@@ -125,6 +145,10 @@ cd engine
 uv run --locked pytest -q --cov=shiftopt --cov-fail-under=80
 uv run --locked python -u benchmarks/run_roster_scale.py --sizes 20 30 40 --seeds 0 1 2 --time-limit 60 --workers 1
 uv run --locked python benchmarks/compare_solvers.py
+uv run --locked python -u benchmarks/run_roster_scale.py --solver both --sizes 10 20 30 --seeds 0 1 2 --time-limit 60 --workers 1
+uv run --locked python -u -m benchmarks.integrality_gap
+uv run --locked python -u -m benchmarks.weighted_vs_lexicographic
+uv run --locked python -u -m benchmarks.cost_tolerance
 
 cd ../backend
 uv run --locked python -u -m scripts.baseline_store18 --store 18 --employees 30 --productivity 4 --time-limit 60 --workers 1 --seeds 0 1 2
@@ -178,3 +202,7 @@ Màn hình Schedule (kết quả một run) và What-if (đường cong z(lambda
 | What-if (lambda, đường cong, heatmap chi phí biên, so sánh kịch bản) | R4, R11, R9 |
 | Schedule: Xếp lại (repair) và đánh dấu ô đổi | R14, R16, R1, R9 (khóa ngày dùng nhãn chữ, không chỉ màu) |
 | Schedule / Compliance: Gợi ý người thay | R17, R9, R10 |
+| Schedule, What-if: cảnh báo trước khi giải (G1) | R9 (thông báo inline ngay trên nút gửi, có biểu tượng). **Chưa có nguồn thứ hai đã mở** (plan D3) |
+| Schedule: bảng "Vì sao còn giờ thiếu người" (G2) | R1 (score analysis liệt kê vi phạm theo ràng buộc), R7 (bảng). Nhãn luật dùng lại của khung Tuân thủ |
+| Schedule: nhãn "Đầu vào đã đổi sau lượt này" (G4) | R9. **Chưa có nguồn thứ hai đã mở** (plan D3) |
+| What-if: quét dung sai chi phí (F) | Bố cục của `SweepView` trong dự án (đường cong, điểm rỗng khi chưa chứng minh), R7 (bảng dữ liệu). **Chưa có nguồn bên ngoài cho biểu đồ đánh đổi** (plan D3) |

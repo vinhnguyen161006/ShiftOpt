@@ -1,6 +1,6 @@
 # Kịch bản demo ShiftOpt trước lớp
 
-Cập nhật: 2026-11-08. Thời lượng: khoảng 20 phút trình bày, cộng 5 phút hỏi đáp.
+Cập nhật: 2026-11-09. Thời lượng: khoảng 20 phút trình bày, cộng 5 phút hỏi đáp.
 
 Tài liệu gồm sáu phần:
 
@@ -32,7 +32,7 @@ Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần c
 |---|---|
 | Lịch xếp ca | Ai làm ca nào, ngày nào |
 | Biểu đồ phủ nhu cầu | Mỗi giờ có bao nhiêu người so với số cần |
-| KPI | Tỷ lệ phủ, giờ thiếu, giờ thừa, chi phí lương, phụ cấp đêm, mức công bằng |
+| KPI | Tỷ lệ phủ, giờ thiếu, giờ thừa, chi phí lương, phụ cấp đêm, mức công bằng (chênh ca đêm, chênh giờ làm), giờ thiếu so với hợp đồng |
 | Danh sách vi phạm | Phải bằng 0 với ràng buộc luật |
 | Phân tích độ nhạy | Chi phí thay đổi ra sao khi nhu cầu tăng hoặc giảm |
 
@@ -40,16 +40,19 @@ Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần c
 
 1. **Quy đổi nhu cầu.** Dữ liệu bán hàng không phải số người. Công thức quy đổi: `số người = max(sàn, làm tròn lên(alpha × doanh số / p))`. Trong đó `alpha` và `p` là **giả định của nhóm**, luôn hiện trên màn hình.
 2. **Tối ưu hóa.** Bài toán được viết thành mô hình **quy hoạch nguyên** và giải bằng **OR-Tools CP-SAT** (solver của Google). Biến `x[e, d, s] = 1` nghĩa là nhân viên `e` làm ca `s` vào ngày `d`.
-3. **Thứ tự ưu tiên khi tối ưu (lexicographic).** Giải lần lượt theo bốn tầng:
+3. **Thứ tự ưu tiên khi tối ưu (lexicographic).** Giải lần lượt theo tầng:
    1. Ít giờ thiếu người nhất.
-   2. Rồi chi phí lương thấp nhất.
-   3. Rồi chia ca đêm công bằng nhất.
-   4. Rồi tôn trọng ngày nghỉ mong muốn.
+   2. (Nếu có nhân viên đặt giờ tối thiểu) gần giờ tối thiểu nhất.
+   3. Rồi chi phí lương thấp nhất, không vượt ngân sách tuần nếu có.
+   4. Rồi chia ca đêm công bằng nhất.
+   5. (Nếu đặt dung sai chi phí lớn hơn 0) chia giờ làm đều nhất.
+   6. Rồi tôn trọng ngày nghỉ mong muốn.
 
-   Mỗi tầng không được làm hỏng kết quả tầng trước.
+   Mỗi tầng không được làm hỏng kết quả tầng trước. Demo dùng cấu hình mặc định, nên chỉ có tầng 1, 3, 4, 6.
 4. **Kiểm tra lại độc lập (validator).** Lịch solver trả về được một chương trình khác kiểm lại toàn bộ luật, không tin solver.
 5. **Phân tích độ nhạy.** Giải lại nhiều lần với nhu cầu khác nhau để thấy chi phí thay đổi.
 6. **Xếp lại khi có biến động.** Khi có người báo nghỉ, giải lại từ lịch đã công bố: các ngày đã qua giữ nguyên, ca được ghim giữ nguyên, solver đổi ít ca nhất có thể (đặc tả D20).
+7. **Giải thích và cảnh báo.** Trước khi giải, form báo cấu hình chắc chắn gây thiếu người. Sau khi giải, lượt còn giờ thiếu có bảng chỉ ra luật nào chặn. Sửa dữ liệu sau khi giải thì lượt cũ hiện nhãn "Đầu vào đã đổi".
 
 ### A4. Ràng buộc pháp lý được cài (Bộ luật Lao động 2019)
 
@@ -176,7 +179,7 @@ make smoke          # lần 2: phải pass như lần 1
 docker compose -p shiftopt-e2e down -v
 ```
 
-Smoke gồm: tối ưu, sửa tay gây vi phạm, xếp lại, từ chối ngày khóa, gợi ý người thay (áp dụng), báo nghỉ, quét nhu cầu.
+Smoke gồm: tối ưu, sửa tay gây vi phạm, xếp lại, từ chối ngày khóa, gợi ý người thay (áp dụng), báo nghỉ, quét nhu cầu, quét dung sai chi phí.
 
 ### B6. Chuẩn bị máy chiếu
 
@@ -205,6 +208,7 @@ Thời gian trong phần này đo bằng trình duyệt tự động (Playwright
 | 7d | Kết quả lượt gốc | Khung **Gợi ý người thay** → chọn một ca → **Áp dụng** ở dòng đầu | Lượt sửa tay mới, 0 vi phạm |
 | 8 | Độ nhạy | **Chạy quét nhu cầu** → kéo **Hệ số nhu cầu lambda** | Đường z(λ), khoảng 13 giây |
 | 9 | Độ nhạy | Chọn `alpha`, nhập `0.8, 1.0, 1.2` → **Chạy quét giả định** | Bảng 3 dòng, khoảng 20 giây |
+| 9b | Độ nhạy (tùy chọn) | Ô **Các mức dung sai chi phí (%)** để `0, 1, 2, 5, 10` → **Quét dung sai chi phí** | Hai biểu đồ và bảng; thời gian chưa đo |
 | 10 | Độ nhạy | Lương = `100` → **Tính chi phí biên theo giờ** | Bản đồ nhiệt, khoảng 5 giây |
 | 11 | Kết quả lượt gốc | Bấm **CSV độ phủ** hoặc **CSV KPI** | Tải file CSV |
 | 12 | — | Kết luận | — |
@@ -253,8 +257,10 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
      - **Seed ngẫu nhiên**: 0
      - **Giờ tối đa mỗi tuần**: 48
      - **Số ngày làm liên tiếp tối đa**: 6
-  6. Bấm **Tối ưu**.
-- **Nói (trong lúc chờ):** "Bấm Tối ưu không chặn giao diện. Hệ thống tạo một job, chạy solver trong tiến trình riêng, và trang tự hỏi lại trạng thái. Đặt 1 worker và seed 0 thì chạy lại bao nhiêu lần cũng ra cùng kết quả; đây là yêu cầu tái lập. Solver giải bốn tầng: ít thiếu người nhất, rồi rẻ nhất, rồi công bằng ca đêm, rồi tôn trọng mong muốn nghỉ."
+     - **Dung sai chi phí (%)**: 0
+     - **Ngân sách lương tuần**: để trống
+  6. Nhìn ngay trên nút: không có khung cảnh báo vàng nghĩa là cấu hình không chắc chắn gây thiếu người. Bấm **Tối ưu**.
+- **Nói (trong lúc chờ):** "Bấm Tối ưu không chặn giao diện. Hệ thống tạo một job, chạy solver trong tiến trình riêng, và trang tự hỏi lại trạng thái. Đặt 1 worker và seed 0 thì chạy lại bao nhiêu lần cũng ra cùng kết quả; đây là yêu cầu tái lập. Solver giải theo tầng: ít thiếu người nhất, rồi rẻ nhất, rồi công bằng ca đêm, rồi tôn trọng mong muốn nghỉ. Nếu đặt giờ tối thiểu, ngân sách hay dung sai chi phí thì có thêm tầng hoặc ràng buộc tương ứng."
 - **Ý nghĩa:** đây là chức năng chính của dự án.
 - **Mong đợi:** trang tự chuyển sang trang của lượt mới. Lần đo ngày 2026-11-06 mất 6,5 giây từ lúc bấm tới khi hiện `OPTIMAL`.
 
@@ -266,6 +272,7 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
   - **Lưới lịch:** "Mỗi hàng là một nhân viên, mỗi cột là một ngày, ô màu là ca được giao."
   - **Biểu đồ phủ:** "Cột là số người có mặt, vạch nét đứt là số người cần. Nếu thiếu người, phần thiếu được tô sọc chéo; ở đây không thiếu giờ nào."
   - **Chi tiết lượt giải:** tỷ lệ phủ, giờ thiếu, giờ thừa, hiệu suất, độ lệch số ca đêm giữa các nhân viên.
+  - **Vì sao còn giờ thiếu người:** khung này chỉ hiện khi lượt còn giờ thiếu. Ở đây không có.
   - **Chi phí lao động:** tổng lương và phụ cấp đêm. Nhập một số vào ô **Doanh thu tuần giả định (giả định của nhóm)** để ra tỷ lệ chi phí lao động. Nói: "Doanh thu là giả định, nên tỷ lệ này chỉ để minh họa."
 - **Ý nghĩa:** chứng minh hệ thống trả đủ các đầu ra đã hứa.
 - **Mong đợi:** `OPTIMAL`, tỷ lệ phủ 100,0%, 0 giờ thiếu. E07 có tối đa 3 ca (24 giờ).
@@ -345,6 +352,12 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 
   Nói: "alpha tăng 20% thì chi phí tăng khoảng 18%." Cột Giá trị hiện `1` thay cho `1,0`; đây là cách hiển thị, không phải lỗi số liệu.
 
+### Bước 9b (tùy chọn). Đánh đổi chi phí và công bằng (2 phút)
+
+- **Làm:** vẫn ở trang **Độ nhạy**, ô **Các mức dung sai chi phí (%)** giữ `0, 1, 2, 5, 10`, bấm **Quét dung sai chi phí**.
+- **Nói:** "Thứ tự ưu tiên đặt chi phí trước công bằng, nên lịch rẻ nhất có thể dồn ca đêm vào vài người. Ở đây cho phép trả thêm tối đa vài phần trăm chi phí để chia ca đêm và giờ làm đều hơn. Mỗi điểm là một lần giải lại."
+- **Mong đợi:** hai biểu đồ (chênh ca đêm, chênh giờ làm theo chi phí tăng) và bảng. Điểm chưa chứng minh tối ưu vẽ bằng vòng tròn rỗng. Với lương đồng đều như dữ liệu demo, chênh lệch có thể nhỏ; số đo với lương lệch ở `docs/benchmarks.md` mục 6. Thời gian qua giao diện chưa đo.
+
 ### Bước 10 (tùy chọn). Chi phí biên theo giờ
 
 - **Làm:** nhập ô **Lương theo giờ cho mô hình chi phí biên (giả định của nhóm)** = `100`, bấm **Tính chi phí biên theo giờ**.
@@ -372,7 +385,7 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 
 | Câu hỏi | Trả lời ngắn |
 |---|---|
-| Tại sao dùng OR-Tools CP-SAT mà không dùng PuLP? | CP-SAT mạnh với biến 0/1 và ràng buộc chuỗi ngày, nghỉ giữa ca. PuLP + HiGHS được dùng cho mô hình tổng hợp và để lấy dual LP. Hai solver được so sánh trên cùng mô hình tổng hợp (`docs/benchmarks.md` mục 2). |
+| Tại sao dùng OR-Tools CP-SAT mà không dùng PuLP? | CP-SAT mạnh với biến 0/1 và ràng buộc chuỗi ngày, nghỉ giữa ca. PuLP + HiGHS được dùng cho mô hình tổng hợp, để lấy dual LP, và giải cùng mô hình theo nhân viên viết dạng ILP để đối chiếu. Hai solver được so sánh trên cả hai mô hình (`docs/benchmarks.md` mục 2, 2b). |
 | Sao không dùng trọng số phạt cho giờ thiếu? | Chọn trọng số lớn tùy tiện dễ sai. Giải theo tầng bảo đảm thiếu người luôn ưu tiên hơn chi phí. |
 | Nếu không đủ người thì sao? | Lịch vẫn được tạo, giờ thiếu hiện trên biểu đồ. Luật vẫn không bị vi phạm. |
 | Kết quả có đúng không? | Mô hình được kiểm trên benchmark công khai Curtois & Qu: 3/5 instance đạt và chứng minh được đúng tối ưu đã công bố (8 worker, 120 giây). Mọi lịch đều qua validator độc lập. |
@@ -380,6 +393,9 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 | Shadow price của mô hình là gì? | Mô hình nguyên không có shadow price hợp lệ. Chi phí biên được tính bằng giải lại; dual LP chỉ là xấp xỉ và luôn có nhãn. |
 | Chạy lại có ra kết quả khác không? | Với 1 worker và cùng seed thì ra cùng kết quả; có test tự động kiểm tra điều này. |
 | Có người báo ốm giữa tuần thì sao? | **Xếp lại**: khóa các ngày đã qua, đánh dấu người vắng, solver đổi ít ca nhất có thể; hoặc **Gợi ý người thay** cho từng ca. Cả hai tạo lượt mới, lịch gốc không đổi. |
+| Vì sao giờ này còn thiếu người? | Khung **Vì sao còn giờ thiếu người** thử thêm một ca cho từng người rảnh và báo luật chặn (48 giờ, nghỉ 12 giờ, ngày vắng, ngân sách). |
+| Sửa nhân viên sau khi giải thì lịch cũ thế nào? | Lịch cũ giữ nguyên dữ liệu lúc giải; trang lượt hiện nhãn "Đầu vào đã đổi sau lượt này" để biết cần giải lại. |
+| Có giới hạn ngân sách hay giờ hợp đồng không? | Có: ngân sách tuần là trần cứng (ngân sách chặt thì thiếu người thay vì vượt), giờ tối thiểu theo hợp đồng là mục tiêu mềm. |
 
 ---
 
@@ -398,8 +414,9 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 ## F. Phần chưa kiểm
 
 - Toàn bộ phần C chưa được bấm thử trên trình duyệt theo đúng thứ tự này. Nhãn nút lấy từ mã nguồn. Phải chạy thử trước buổi.
-- Kết quả bước 4–5 (OPTIMAL, 12–20 giây) dựa trên lần đo bằng script với cùng dữ liệu, chưa đo qua giao diện.
+- Bước 4 đo 6,5 giây bằng trình duyệt tự động một lần ngày 2026-11-06. Script `baseline_store18` cho 12–20 giây với cùng dữ liệu (`docs/benchmarks.md` mục 4). Chưa đo lại qua giao diện sau các thay đổi F và G.
 - Thời gian bước 8, 9, 10 qua giao diện chưa đo.
 - Ảnh chụp tự động ngày 2026-11-07 đã bỏ khỏi repo và chưa qua duyệt tay. Chụp lại trước buổi demo.
 - Nghị định 145/2020 chưa đối chiếu văn bản gốc (`docs/đặc tả.md` mục 4).
-- Bước 7c, 7d (xếp lại, gợi ý người thay) mới thêm ngày 2026-11-08: có test engine và unit backend, nhưng chưa chạy integration trên MySQL và chưa bấm thử trên trình duyệt. Chưa có ảnh dự phòng.
+- Bước 7c, 7d (xếp lại, gợi ý người thay): có test engine, unit backend và integration trên MySQL (CI), smoke flow pass trên stack `shiftopt-e2e`; chưa bấm thử trên trình duyệt. Ảnh dự phòng có ở `docs/images/` (repair, replacements, reroster, schedule_dark).
+- Bước 9b, cảnh báo trước khi giải, bảng giờ thiếu và nhãn đầu vào đã đổi (F, G1–G4, 2026-11-09): có test engine, backend và CI; chưa bấm thử trên trình duyệt, chưa có ảnh dự phòng.
