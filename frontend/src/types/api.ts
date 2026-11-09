@@ -283,6 +283,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/schedules/preview-warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Warnings */
+        post: operations["preview_warnings_api_schedules_preview_warnings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schedules/{run_id}": {
         parameters: {
             query?: never;
@@ -729,6 +746,8 @@ export interface components {
             hourly_wage: number;
             /** Max Weekly Hours */
             max_weekly_hours?: number | null;
+            /** Min Weekly Hours */
+            min_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -751,6 +770,8 @@ export interface components {
             id: number;
             /** Max Weekly Hours */
             max_weekly_hours: number | null;
+            /** Min Weekly Hours */
+            min_weekly_hours: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -766,6 +787,8 @@ export interface components {
             hourly_wage: number;
             /** Max Weekly Hours */
             max_weekly_hours?: number | null;
+            /** Min Weekly Hours */
+            min_weekly_hours?: number | null;
             /** Name */
             name: string;
             /** Preferred Days Off */
@@ -829,6 +852,8 @@ export interface components {
             hours_spread: number;
             /** Labor Cost */
             labor_cost: number;
+            /** Min Hours Shortfall */
+            min_hours_shortfall: number;
             /** Night Premium Cost */
             night_premium_cost: number;
             /** Night Shift Stddev */
@@ -935,6 +960,19 @@ export interface components {
             marginal_cost_by_hour: (number | null)[];
             /** Proven By Hour */
             proven_by_hour: boolean[];
+        };
+        /** PreSolveWarningRead */
+        PreSolveWarningRead: {
+            /** Detail */
+            detail: string;
+            /** Employee Id */
+            employee_id: string | null;
+            kind: components["schemas"]["WarningKind"];
+        };
+        /** PreviewWarningsRead */
+        PreviewWarningsRead: {
+            /** Warnings */
+            warnings: components["schemas"]["PreSolveWarningRead"][];
         };
         /** RepairRequest */
         RepairRequest: {
@@ -1121,6 +1159,8 @@ export interface components {
              * @default 60
              */
             time_limit_seconds: number;
+            /** Weekly Budget */
+            weekly_budget?: number | null;
         };
         /** SolveRunRead */
         SolveRunRead: {
@@ -1174,6 +1214,8 @@ export interface components {
             understaffed_hours: number | null;
             /** Wall Time Seconds */
             wall_time_seconds: number | null;
+            /** Weekly Budget */
+            weekly_budget: number | null;
         };
         /**
          * StaffingMode
@@ -1260,12 +1302,17 @@ export interface components {
             /** Detail */
             detail: string;
             /** Employee Code */
-            employee_code: string;
+            employee_code: string | null;
             /** Kind */
             kind: string;
             /** Legal Basis */
             legal_basis: string;
         };
+        /**
+         * WarningKind
+         * @enum {string}
+         */
+        WarningKind: "no_available_days" | "capacity_below_demand" | "no_night_shift" | "min_hours_unreachable" | "budget_below_demand";
     };
     responses: never;
     parameters: never;
@@ -1964,6 +2011,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_warnings_api_schedules_preview_warnings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewWarningsRead"];
                 };
             };
             /** @description Validation Error */

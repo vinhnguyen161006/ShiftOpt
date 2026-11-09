@@ -22,16 +22,18 @@ def greedy_roster(instance: Instance) -> Solution:
     staff = [0] * HOURS_PER_WEEK
     chosen: dict[str, list[Assignment]] = {employee.id: [] for employee in instance.employees}
     hours = dict.fromkeys(chosen, 0)
+    spent = 0
     while True:
         options = _ranked_options(instance, shifts, staff)
         if not options:
             break
         placed = False
         for _, day, shift, offset in options:
-            employee = _pick_employee(instance, chosen, hours, day, shift, offset)
+            employee = _pick_employee(instance, chosen, hours, spent, day, shift, offset)
             if employee is None:
                 continue
             _place(instance, staff, chosen, hours, employee, day, shift, offset)
+            spent += _shift_cost(instance, employee, shift)
             placed = True
             break
         if not placed:
@@ -92,17 +94,25 @@ def _pick_employee(
     instance: Instance,
     chosen: dict[str, list[Assignment]],
     hours: dict[str, int],
+    spent: int,
     day: int,
     shift: ShiftType,
     offset: int | None,
 ) -> Employee | None:
     ranked = sorted(instance.employees, key=lambda e: (hours[e.id], e.hourly_wage, e.id))
+    budget = instance.weekly_budget
     for employee in ranked:
+        if budget is not None and spent + _shift_cost(instance, employee, shift) > budget:
+            continue
         candidate = Assignment(employee.id, day, shift.name, offset)
         single = Instance(_EMPTY_DEMAND, (employee,), instance.shift_types, instance.rules)
         if not validate(single, Solution((*chosen[employee.id], candidate))):
             return employee
     return None
+
+
+def _shift_cost(instance: Instance, employee: Employee, shift: ShiftType) -> int:
+    return employee.hourly_wage * shift.cost_per_wage_unit(instance.rules)
 
 
 def _place(

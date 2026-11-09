@@ -132,6 +132,7 @@ Tập: `E` nhân viên, `D` ngày, `S` kiểu ca, `H` giờ. Biến: `x[e,d,s]` 
 Mục tiêu: `min sum c_s x + M_u * sum u_h + lambda_F * F`.
 
 Thứ tự ưu tiên: thiếu người `M_u` ≫ chi phí lao động ≫ công bằng ≫ sở thích. Ưu tiên **giải lexicographic** (tối thiểu thiếu người trước, cố định, rồi tối thiểu chi phí) thay vì chọn `M` tùy tiện. Mọi trọng số là hằng có tên trong config, không magic number.
+Giờ tối thiểu theo hợp đồng (`min_weekly_hours`, mềm, D25): nếu có nhân viên nào đặt, thêm tầng `min_hours` (tổng giờ dưới mức tối thiểu) ngay sau `shortfall`, trước `changes` và chi phí. Ngân sách tuần (`weekly_budget`, cứng, D26) là ràng buộc `chi phí <= ngân sách`; vì độ phủ vẫn mềm nên mô hình không bao giờ INFEASIBLE vì ngân sách, và validator có vi phạm `OVER_BUDGET`.
 Khi `cost_tolerance_percent` > 0 (mặc định 0, đặc tả D21): tầng chi phí được nới tới `optimum * (100 + tol) / 100`; sau tầng chênh ca đêm thêm tầng `hours_spread` (max - min giờ làm mỗi người). Tol = 0 giữ thứ tự cũ, không có tầng giờ làm. Dung sai đo trên giá trị tầng chi phí tìm được; nếu tầng đó chỉ FEASIBLE thì không phải tối ưu thật, dùng `kpi.labor_cost` để lấy chi phí thật.
 Khi repair (C6, lịch gốc + ngày khóa `from_day` + ca ghim): thiếu người ≫ số ca thay đổi so với lịch gốc ≫ chi phí lao động ≫ công bằng ≫ sở thích. Ngày trước `from_day` và ca ghim là ràng buộc cứng; người vắng không được xếp vào ngày vắng (đặc tả D20).
 
@@ -150,6 +151,8 @@ Khi repair (C6, lịch gốc + ngày khóa `from_day` + ca ghim): thiếu ngư�
 | Công bằng ca đêm / cuối tuần | Van den Bergh 2013 | Soft | `F = max_e N_e - min_e N_e`, `AddMaxEquality` / `AddMinEquality` |
 | Số ngày làm liên tiếp tối thiểu, số cuối tuần tối đa | INRC-II | Soft | Trọng số cấu hình |
 | Yêu cầu ca / ngày nghỉ của nhân viên | OR-Tools "shift requests" | Soft | Chỉ áp cho nhân viên có yêu cầu |
+| Giờ tối thiểu theo hợp đồng | Đặc tả D25 | Soft | Tầng `min_hours` sau thiếu người; chỉ khi có nhân viên đặt `min_weekly_hours` |
+| Ngân sách lương tuần | Đặc tả D26 | Hard | `sum(c_s x) <= weekly_budget`, tùy chọn theo lượt giải; coverage vẫn mềm |
 
 Điều kiện nghỉ 12 giờ **luôn viết bằng công thức tổng quát** `24 + sigma' - (sigma + L) < 12`. Dạng rút gọn `sigma - sigma' > 4` chỉ đúng với `L = 8`; không hard-code. Ví dụ phải bị cấm: ca 14h–22h hôm trước rồi 06h–14h hôm sau (nghỉ 8 giờ). Đây là test bắt buộc.
 
@@ -331,6 +334,7 @@ engine/
     sensitivity/            lp_duals.py, parametric.py, scenarios.py
     validation.py           kiểm tra hậu nghiệm mọi ràng buộc cứng, độc lập với solver
     replacement.py          gợi ý người thay: ứng viên đi qua validator, không gọi solver
+    diagnostics.py          cảnh báo trước khi giải (điều kiện cần, không gọi solver), dùng cho preview-warnings
     kpi.py
   tests/
     conftest.py             fixture three_shifts, build_instance

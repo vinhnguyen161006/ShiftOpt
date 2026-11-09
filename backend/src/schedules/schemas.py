@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from shiftopt.diagnostics import WarningKind
 
 from src.schedules.models import RunStatus
 
@@ -22,11 +23,22 @@ class SolveRequest(SolveSettings):
     employee_ids: list[int] | None = Field(default=None, max_length=500)
     max_weekly_hours: int = Field(48, ge=1, le=168)
     max_consecutive_days: int = Field(6, ge=1, le=6)
+    weekly_budget: int | None = Field(None, ge=1, le=1_000_000_000)
 
 
 class JobAccepted(BaseModel):
     job_id: int
     status: RunStatus
+
+
+class PreSolveWarningRead(BaseModel):
+    kind: WarningKind
+    detail: str
+    employee_id: str | None
+
+
+class PreviewWarningsRead(BaseModel):
+    warnings: list[PreSolveWarningRead]
 
 
 class AssignmentRead(BaseModel):
@@ -98,6 +110,7 @@ class SolveRunRead(BaseModel):
 
     id: int
     employee_codes: list[str]
+    weekly_budget: int | None
     shift_types: list[ShiftTypeRead]
     demand_profile_id: int | None
     parent_run_id: int | None
@@ -123,7 +136,7 @@ class SolveRunRead(BaseModel):
 
 class ViolationRead(BaseModel):
     kind: str
-    employee_code: str
+    employee_code: str | None
     detail: str
     day: int | None
     legal_basis: str
@@ -145,6 +158,7 @@ class KpiRead(BaseModel):
     night_shift_stddev: float
     weekend_shift_stddev: float
     hours_spread: int
+    min_hours_shortfall: int
     hard_violations: int
     staff_by_hour: list[int] = Field(min_length=168, max_length=168)
     required_by_hour: list[int] = Field(min_length=168, max_length=168)

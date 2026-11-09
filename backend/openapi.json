@@ -594,6 +594,19 @@
             ],
             "title": "Max Weekly Hours"
           },
+          "min_weekly_hours": {
+            "anyOf": [
+              {
+                "maximum": 48.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Weekly Hours"
+          },
           "name": {
             "maxLength": 120,
             "minLength": 1,
@@ -659,6 +672,17 @@
             ],
             "title": "Max Weekly Hours"
           },
+          "min_weekly_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Weekly Hours"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -684,6 +708,7 @@
           "name",
           "hourly_wage",
           "max_weekly_hours",
+          "min_weekly_hours",
           "unavailable_days",
           "preferred_days_off",
           "created_at"
@@ -716,6 +741,19 @@
               }
             ],
             "title": "Max Weekly Hours"
+          },
+          "min_weekly_hours": {
+            "anyOf": [
+              {
+                "maximum": 48.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Weekly Hours"
           },
           "name": {
             "maxLength": 120,
@@ -927,6 +965,10 @@
             "title": "Labor Cost",
             "type": "integer"
           },
+          "min_hours_shortfall": {
+            "title": "Min Hours Shortfall",
+            "type": "integer"
+          },
           "night_premium_cost": {
             "title": "Night Premium Cost",
             "type": "integer"
@@ -985,6 +1027,7 @@
           "night_shift_stddev",
           "weekend_shift_stddev",
           "hours_spread",
+          "min_hours_shortfall",
           "hard_violations",
           "staff_by_hour",
           "required_by_hour"
@@ -1220,6 +1263,51 @@
           "lp_dual_by_hour"
         ],
         "title": "MarginalCostResult",
+        "type": "object"
+      },
+      "PreSolveWarningRead": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "employee_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WarningKind"
+          }
+        },
+        "required": [
+          "kind",
+          "detail",
+          "employee_id"
+        ],
+        "title": "PreSolveWarningRead",
+        "type": "object"
+      },
+      "PreviewWarningsRead": {
+        "properties": {
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/PreSolveWarningRead"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "warnings"
+        ],
+        "title": "PreviewWarningsRead",
         "type": "object"
       },
       "RepairRequest": {
@@ -1670,6 +1758,19 @@
             "exclusiveMinimum": 0.0,
             "title": "Time Limit Seconds",
             "type": "number"
+          },
+          "weekly_budget": {
+            "anyOf": [
+              {
+                "maximum": 1000000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Budget"
           }
         },
         "required": [
@@ -1900,11 +2001,23 @@
               }
             ],
             "title": "Wall Time Seconds"
+          },
+          "weekly_budget": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Budget"
           }
         },
         "required": [
           "id",
           "employee_codes",
+          "weekly_budget",
           "shift_types",
           "demand_profile_id",
           "parent_run_id",
@@ -2208,8 +2321,15 @@
             "type": "string"
           },
           "employee_code": {
-            "title": "Employee Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Code"
           },
           "kind": {
             "title": "Kind",
@@ -2229,6 +2349,17 @@
         ],
         "title": "ViolationRead",
         "type": "object"
+      },
+      "WarningKind": {
+        "enum": [
+          "no_available_days",
+          "capacity_below_demand",
+          "no_night_shift",
+          "min_hours_unreachable",
+          "budget_below_demand"
+        ],
+        "title": "WarningKind",
+        "type": "string"
       }
     }
   },
@@ -3273,6 +3404,47 @@
           }
         },
         "summary": "Create Schedule",
+        "tags": [
+          "schedules"
+        ]
+      }
+    },
+    "/api/schedules/preview-warnings": {
+      "post": {
+        "operationId": "preview_warnings_api_schedules_preview_warnings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewWarningsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Warnings",
         "tags": [
           "schedules"
         ]

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PreSolveWarnings } from "../../../components/solve/PreSolveWarnings";
 import {
   initialDraft,
   SOLVE_FIELD_IDS,
@@ -185,6 +186,13 @@ export function WhatIfSetup({
         )}
       </Field>
       {!canSweepAssumption && <p className="muted">{vi.whatIf.form.onlySales}</p>}
+      <PreSolveWarnings
+        body={
+          draft.demandProfileId !== "" && draft.shiftTemplateIds.length > 0
+            ? toSolveRequest(draft)
+            : null
+        }
+      />
       {general && <Notice kind="error" title={general} />}
       <div className="whatif-actions">
         <Button

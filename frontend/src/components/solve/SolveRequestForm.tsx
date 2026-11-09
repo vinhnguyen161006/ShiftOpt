@@ -19,6 +19,7 @@ export type SolveDraft = {
   maxWeeklyHours: string;
   maxConsecutiveDays: string;
   costTolerance: string;
+  weeklyBudget: string;
 };
 
 export function initialDraft(rules?: LaborRulesRead): SolveDraft {
@@ -32,6 +33,7 @@ export function initialDraft(rules?: LaborRulesRead): SolveDraft {
     maxWeeklyHours: rules ? String(rules.max_weekly_hours) : "",
     maxConsecutiveDays: rules ? String(rules.max_consecutive_days) : "",
     costTolerance: "0",
+    weeklyBudget: "",
   };
 }
 
@@ -47,6 +49,7 @@ export function toSolveRequest(draft: SolveDraft): SolveRequest {
     max_weekly_hours: toNumber(draft.maxWeeklyHours),
     max_consecutive_days: toNumber(draft.maxConsecutiveDays),
     cost_tolerance_percent: toNumber(draft.costTolerance),
+    weekly_budget: draft.weeklyBudget.trim() === "" ? null : toNumber(draft.weeklyBudget),
   };
 }
 
@@ -60,6 +63,7 @@ export const SOLVE_FIELD_IDS: Record<string, string> = {
   max_weekly_hours: "solve-weekly-hours",
   max_consecutive_days: "solve-consecutive-days",
   cost_tolerance_percent: "solve-cost-tolerance",
+  weekly_budget: "solve-weekly-budget",
 };
 
 type SolveRequestFormProps = {
@@ -98,6 +102,7 @@ const SETTINGS: NumberSetting[] = [
     ...vi.solve.costTolerance,
     step: "0.5",
   },
+  { key: "weeklyBudget", path: "weekly_budget", ...vi.solve.weeklyBudget, step: "any" },
 ];
 
 export function SolveRequestForm({

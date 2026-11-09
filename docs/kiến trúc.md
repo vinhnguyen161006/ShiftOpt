@@ -98,7 +98,8 @@ Quy tắc giữa các tầng:
 3. **Việc nặng giao cho tầng 3.** Giải lịch và phân tích độ nhạy có thể mất hàng chục giây. API tạo một dòng job trong cơ sở dữ liệu, trả mã job ngay (`202 Accepted`), rồi giao việc cho tầng xử lý nền.
 4. **Chụp ảnh đầu vào (snapshot).** Trước khi giải, API chép toàn bộ đầu vào vào lượt giải: nhu cầu, nhân viên, mẫu ca, bộ luật (`LaborRules`), tham số solver. Sau này có sửa nhân viên thì lượt giải cũ vẫn giữ nguyên dữ liệu lúc giải. Mỗi lượt giải không bao giờ bị sửa.
 
-5. **Xếp lại và gợi ý người thay.** `POST /api/schedules/{id}/repair` tạo lượt mới từ lịch của lượt `id` (chi tiết ở mục 7.2). Trước khi tạo job, API kiểm: ngày vắng không rơi vào ngày khóa, ca ghim không rơi vào ngày khóa, và tập ca bị khóa qua được validator; sai thì trả `422` kèm danh sách. `GET /api/schedules/{id}/replacements?employee_code=&day=&limit=` trả tối đa `limit` người thay, tính ngay vì chỉ gọi validator, không gọi solver.
+5. **Cảnh báo trước khi giải.** `POST /api/schedules/preview-warnings` nhận cùng body với Optimize, dựng snapshot (không tạo lượt, không xếp hàng job) và chạy `diagnostics.diagnose`. Ba cảnh báo: nhân viên không còn ngày khả dụng; tổng giờ làm tối đa của đội (theo ngày khả dụng, giới hạn 48 giờ và luật ngày liên tiếp) thấp hơn tổng nhu cầu; có nhu cầu ban đêm mà không mẫu ca nào phủ giờ đêm. Mỗi cảnh báo là điều kiện cần, nên không báo sai, nhưng không đủ để kết luận lịch khả thi.
+6. **Xếp lại và gợi ý người thay.** `POST /api/schedules/{id}/repair` tạo lượt mới từ lịch của lượt `id` (chi tiết ở mục 7.2). Trước khi tạo job, API kiểm: ngày vắng không rơi vào ngày khóa, ca ghim không rơi vào ngày khóa, và tập ca bị khóa qua được validator; sai thì trả `422` kèm danh sách. `GET /api/schedules/{id}/replacements?employee_code=&day=&limit=` trả tối đa `limit` người thay, tính ngay vì chỉ gọi validator, không gọi solver.
 
 **Ingest file doanh số** (`POST /api/demand-profiles/ingest`):
 

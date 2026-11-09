@@ -8,6 +8,7 @@ from src.schedules.schemas import (
     JobAccepted,
     KpiRead,
     ManualEditRequest,
+    PreviewWarningsRead,
     RepairRequest,
     ReplacementRead,
     RerosterRequest,
@@ -39,6 +40,11 @@ async def create_schedule(
     run = await service.create_run(session, payload)
     background.add_task(service.execute_run, jobs, run.id)
     return JobAccepted(job_id=run.id, status=run.status)
+
+
+@router.post("/preview-warnings", response_model=PreviewWarningsRead)
+async def preview_warnings(payload: SolveRequest, session: SessionDep) -> PreviewWarningsRead:
+    return await service.preview_warnings(session, payload)
 
 
 @router.get("", response_model=list[SolveRunRead])

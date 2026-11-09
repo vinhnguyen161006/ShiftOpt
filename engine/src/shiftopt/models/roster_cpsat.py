@@ -30,6 +30,7 @@ class RosterOutcome:
     approximate: bool = False
     changes: int | None = None
     hours_spread: int | None = None
+    min_hours_shortfall: int | None = None
 
 
 def solve_roster(
@@ -45,10 +46,14 @@ def solve_roster(
     Hard: at most one shift per day, weekly hours (Article 105), rest between shifts from the
     general formula (Article 110), maximum consecutive days, at least 24 consecutive hours without
     work (Article 111), one rest break per shift that needs one (Article 109), and no shift on an
-    unavailable day. Soft: coverage through shortfall variables, so the model is always feasible.
-    Objective: lexicographic, one CP-SAT solve per tier: shortfall, labour cost with the night
-    premium (Article 98), night-shift spread, then preference misses. Each tier is capped at the
-    optimum of the tier before. Status is OPTIMAL only when every tier proves optimality.
+    unavailable day. Soft: coverage through shortfall variables, so the model stays feasible.
+    An optional weekly_budget on the instance is a hard cap on the labour cost, which only adds
+    shortfall when it binds. An optional min_weekly_hours on an employee is soft: the total hours
+    below the minimums is its own tier right after the shortfall.
+    Objective: lexicographic, one CP-SAT solve per tier: shortfall, minimum-hours shortfall,
+    labour cost with the night premium (Article 98), night-shift spread, then preference misses.
+    Each tier is capped at the optimum of the tier before. Status is OPTIMAL only when every tier
+    proves optimality.
 
     With cost_tolerance_percent above 0 the labour cost tier is capped at its optimum plus that
     percentage instead of the optimum, and a worked-hours spread tier is added after the night-shift
@@ -103,13 +108,14 @@ def roster_model_size(instance: Instance) -> tuple[int, int]:
 
 
 def symmetry_pairs(employees: tuple[Employee, ...]) -> list[tuple[int, int]]:
-    """Consecutive index pairs of employees with equal wage and no requests. Only these are
-    interchangeable: swapping two employees with different contracts or requests can change the
-    optimum."""
-    groups: dict[int, list[int]] = {}
+    """Consecutive index pairs of employees with equal wage, equal weekly hour limits and no
+    requests. Only these are interchangeable: swapping two employees with different contracts or
+    requests can change the optimum."""
+    groups: dict[tuple[int, int | None, int | None], list[int]] = {}
     for index, employee in enumerate(employees):
         if not employee.has_requests:
-            groups.setdefault(employee.hourly_wage, []).append(index)
+            key = (employee.hourly_wage, employee.max_weekly_hours, employee.min_weekly_hours)
+            groups.setdefault(key, []).append(index)
     return [
         (members[position], members[position + 1])
         for members in groups.values()
@@ -166,6 +172,7 @@ class _RosterModel:
         self.night_min: Any = None
         self.hours_max: Any = None
         self.hours_min: Any = None
+        self.min_gaps: list[Any] = []
         self.repair = repair
         self.baseline_keys: dict[tuple[int, int, int], int | None] = {}
         self.changes: Any = None
@@ -183,6 +190,8 @@ class _RosterModel:
         self._create_shift_variables()
         self._add_one_shift_per_day()
         self._add_weekly_hours()
+        self._add_budget()
+        self._add_min_hours()
         self._add_rest_between_shifts()
         self._add_consecutive_days()
         self._add_weekly_rest()
@@ -350,6 +359,19 @@ class _RosterModel:
         self.model.add_max_equality(self.night_max, self.night_counts)
         self.model.add_min_equality(self.night_min, self.night_counts)
 
+    def _add_budget(self) -> None:
+        if self.instance.weekly_budget is not None:
+            self.model.add(self._cost() <= self.instance.weekly_budget)
+
+    def _add_min_hours(self) -> None:
+        for e_index, employee in enumerate(self.employees):
+            minimum = employee.min_weekly_hours
+            if minimum is None:
+                continue
+            gap = self.model.new_int_var(0, minimum, f"min_gap_{e_index}")
+            self.model.add(self._employee_hours(e_index) + gap >= minimum)
+            self.min_gaps.append(gap)
+
     def _employee_shifts(self, e_index: int) -> Any:
         return self._sum(work for (e, _, _), work in self.work.items() if e == e_index)
 
@@ -408,6 +430,8 @@ class _RosterModel:
 
     def _stages(self) -> list[tuple[str, Any]]:
         stages: list[tuple[str, Any]] = [("shortfall", self._sum(self.shortfall))]
+        if self.min_gaps:
+            stages.append(("min_hours", self._sum(self.min_gaps)))
         if self.changes is not None:
             stages.append(("changes", self.changes))
         stages.append(("cost", self._cost()))
@@ -477,6 +501,9 @@ class _RosterModel:
                 round(best.value(self.hours_max) - best.value(self.hours_min))
                 if self.hours_max is not None
                 else None
+            ),
+            min_hours_shortfall=(
+                round(sum(best.value(gap) for gap in self.min_gaps)) if self.min_gaps else None
             ),
         )
 

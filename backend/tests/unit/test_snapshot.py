@@ -70,3 +70,28 @@ def test_solution_rows_keep_break_offset() -> None:
 
     assert solution.assignments[0].employee_id == "E1"
     assert solution.assignments[0].break_offset == 3
+
+
+def test_snapshot_round_trips_minimum_hours_and_budget() -> None:
+    record = _employee("E1")
+    record.min_weekly_hours = 16
+    snapshot = build_snapshot(
+        [1] * 168, [_template("day", 8, 8)], [record], LaborRules(), weekly_budget=500_000
+    )
+
+    instance = instance_from_snapshot(snapshot)
+
+    assert instance.employees[0].min_weekly_hours == 16
+    assert instance.weekly_budget == 500_000
+
+
+def test_old_snapshot_without_budget_still_loads() -> None:
+    snapshot = _snapshot()
+    del snapshot["weekly_budget"]
+    for row in snapshot["employees"]:
+        del row["min_weekly_hours"]
+
+    instance = instance_from_snapshot(snapshot)
+
+    assert instance.weekly_budget is None
+    assert instance.employees[0].min_weekly_hours is None

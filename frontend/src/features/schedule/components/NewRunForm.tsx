@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react";
+import { PreSolveWarnings } from "../../../components/solve/PreSolveWarnings";
 import {
   initialDraft,
   SOLVE_FIELD_IDS,
@@ -19,6 +20,12 @@ type NewRunFormProps = {
   rules: LaborRulesRead;
   onCreated: (runId: number) => void;
 };
+
+function readyBody(draft: ReturnType<typeof initialDraft>) {
+  return draft.demandProfileId !== "" && draft.shiftTemplateIds.length > 0
+    ? toSolveRequest(draft)
+    : null;
+}
 
 export function NewRunForm({
   profiles,
@@ -53,6 +60,7 @@ export function NewRunForm({
         employeeCount={employeeCount}
         errors={errorsByPath(create.error)}
       />
+      <PreSolveWarnings body={readyBody(draft)} />
       {general && <Notice kind="error" title={general} />}
       <div className="form-actions">
         <Button type="submit" variant="primary" disabled={create.isPending}>

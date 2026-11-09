@@ -172,3 +172,15 @@ Parameter `cost_tolerance_percent` t in [0, 10] (`SolveParams`, default 0; decis
 - Scope: solve_roster (CP-SAT, also the decomposition path) and solve_roster_mip. solve_roster_weighted ignores the tolerance.
 - KPI: hours_spread = max - min of worked hours per employee, counting each shift at full length (breaks are not subtracted, as in the weekly-hours rule). Idle employees count as zero.
 - Rationale: the default order puts cost before fairness, so the cheapest employees take the night shifts. A tolerance of a few percent lets fairness improve at a bounded extra cost. Measured effect: docs/benchmarks.md section 6.
+
+## 8. Weekly budget and contract minimum hours (G3)
+
+Decisions D25 and D26 in `đặc tả.md`.
+
+- Weekly budget B (`Instance.weekly_budget`, optional, hundredths of the wage unit like `kpi.labor_cost`): one hard row, sum over (e,d,s) of wage_e * cost_s * x[e,d,s] <= B. Coverage stays soft, so a binding budget raises the shortfall tier and never makes the model infeasible. The empty roster always satisfies the row. `validate` adds the kind OVER_BUDGET (no employee), so manual edits above the budget are rejected, and a repair whose locked days already exceed B is rejected before solving.
+- Contract minimum m_e (`Employee.min_weekly_hours`, optional, at most the weekly cap): a gap variable g_e in [0, m_e] with H_e + g_e >= m_e, where H_e = sum of length_s * x[e,d,s]. The tier min_hours = sum of g_e comes right after the shortfall tier and before changes and cost. It is soft: an employee who cannot reach the minimum (for example too many unavailable days) shows up as a positive tier value, not as INFEASIBLE. It is not a validator violation, so "removing a shift never creates a violation" still holds for repair and replacement.
+- The tier is added only when at least one employee has a minimum, so rosters without minimums are unchanged. `solve_roster_weighted` ignores the minimum tier.
+- Tier order with both: shortfall, min_hours, changes (repair only), cost, night spread, hours spread (when the cost tolerance is positive), preference.
+- Symmetry breaking groups employees by wage, maximum hours and minimum hours.
+- Greedy baseline: skips an employee whose shift would push the running cost above the budget.
+- Pre-solve warnings: MIN_HOURS_UNREACHABLE when m_e exceeds the most hours the employee can work; BUDGET_BELOW_DEMAND when B is below total demand times the lowest wage times 100.
