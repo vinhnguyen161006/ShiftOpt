@@ -96,6 +96,8 @@ jobs:
       SHIFTOPT_DB_ROOT_PASSWORD: ci-root
       SHIFTOPT_DB_USER: shiftopt
       SHIFTOPT_DB_PASSWORD: ci
+      SHIFTOPT_DEMO_EMAIL: ci@example.com
+      SHIFTOPT_DEMO_PASSWORD: ci-password
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - run: docker compose config --quiet
