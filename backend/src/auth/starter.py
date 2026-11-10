@@ -7,7 +7,7 @@ from src.employees.models import EmployeeRecord
 from src.shifts.models import ShiftTemplate
 
 EMPLOYEE_COUNT = 30
-HOURLY_WAGE = 100
+HOURLY_WAGE = 35_000
 PART_TIME_CODE = "E07"
 PART_TIME_WEEKLY_HOURS = 24
 SHIFT_TEMPLATES = (("\u0110\xeam", 0), ("Ng\xe0y", 8), ("T\u1ed1i", 16))

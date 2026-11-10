@@ -42,6 +42,7 @@ type StaffingField = StaffingSweepRequest["assumption"];
 const MULTIPLIERS = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
 const DEFAULT_TOLERANCES = "0, 1, 2, 5, 10";
 const PREFIX = "whatif-";
+const DEFAULT_HOURLY_WAGE = 35000;
 
 function parseValues(text: string): number[] {
   return text
@@ -95,7 +96,7 @@ export function WhatIfSetup({
     timeLimitSeconds: "20",
     numWorkers: "1",
   }));
-  const [wage, setWage] = useState("");
+  const [wage, setWage] = useState(String(DEFAULT_HOURLY_WAGE));
   const [assumption, setAssumption] = useState<StaffingField>("alpha");
   const [valuesText, setValuesText] = useState("0.8, 1.0, 1.2");
   const [tolerancesText, setTolerancesText] = useState(DEFAULT_TOLERANCES);

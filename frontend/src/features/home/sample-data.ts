@@ -123,7 +123,7 @@ const NAMES = Array.from(
 
 const VISIBLE_ROWS = 10;
 const SHIFT_HOURS = 8;
-const WAGE = 7.5;
+const WAGE = 35000;
 const NIGHT_ALLOWANCE = 0.3;
 const NIGHT_FROM = 22;
 const NIGHT_TO = 6;
@@ -204,8 +204,10 @@ function weeklyCost(): number {
   return shifts * SHIFT_HOURS * WAGE + nightHours * WAGE * NIGHT_ALLOWANCE;
 }
 
+const DONG_SIGN = String.fromCharCode(0x20ab);
+
 function money(value: number): string {
-  return `$${Math.round(value).toLocaleString("vi-VN")}`;
+  return `${Math.round(value).toLocaleString("vi-VN")} ${DONG_SIGN}`;
 }
 
 function bars(required: number[], assigned: number[], height: number): Bar[] {
