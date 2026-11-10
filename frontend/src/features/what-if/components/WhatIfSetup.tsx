@@ -16,31 +16,23 @@ import type {
   ShiftTemplateRead,
   StaffingSweepRequest,
 } from "../../../types/models";
-import {
-  useBaselineCompare,
-  useDemandSweep,
-  useFairnessSweep,
-  useMarginalCost,
-  useStaffingSweep,
-} from "../api/analysis";
+import { useDemandSweep, useMarginalCost, useStaffingSweep } from "../api/analysis";
 import "../what-if.css";
 import { vi } from "../../../locales/vi";
+
+export type AnalysisKind = "sweep" | "marginal" | "staffing";
 
 type WhatIfSetupProps = {
   profiles: DemandProfileRead[];
   templates: ShiftTemplateRead[];
   employeeCount: number;
   rules: LaborRulesRead;
-  onStarted: (
-    kind: "sweep" | "marginal" | "staffing" | "baseline" | "fairness",
-    runId: number,
-  ) => void;
+  onStarted: (kind: AnalysisKind, runId: number) => void;
 };
 
 type StaffingField = StaffingSweepRequest["assumption"];
 
 const MULTIPLIERS = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
-const DEFAULT_TOLERANCES = "0, 1, 2, 5, 10";
 const PREFIX = "whatif-";
 const DEFAULT_HOURLY_WAGE = 35000;
 
@@ -56,9 +48,6 @@ function fieldId(path: string): string | undefined {
   const [head, tail] = path.split(".");
   if (head === "hourly_wage") {
     return `${PREFIX}wage`;
-  }
-  if (head === "tolerances") {
-    return `${PREFIX}tolerances`;
   }
   if (head === "assumption" || head === "values") {
     return `${PREFIX}${head === "values" ? "staffing-values" : "assumption"}`;
@@ -87,8 +76,6 @@ export function WhatIfSetup({
   const sweep = useDemandSweep();
   const marginal = useMarginalCost();
   const staffing = useStaffingSweep();
-  const baseline = useBaselineCompare();
-  const fairness = useFairnessSweep();
   const [draft, setDraft] = useState(() => ({
     ...initialDraft(rules),
     demandProfileId: profiles[0] ? String(profiles[0].id) : "",
@@ -99,10 +86,9 @@ export function WhatIfSetup({
   const [wage, setWage] = useState(String(DEFAULT_HOURLY_WAGE));
   const [assumption, setAssumption] = useState<StaffingField>("alpha");
   const [valuesText, setValuesText] = useState("0.8, 1.0, 1.2");
-  const [tolerancesText, setTolerancesText] = useState(DEFAULT_TOLERANCES);
   const selectedProfile = profiles.find((profile) => String(profile.id) === draft.demandProfileId);
   const canSweepAssumption = selectedProfile?.has_sales_load === true;
-  const error = sweep.error ?? marginal.error ?? staffing.error ?? baseline.error ?? fairness.error;
+  const error = sweep.error ?? marginal.error ?? staffing.error;
   const general = generalError(error);
 
   return (
@@ -117,76 +103,6 @@ export function WhatIfSetup({
         errors={solveErrors(error)}
         prefix={PREFIX}
       />
-      <Field
-        id={`${PREFIX}wage`}
-        label={vi.whatIf.form.wage}
-        hint={vi.whatIf.form.wageHint}
-        error={errorsByPath(error).get("hourly_wage")}
-      >
-        {(control) => (
-          <input
-            {...control}
-            className="input"
-            type="number"
-            min={1}
-            step={1}
-            value={wage}
-            onChange={(event) => setWage(event.target.value)}
-          />
-        )}
-      </Field>
-      <p className="muted">{vi.whatIf.form.note(MULTIPLIERS.join("; "), MULTIPLIERS.length)}</p>
-      <div className="form-grid">
-        <Field
-          id={`${PREFIX}assumption`}
-          label={vi.whatIf.form.assumption}
-          hint={vi.whatIf.form.assumptionHint}
-        >
-          {(control) => (
-            <select
-              {...control}
-              className="input"
-              value={assumption}
-              onChange={(event) => setAssumption(event.target.value as StaffingField)}
-            >
-              <option value="alpha">{vi.whatIf.form.options.alpha}</option>
-              <option value="productivity">{vi.whatIf.form.options.productivity}</option>
-              <option value="min_staff">{vi.whatIf.form.options.min_staff}</option>
-              <option value="night_min_staff">{vi.whatIf.form.options.night_min_staff}</option>
-            </select>
-          )}
-        </Field>
-        <Field
-          id={`${PREFIX}staffing-values`}
-          label={vi.whatIf.form.values}
-          hint={vi.whatIf.form.valuesHint}
-        >
-          {(control) => (
-            <input
-              {...control}
-              className="input"
-              value={valuesText}
-              onChange={(event) => setValuesText(event.target.value)}
-            />
-          )}
-        </Field>
-      </div>
-      <Field
-        id={`${PREFIX}tolerances`}
-        label={vi.whatIf.form.tolerances}
-        hint={vi.whatIf.form.tolerancesHint}
-        error={errorsByPath(error).get("tolerances")}
-      >
-        {(control) => (
-          <input
-            {...control}
-            className="input"
-            value={tolerancesText}
-            onChange={(event) => setTolerancesText(event.target.value)}
-          />
-        )}
-      </Field>
-      {!canSweepAssumption && <p className="muted">{vi.whatIf.form.onlySales}</p>}
       <PreSolveWarnings
         body={
           draft.demandProfileId !== "" && draft.shiftTemplateIds.length > 0
@@ -195,74 +111,127 @@ export function WhatIfSetup({
         }
       />
       {general && <Notice kind="error" title={general} />}
-      <div className="whatif-actions">
-        <Button
-          disabled={marginal.isPending}
-          onClick={() => {
-            sweep.reset();
-            staffing.reset();
-            marginal.mutate(
-              { solve: toSolveRequest(draft), hourly_wage: toNumber(wage) },
-              { onSuccess: (job) => onStarted("marginal", job.job_id) },
-            );
-          }}
+      <section className="whatif-group" aria-labelledby={`${PREFIX}sweep-group`}>
+        <h3 id={`${PREFIX}sweep-group`} className="whatif-group-title">
+          {vi.whatIf.form.sweepGroup}
+        </h3>
+        <p className="muted">{vi.whatIf.form.note(MULTIPLIERS.join("; "), MULTIPLIERS.length)}</p>
+        <div className="whatif-actions">
+          <Button
+            variant="primary"
+            disabled={sweep.isPending}
+            onClick={() => {
+              marginal.reset();
+              staffing.reset();
+              sweep.mutate(
+                { solve: toSolveRequest(draft), multipliers: MULTIPLIERS },
+                { onSuccess: (job) => onStarted("sweep", job.job_id) },
+              );
+            }}
+          >
+            {sweep.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runSweep}
+          </Button>
+        </div>
+      </section>
+      <section className="whatif-group" aria-labelledby={`${PREFIX}marginal-group`}>
+        <h3 id={`${PREFIX}marginal-group`} className="whatif-group-title">
+          {vi.whatIf.form.marginalGroup}
+        </h3>
+        <p className="muted">{vi.whatIf.form.marginalNote}</p>
+        <Field
+          id={`${PREFIX}wage`}
+          label={vi.whatIf.form.wage}
+          hint={vi.whatIf.form.wageHint}
+          error={errorsByPath(error).get("hourly_wage")}
         >
-          {marginal.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runMarginal}
-        </Button>
-        <Button
-          variant="primary"
-          disabled={sweep.isPending}
-          onClick={() => {
-            marginal.reset();
-            staffing.reset();
-            sweep.mutate(
-              { solve: toSolveRequest(draft), multipliers: MULTIPLIERS },
-              { onSuccess: (job) => onStarted("sweep", job.job_id) },
-            );
-          }}
-        >
-          {sweep.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runSweep}
-        </Button>
-        <Button
-          disabled={staffing.isPending || !canSweepAssumption}
-          onClick={() => {
-            sweep.reset();
-            marginal.reset();
-            staffing.mutate(
-              {
-                solve: toSolveRequest(draft),
-                assumption,
-                values: parseValues(valuesText),
-              },
-              { onSuccess: (job) => onStarted("staffing", job.job_id) },
-            );
-          }}
-        >
-          {staffing.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runStaffing}
-        </Button>
-        <Button
-          disabled={baseline.isPending}
-          onClick={() => {
-            baseline.mutate(
-              { solve: toSolveRequest(draft) },
-              { onSuccess: (job) => onStarted("baseline", job.job_id) },
-            );
-          }}
-        >
-          {baseline.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runBaseline}
-        </Button>
-        <Button
-          disabled={fairness.isPending}
-          onClick={() => {
-            fairness.mutate(
-              { solve: toSolveRequest(draft), tolerances: parseValues(tolerancesText) },
-              { onSuccess: (job) => onStarted("fairness", job.job_id) },
-            );
-          }}
-        >
-          {fairness.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runFairness}
-        </Button>
-      </div>
+          {(control) => (
+            <input
+              {...control}
+              className="input"
+              type="number"
+              min={1}
+              step={1}
+              value={wage}
+              onChange={(event) => setWage(event.target.value)}
+            />
+          )}
+        </Field>
+        <div className="whatif-actions">
+          <Button
+            disabled={marginal.isPending}
+            onClick={() => {
+              sweep.reset();
+              staffing.reset();
+              marginal.mutate(
+                { solve: toSolveRequest(draft), hourly_wage: toNumber(wage) },
+                { onSuccess: (job) => onStarted("marginal", job.job_id) },
+              );
+            }}
+          >
+            {marginal.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runMarginal}
+          </Button>
+        </div>
+      </section>
+      <section className="whatif-group" aria-labelledby={`${PREFIX}staffing-group`}>
+        <h3 id={`${PREFIX}staffing-group`} className="whatif-group-title">
+          {vi.whatIf.form.staffingGroup}
+        </h3>
+        <div className="form-grid">
+          <Field
+            id={`${PREFIX}assumption`}
+            label={vi.whatIf.form.assumption}
+            hint={vi.whatIf.form.assumptionHint}
+          >
+            {(control) => (
+              <select
+                {...control}
+                className="input"
+                value={assumption}
+                onChange={(event) => setAssumption(event.target.value as StaffingField)}
+              >
+                <option value="alpha">{vi.whatIf.form.options.alpha}</option>
+                <option value="productivity">{vi.whatIf.form.options.productivity}</option>
+                <option value="min_staff">{vi.whatIf.form.options.min_staff}</option>
+                <option value="night_min_staff">{vi.whatIf.form.options.night_min_staff}</option>
+              </select>
+            )}
+          </Field>
+          <Field
+            id={`${PREFIX}staffing-values`}
+            label={vi.whatIf.form.values}
+            hint={vi.whatIf.form.valuesHint}
+          >
+            {(control) => (
+              <input
+                {...control}
+                className="input"
+                value={valuesText}
+                onChange={(event) => setValuesText(event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+        {!canSweepAssumption && <p className="muted">{vi.whatIf.form.onlySales}</p>}
+        <div className="whatif-actions">
+          <Button
+            disabled={staffing.isPending || !canSweepAssumption}
+            onClick={() => {
+              sweep.reset();
+              marginal.reset();
+              staffing.mutate(
+                {
+                  solve: toSolveRequest(draft),
+                  assumption,
+                  values: parseValues(valuesText),
+                },
+                { onSuccess: (job) => onStarted("staffing", job.job_id) },
+              );
+            }}
+          >
+            {staffing.isPending ? vi.whatIf.form.submitting : vi.whatIf.form.runStaffing}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
