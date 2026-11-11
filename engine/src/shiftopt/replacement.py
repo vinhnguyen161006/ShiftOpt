@@ -8,7 +8,6 @@ from shiftopt.validation import validate
 class Candidate:
     employee_id: str
     shift_name: str
-    break_offset: int | None
     extra_cost: int
     weekly_hours: int
     prefers_off: bool
@@ -17,11 +16,11 @@ class Candidate:
 def suggest_replacements(
     instance: Instance, solution: Solution, employee_id: str, day: int, limit: int
 ) -> tuple[Candidate, ...]:
-    """Employees who can take the shift that employee_id holds on day, same shift type and break
-    offset, ranked by (prefers the day off, extra wage cost, weekly hours, id). A candidate is kept
-    only when the roster with the swap passes every hard constraint, checked by validate. The
-    absent employee's shift is removed first; removing shifts never breaks a constraint, so only
-    the candidate's own rest, hours and days can cause a rejection."""
+    """Employees who can take the shift that employee_id holds on day, same shift type, ranked
+    by (prefers the day off, extra wage cost, weekly hours, id). A candidate is kept only when the
+    roster with the swap passes every hard constraint, checked by validate. The absent employee's
+    shift is removed first; removing shifts never breaks a constraint, so only the candidate's own
+    rest, hours and days can cause a rejection."""
     absent = [
         item for item in solution.assignments if item.employee_id == employee_id and item.day == day
     ]
@@ -39,14 +38,13 @@ def suggest_replacements(
     for employee in instance.employees:
         if employee.id == employee_id or employee.id in busy or day in employee.unavailable_days:
             continue
-        swap = Assignment(employee.id, day, shift.name, target.break_offset)
+        swap = Assignment(employee.id, day, shift.name)
         if validate(instance, Solution((*remaining, swap))):
             continue
         candidates.append(
             Candidate(
                 employee_id=employee.id,
                 shift_name=shift.name,
-                break_offset=target.break_offset,
                 extra_cost=employee.hourly_wage * shift.cost_per_wage_unit(instance.rules),
                 weekly_hours=hours[employee.id] + shift.length,
                 prefers_off=day in employee.preferred_days_off,

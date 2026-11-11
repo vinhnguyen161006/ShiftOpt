@@ -26,8 +26,3 @@ class ShiftTemplate(Base):
     def night_hours(self) -> int:
         """Hours inside the default night window (Article 106), from the engine."""
         return self._shift_type().night_hours(LaborRules())
-
-    @property
-    def break_required(self) -> bool:
-        """Whether the default rules require a rest break inside this shift (Article 109)."""
-        return bool(self._shift_type().break_window(LaborRules()))

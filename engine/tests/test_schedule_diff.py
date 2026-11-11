@@ -23,17 +23,6 @@ def test_swapped_person_is_one_removed_and_one_added() -> None:
     assert [a.employee_id for a in diff.removed] == ["e0"]
 
 
-def test_break_offset_move_is_not_a_change() -> None:
-    before = Solution((Assignment("e0", 0, "day", break_offset=2),))
-    after = Solution((Assignment("e0", 0, "day", break_offset=4),))
-
-    diff = diff_solutions(before, after)
-
-    assert len(diff.kept) == 1
-    assert diff.added == ()
-    assert diff.removed == ()
-
-
 def test_duplicate_keys_are_matched_as_multisets() -> None:
     before = Solution((Assignment("e0", 1, "day"), Assignment("e0", 1, "day")))
     after = Solution((Assignment("e0", 1, "day"),))

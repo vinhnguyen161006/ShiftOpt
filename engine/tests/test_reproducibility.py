@@ -1,9 +1,9 @@
 from collections.abc import Callable
 
 from shiftopt.domain import Assignment, Employee, Instance, ShiftType
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
-from shiftopt.models.implicit_breaks_cpsat import solve_with_implicit_breaks_cpsat
 from shiftopt.models.roster_cpsat import solve_roster
+from shiftopt.models.set_covering_cpsat import solve_set_covering_cpsat
+from shiftopt.models.set_covering_pulp import solve_set_covering
 from shiftopt.solvers.base import SolveParams
 from shiftopt.time_grid import HOURS_PER_WEEK
 
@@ -37,7 +37,7 @@ def test_roster_repeats_objective_and_assignments() -> None:
 def test_highs_aggregate_repeats_counts(build_instance: Callable[..., Instance]) -> None:
     instance = build_instance(demand_per_hour=2)
 
-    outcomes = [solve_with_implicit_breaks(instance, WAGE, PARAMS) for _ in range(RUNS)]
+    outcomes = [solve_set_covering(instance, WAGE, PARAMS) for _ in range(RUNS)]
 
     first = outcomes[0]
     for outcome in outcomes[1:]:
@@ -48,7 +48,7 @@ def test_highs_aggregate_repeats_counts(build_instance: Callable[..., Instance])
 def test_cpsat_aggregate_repeats_counts(build_instance: Callable[..., Instance]) -> None:
     instance = build_instance(demand_per_hour=2)
 
-    outcomes = [solve_with_implicit_breaks_cpsat(instance, WAGE, PARAMS) for _ in range(RUNS)]
+    outcomes = [solve_set_covering_cpsat(instance, WAGE, PARAMS) for _ in range(RUNS)]
 
     first = outcomes[0]
     for outcome in outcomes[1:]:

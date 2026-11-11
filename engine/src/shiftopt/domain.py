@@ -39,13 +39,6 @@ class ShiftType:
         fairness measure, so an evening shift that only touches midnight is not a night shift."""
         return 2 * self.night_hours(rules) > self.length
 
-    def break_window(self, rules: LaborRules) -> tuple[int, ...]:
-        """Offsets from the shift start where the rest break may begin: hours 1 to length - 2,
-        so the break is never the first or last hour. Empty when the shift needs no break."""
-        if self.length < rules.break_required_from_hours:
-            return ()
-        return tuple(range(1, self.length - 1))
-
 
 @dataclass(frozen=True)
 class Employee:
@@ -123,7 +116,6 @@ class Assignment:
     employee_id: str
     day: int
     shift_name: str
-    break_offset: int | None = None
 
     def __post_init__(self) -> None:
         if not 0 <= self.day < DAYS_PER_WEEK:

@@ -51,12 +51,6 @@ export function ShiftTemplateList({ templates, rules, onEdit, onDelete }: ShiftT
           render: (template) => vi.home.sample.hours(template.night_hours),
         },
         {
-          key: "break",
-          label: vi.shifts.table.break,
-          render: (template) =>
-            template.break_required ? vi.shifts.table.required : vi.shifts.table.notRequired,
-        },
-        {
           key: "actions",
           label: vi.common.actions,
           render: (template) => (

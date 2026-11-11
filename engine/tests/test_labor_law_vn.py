@@ -21,7 +21,7 @@ def six_day_roster(rules: LaborRules) -> list[ViolationKind]:
         shift_types=(DAY,),
         rules=rules,
     )
-    roster = Solution(tuple(Assignment("e1", day, DAY.name, break_offset=1) for day in range(6)))
+    roster = Solution(tuple(Assignment("e1", day, DAY.name) for day in range(6)))
     return [violation.kind for violation in validate(instance, roster)]
 
 
@@ -74,8 +74,8 @@ def test_forbidden_pairs_match_validator_rest_rule() -> None:
                 )
                 roster = Solution(
                     (
-                        Assignment("e1", 0, prev.name, break_offset=1),
-                        Assignment("e1", offset, nxt.name, break_offset=1),
+                        Assignment("e1", 0, prev.name),
+                        Assignment("e1", offset, nxt.name),
                     )
                 )
                 flagged = {
@@ -113,8 +113,3 @@ def test_night_premium_percent_30() -> None:
     assert LaborRules().night_premium_percent == 30
     night = ShiftType("night", 0)
     assert night.cost_per_wage_unit(LaborRules(night_premium_percent=50)) == 100 * 8 + 50 * 6
-
-
-def test_break_minimums_follow_article_109() -> None:
-    rules = LaborRules()
-    assert (rules.min_break_minutes, rules.min_night_break_minutes) == (30, 45)

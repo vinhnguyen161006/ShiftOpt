@@ -1,14 +1,9 @@
 from collections.abc import Callable
 
-import pulp
-
-from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.domain import Instance, ShiftType
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
 from shiftopt.models.set_covering_pulp import solve_set_covering
 from shiftopt.solvers.base import SolveParams, SolveStatus
-from shiftopt.solvers.pulp_backend import run_problem
-from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_WEEK, hour_of_week, shift_hours
+from shiftopt.time_grid import HOURS_PER_WEEK, shift_hours
 
 PARAMS = SolveParams(num_workers=1, time_limit_seconds=30)
 
@@ -20,41 +15,6 @@ def coverage(counts: dict[tuple[int, str], float], instance: Instance) -> list[f
         for hour in shift_hours(day, shift.start_hour, shift.length):
             covered[hour] += people
     return covered
-
-
-def enumerated_break_optimum(instance: Instance, hourly_wage: int) -> float:
-    """Oracle: enumerate every (day, shift, break position) column explicitly, the Dantzig form
-    the implicit model is supposed to match. A column covers every hour of its shift except the
-    break hour."""
-    rules = instance.rules
-    problem = pulp.LpProblem("enumerated", pulp.LpMinimize)
-    columns: list[tuple[int, float, set[int]]] = []
-    for day in range(DAYS_PER_WEEK):
-        for shift in instance.shift_types:
-            if shift.length > rules.max_daily_hours:
-                continue
-            hours = set(shift_hours(day, shift.start_hour, shift.length))
-            cost = hourly_wage * shift.cost_per_wage_unit(rules)
-            window = shift.break_window(rules)
-            if not window:
-                columns.append((len(columns), cost, hours))
-            for offset in window:
-                broken = hour_of_week(day, shift.start_hour + offset)
-                columns.append((len(columns), cost, hours - {broken}))
-    variables = [
-        problem.add_variable(f"c_{index}", lowBound=0, cat=pulp.LpInteger)
-        for index, _, _ in columns
-    ]
-    problem += pulp.lpSum(cost * variables[index] for index, cost, _ in columns)
-    for hour in range(HOURS_PER_WEEK):
-        problem += (
-            pulp.lpSum(variables[index] for index, _, hours in columns if hour in hours)
-            >= instance.demand[hour],
-            f"cover_{hour}",
-        )
-    result = run_problem(problem, PARAMS, mip=True)
-    assert result.objective is not None
-    return result.objective
 
 
 def test_three_shifts_cover_one_person_around_the_clock(
@@ -112,30 +72,3 @@ def test_relaxation_is_a_lower_bound(build_instance: Callable[..., Instance]) ->
     assert relaxed.result.objective is not None
     assert integer.result.objective is not None
     assert relaxed.result.objective <= integer.result.objective
-
-
-def test_implicit_breaks_match_enumerated_columns(build_instance: Callable[..., Instance]) -> None:
-    instance = build_instance(demand_per_hour=1)
-    implicit = solve_with_implicit_breaks(instance, hourly_wage=100, params=PARAMS)
-    assert implicit.result.objective == enumerated_break_optimum(instance, hourly_wage=100)
-
-
-def test_implicit_breaks_match_enumerated_columns_on_peaked_demand() -> None:
-    demand = tuple(2 if 8 <= hour % 24 < 16 else 1 for hour in range(HOURS_PER_WEEK))
-    instance = Instance(
-        demand=demand,
-        employees=(),
-        shift_types=(ShiftType("night", 0), ShiftType("day", 8), ShiftType("evening", 16)),
-        rules=LaborRules(),
-    )
-    implicit = solve_with_implicit_breaks(instance, hourly_wage=100, params=PARAMS)
-    assert implicit.result.objective == enumerated_break_optimum(instance, hourly_wage=100)
-
-
-def test_breaks_never_make_the_head_count_cheaper(build_instance: Callable[..., Instance]) -> None:
-    instance = build_instance(demand_per_hour=1)
-    plain = solve_set_covering(instance, hourly_wage=100, params=PARAMS)
-    implicit = solve_with_implicit_breaks(instance, hourly_wage=100, params=PARAMS)
-    assert plain.result.objective is not None
-    assert implicit.result.objective is not None
-    assert implicit.result.objective >= plain.result.objective

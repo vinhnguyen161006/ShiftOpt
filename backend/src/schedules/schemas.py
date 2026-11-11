@@ -45,14 +45,12 @@ class AssignmentRead(BaseModel):
     employee_code: str
     day: int = Field(ge=0, le=6)
     shift_name: str
-    break_offset: int | None = None
 
 
 class AssignmentWrite(BaseModel):
     employee_code: str = Field(min_length=1, max_length=32)
     day: int = Field(ge=0, le=6)
     shift_name: str = Field(min_length=1, max_length=64)
-    break_offset: int | None = Field(default=None, ge=0, le=23)
 
 
 class ManualEditRequest(BaseModel):
@@ -114,7 +112,6 @@ class ShortfallHourRead(BaseModel):
 class ReplacementRead(BaseModel):
     employee_code: str
     shift_name: str
-    break_offset: int | None
     extra_cost: int
     weekly_hours: int
     prefers_off: bool

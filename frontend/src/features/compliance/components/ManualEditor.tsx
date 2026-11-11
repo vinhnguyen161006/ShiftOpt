@@ -2,8 +2,8 @@ import { type FormEvent, useState } from "react";
 import { Button } from "../../../components/ui/Button";
 import { Notice } from "../../../components/ui/Feedback";
 import { errorMessage } from "../../../lib/api-client";
-import { DAYS, formatHour } from "../../../lib/time";
-import type { AssignmentWrite, ShiftTypeRead, SolveRunRead } from "../../../types/models";
+import { DAYS } from "../../../lib/time";
+import type { AssignmentWrite, SolveRunRead } from "../../../types/models";
 import { useCreateManualEdit } from "../api/compliance";
 import "../compliance.css";
 import { vi } from "../../../locales/vi";
@@ -21,19 +21,13 @@ function toRows(run: SolveRunRead): Row[] {
     employee_code: assignment.employee_code,
     day: assignment.day,
     shift_name: assignment.shift_name,
-    break_offset: assignment.break_offset ?? null,
   }));
-}
-
-function breakOptions(shift: ShiftTypeRead | undefined): number[] {
-  return shift ? Array.from({ length: shift.length }, (_, offset) => offset) : [];
 }
 
 export function ManualEditor({ run, onCreated }: ManualEditorProps) {
   const edit = useCreateManualEdit(run.id);
   const [rows, setRows] = useState(() => toRows(run));
   const [nextKey, setNextKey] = useState(rows.length);
-  const shifts = new Map(run.shift_types.map((shift) => [shift.name, shift]));
 
   function update(key: number, patch: Partial<AssignmentWrite>) {
     setRows(rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -48,7 +42,6 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
         employee_code: run.employee_codes[0] ?? "",
         day: 0,
         shift_name: shift?.name ?? "",
-        break_offset: null,
       },
     ]);
     setNextKey(nextKey + 1);
@@ -73,7 +66,6 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
               <th scope="col">{vi.compliance.manual.employee}</th>
               <th scope="col">{vi.compliance.manual.day}</th>
               <th scope="col">{vi.compliance.manual.shift}</th>
-              <th scope="col">{vi.compliance.manual.breakStarts}</th>
               <th scope="col" className="actions">
                 <span className="visually-hidden">{vi.compliance.manual.remove}</span>
               </th>
@@ -81,7 +73,6 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
           </thead>
           <tbody>
             {rows.map((row, index) => {
-              const shift = shifts.get(row.shift_name);
               const label = vi.compliance.manual.row(index + 1);
               return (
                 <tr key={row.key}>
@@ -118,33 +109,11 @@ export function ManualEditor({ run, onCreated }: ManualEditorProps) {
                       className="input"
                       aria-label={vi.compliance.manual.shiftAria(label)}
                       value={row.shift_name}
-                      onChange={(event) =>
-                        update(row.key, { shift_name: event.target.value, break_offset: null })
-                      }
+                      onChange={(event) => update(row.key, { shift_name: event.target.value })}
                     >
                       {run.shift_types.map((option) => (
                         <option key={option.name} value={option.name}>
                           {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <select
-                      className="input"
-                      aria-label={vi.compliance.manual.breakAria(label)}
-                      value={row.break_offset ?? ""}
-                      onChange={(event) =>
-                        update(row.key, {
-                          break_offset:
-                            event.target.value === "" ? null : Number(event.target.value),
-                        })
-                      }
-                    >
-                      <option value="">{vi.compliance.manual.noBreak}</option>
-                      {breakOptions(shift).map((offset) => (
-                        <option key={offset} value={offset}>
-                          {formatHour((shift?.start_hour ?? 0) + offset)}
                         </option>
                       ))}
                     </select>

@@ -205,14 +205,13 @@ Hệ thống có hai mô hình. Mô hình theo nhân viên tạo lịch thật. 
 | Nghỉ ≥ 12 giờ giữa hai ca (Đ.110) | Trước khi giải, liệt kê mọi cặp (ca hôm trước, ca hôm sau) có khoảng nghỉ dưới 12 giờ. Khoảng nghỉ tính bằng công thức tổng quát `24 × số ngày cách + giờ bắt đầu ca sau − (giờ bắt đầu ca trước + độ dài)`. Mỗi cặp bị cấm thì một người không được làm cả hai. Ví dụ ca Tối 16h–24h rồi ca Ngày 8h hôm sau chỉ nghỉ 8 giờ, nên bị cấm |
 | Tối đa 6 ngày làm liên tiếp | Mọi cửa sổ 7 ngày liên tiếp (tính vòng) phải có ít nhất 1 ngày nghỉ |
 | Nghỉ ≥ 24 giờ liên tục mỗi tuần (Đ.111) | Với mỗi người, mỗi giờ trong tuần có một biến "khoảng nghỉ 24 giờ bắt đầu từ đây". Nếu chọn biến này thì 24 giờ tiếp theo người đó không làm. Bắt buộc chọn ít nhất một giờ bắt đầu. Ràng buộc này tính trên trục giờ, không chỉ đếm ngày nghỉ, vì ca qua đêm có thể làm ngày nghỉ không đủ 24 giờ |
-| Nghỉ giữa ca (Đ.109) | Mỗi ca từ 6 giờ trở lên có đúng một giờ nghỉ, đặt ở giờ thứ 2 đến giờ áp chót của ca. Trong giờ nghỉ, người đó không được tính vào số người có mặt. Nghỉ 30 hoặc 45 phút được làm tròn thành cả giờ, tức chọn phương án an toàn |
 | Ngày không làm được | Không xếp ca vào ngày nhân viên đã báo bận |
 | Ngân sách tuần (nếu có, đặc tả D26) | Tổng chi phí lương của lịch ≤ ngân sách. Vì phủ nhu cầu là mềm, ngân sách chặt chỉ làm tăng giờ thiếu, không làm mô hình vô nghiệm |
 
 **Phủ nhu cầu là ràng buộc mềm.** Mỗi giờ có một biến "thiếu người" `u`, với điều kiện:
 
 ```
-số người có mặt − số người đang nghỉ giữa ca + u ≥ nhu cầu
+số người có mặt + u ≥ nhu cầu
 ```
 
 Nhờ có biến `u`, mô hình luôn có lời giải kể cả khi thiếu nhân viên. Khi đó giao diện chỉ ra giờ nào thiếu, thay vì báo "vô nghiệm".
@@ -227,7 +226,7 @@ Nhờ có biến `u`, mô hình luôn có lời giải kể cả khi thiếu nh�
 
 **Dung sai chi phí (tùy chọn, `cost_tolerance_percent` từ 0 đến 10, mặc định 0).** Khi lớn hơn 0, tầng 2 được nới: chi phí không vượt tối ưu tầng 2 × (100 + t) / 100. Sau tầng 3 thêm một tầng chênh giờ làm (max − min giờ làm mỗi người). Mục đích: đổi một phần nhỏ chi phí lấy ca đêm và giờ làm đều hơn. Với 0 thì thứ tự như trên. Chi tiết: `model.md` mục 7.
 
-**Giờ nghỉ được lưu theo từng ca.** Solver chọn giờ nghỉ cho mỗi ca cần nghỉ. Lịch lưu giờ này thành `break_offset` trong từng dòng phân ca: số giờ tính từ đầu ca, ví dụ ca Ngày 8h có `break_offset = 4` là nghỉ lúc 12h. KPI dùng `break_offset` để trừ người đang nghỉ khỏi số người có mặt; validator kiểm tra `break_offset` nằm trong khoảng cho phép. Khi sửa lịch bằng tay, **người dùng chọn** giờ nghỉ ở cột **Bắt đầu nghỉ**. Đổi ca thì giờ nghỉ bị xóa và phải chọn lại. Để trống ở ca cần nghỉ thì validator báo vi phạm Đ.109.
+**Không xếp nghỉ giữa giờ (Đ.109).** Theo quyết định của người dùng ngày 2026-11-11 (đặc tả D6), mô hình không có giờ nghỉ trong ca: người làm ca được tính có mặt ở mọi giờ của ca. Lịch không ghi ai nghỉ lúc nào; cửa hàng tự sắp khi vận hành. Ca chỉ có một người thì sẽ trống trong lúc người đó nghỉ.
 
 Mỗi tầng không được làm xấu kết quả tầng trước. Thời gian giải chia đều cho các tầng. Lời giải tầng trước được dùng làm gợi ý khởi đầu cho tầng sau, giúp solver tìm nhanh hơn.
 
@@ -245,23 +244,22 @@ Mỗi tầng không được làm xấu kết quả tầng trước. Thời gian
 Dùng khi lịch đã công bố và có biến động giữa tuần, ví dụ người báo ốm (đặc tả D20).
 
 - **Đầu vào:** lịch gốc (một lượt đã có lịch), ngày bắt đầu xếp lại `from_day`, danh sách người vắng theo ngày, các ca ghim. Có thể đổi hồ sơ nhu cầu.
-- **Khóa:** mọi ngày trước `from_day` giữ nguyên lịch gốc, kể cả giờ nghỉ giữa ca. Ca ghim bắt buộc có mặt. Ngày vắng được thêm vào ngày không làm được của người đó.
-- **Mục tiêu:** chèn một tầng mới ngay sau tầng thiếu người: tối thiểu **số ca thay đổi** so với lịch gốc, đếm theo bộ (nhân viên, ngày, ca); đổi giờ nghỉ trong cùng ca không tính. Thứ tự là thiếu người, giờ tối thiểu (nếu có), thay đổi, chi phí, công bằng ca đêm, chênh giờ làm (nếu có dung sai), mong muốn nghỉ. Lịch gốc được dùng làm gợi ý khởi đầu.
+- **Khóa:** mọi ngày trước `from_day` giữ nguyên lịch gốc. Ca ghim bắt buộc có mặt. Ngày vắng được thêm vào ngày không làm được của người đó.
+- **Mục tiêu:** chèn một tầng mới ngay sau tầng thiếu người: tối thiểu **số ca thay đổi** so với lịch gốc, đếm theo bộ (nhân viên, ngày, ca). Thứ tự là thiếu người, giờ tối thiểu (nếu có), thay đổi, chi phí, công bằng ca đêm, chênh giờ làm (nếu có dung sai), mong muốn nghỉ. Lịch gốc được dùng làm gợi ý khởi đầu.
 - **Luôn có lời giải.** Mọi luật cứng, kể cả ngân sách, đều "đơn điệu": bỏ bớt ca không bao giờ tạo vi phạm mới. Giờ tối thiểu là mềm nên không phá tính chất này. Vì vậy nếu riêng tập ca bị khóa qua được validator thì lịch "chỉ gồm các ca bị khóa" đã hợp lệ, và solver luôn tìm được lời giải. API kiểm tập này trước khi tạo job.
 - Không bật phá đối xứng hay phân rã khi repair, vì lịch gốc làm các nhân viên không còn hoán đổi được cho nhau.
 - Lượt repair lưu lịch gốc, `from_day` và ca ghim trong ảnh chụp đầu vào, nên chạy lại được. Giao diện đánh dấu ô khác lịch gốc bằng chữ "đổi" và ngày khóa bằng nhãn "khóa".
 - **Báo nghỉ đột xuất** (`reroster`) là repair cho một người và các ngày vắng, `from_day` mặc định là ngày vắng đầu tiên. Không có solver riêng.
 
-**Gợi ý người thay.** Với một ca (người vắng, ngày), thử lần lượt từng nhân viên còn trống ngày đó, giao đúng ca đó với cùng giờ nghỉ, rồi chạy validator trên cả lịch. Chỉ giữ người không gây vi phạm. Xếp theo: người có đăng ký muốn nghỉ ngày đó xếp sau, rồi chi phí thêm thấp hơn, rồi số giờ trong tuần ít hơn. Bấm **Áp dụng** thì tạo lượt sửa tay mới, validator kiểm lại như mọi lượt sửa tay.
+**Gợi ý người thay.** Với một ca (người vắng, ngày), thử lần lượt từng nhân viên còn trống ngày đó, giao đúng ca đó, rồi chạy validator trên cả lịch. Chỉ giữ người không gây vi phạm. Xếp theo: người có đăng ký muốn nghỉ ngày đó xếp sau, rồi chi phí thêm thấp hơn, rồi số giờ trong tuần ít hơn. Bấm **Áp dụng** thì tạo lượt sửa tay mới, validator kiểm lại như mọi lượt sửa tay.
 
 #### Mô hình tổng hợp (phủ tập Dantzig), giải bằng PuLP + HiGHS
 
 Mô hình này không hỏi "ai làm ca nào" mà chỉ hỏi "mỗi ngày, mỗi loại ca cần **bao nhiêu người**".
 
 - Biến: số người bắt đầu ca `s` vào ngày `d`, là số nguyên không âm.
-- Ràng buộc: mỗi giờ, tổng số người của các ca phủ giờ đó (trừ người đang nghỉ giữa ca) ≥ nhu cầu. Ở mô hình này, phủ nhu cầu là ràng buộc cứng.
+- Ràng buộc: mỗi giờ, tổng số người của các ca phủ giờ đó ≥ nhu cầu. Ở mô hình này, phủ nhu cầu là ràng buộc cứng.
 - Mục tiêu: tối thiểu tổng chi phí, với mọi người cùng một mức lương do người dùng nhập.
-- **Nghỉ giữa ca ngầm (kiểu Bechtold–Jacobs).** Thêm biến "số người nghỉ ở giờ k của ca s". Tổng số người nghỉ của một ca bằng số người làm ca đó. Cách này cho cùng kết quả với việc liệt kê mọi tổ hợp (ca, giờ nghỉ), nhưng ít biến hơn nhiều.
 
 Mô hình này nhỏ và giải rất nhanh, nên được dùng để:
 
@@ -282,10 +280,9 @@ Mô hình này nhỏ và giải rất nhanh, nên được dùng để:
    - mọi khoảng trống giữa hai ca liên tiếp ≥ 12 giờ (Đ.110);
    - khoảng trống dài nhất trong tuần ≥ 24 giờ (Đ.111);
    - số ngày làm liên tiếp dài nhất (tính vòng) ≤ 6;
-   - mỗi ca cần nghỉ có giờ nghỉ nằm trong khoảng cho phép (Đ.109);
    - không có ca nào vào ngày nhân viên đã báo không làm được.
 3. Nếu lượt có ngân sách tuần: tổng chi phí của cả lịch ≤ ngân sách. Vi phạm này thuộc cả lịch, không gắn với một nhân viên.
-4. Trả về danh sách vi phạm. Mỗi vi phạm gồm loại, nhân viên (trống với vi phạm ngân sách) và chi tiết. Giao diện gắn loại vi phạm với điều luật tương ứng (Đ.105, Đ.109, Đ.110, Đ.111) khi hiển thị.
+4. Trả về danh sách vi phạm. Mỗi vi phạm gồm loại, nhân viên (trống với vi phạm ngân sách) và chi tiết. Giao diện gắn loại vi phạm với điều luật tương ứng (Đ.105, Đ.110, Đ.111) khi hiển thị.
 
 **Khi nào chạy:** sau mỗi lượt giải (kể cả repair), sau mỗi lần người dùng sửa lịch bằng tay, trên tập ca bị khóa trước khi tạo job repair, với từng ứng viên khi gợi ý người thay, và với từng ca thử khi giải thích giờ thiếu.
 
@@ -299,7 +296,7 @@ Tính trực tiếp từ lịch, không lấy từ solver:
 
 | Chỉ số | Cách tính, nói dễ hiểu |
 |---|---|
-| Số người có mặt mỗi giờ | Đếm người đang trong ca ở giờ đó, trừ người đang nghỉ giữa ca |
+| Số người có mặt mỗi giờ | Đếm người đang trong ca ở giờ đó |
 | Tỷ lệ phủ | Tổng phần nhu cầu được đáp ứng ÷ tổng nhu cầu. 100% là không thiếu giờ nào |
 | Giờ thiếu / giờ thừa | Cộng phần thiếu / phần dư của từng giờ |
 | Hiệu suất lịch | Tổng nhu cầu ÷ tổng người có mặt. Càng gần 1 càng ít thừa |
@@ -396,7 +393,7 @@ Lệnh: `docker compose up -d --build`, rồi mở `http://localhost:3000`.
 ## 10. Giới hạn đã biết
 
 - Nhu cầu từ file doanh số là tuần trung bình của dữ liệu quá khứ, chưa phải dự báo tuần tới. Chưa đo sai số dự báo.
-- Giờ nghỉ giữa ca được làm tròn thành cả giờ.
+- Không xếp nghỉ giữa giờ Đ.109 (đặc tả D6): lịch lỏng hơn luật ở điểm này.
 - Tái lập chỉ chắc chắn khi lượt giải kết thúc `OPTIMAL` trước time limit.
 - Giới hạn số job đếm trạng thái trong DB rồi mới thêm job, không khóa. Khi nhiều yêu cầu đến cùng lúc, số job thật có thể vượt nhẹ `max_pending_jobs`.
 - Chi phí biên và dual LP tính trên mô hình tổng hợp, không trên đội thật (mục 7.5).

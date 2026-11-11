@@ -33,8 +33,8 @@ def _base() -> dict[str, Any]:
     )
 
 
-def _row(code: str, day: int, shift: str = "day", offset: int | None = 3) -> dict[str, Any]:
-    return {"employee_code": code, "day": day, "shift_name": shift, "break_offset": offset}
+def _row(code: str, day: int, shift: str = "day") -> dict[str, Any]:
+    return {"employee_code": code, "day": day, "shift_name": shift}
 
 
 def test_repair_snapshot_round_trips_baseline_and_pinned() -> None:
@@ -56,7 +56,6 @@ def test_repair_snapshot_round_trips_baseline_and_pinned() -> None:
     assert [item.employee_id for item in spec.baseline.assignments] == ["E1", "E2"]
     assert spec.pinned[0].employee_id == "E1"
     assert spec.pinned[0].day == 4
-    assert spec.pinned[0].break_offset == 3
 
 
 def test_repair_snapshot_merges_absences_and_replaces_demand() -> None:
@@ -99,10 +98,6 @@ def test_assignment_changes_counts_added_and_removed_shifts() -> None:
     rows = [_row("E1", 0), _row("E2", 2)]
 
     assert assignment_changes(baseline, rows) == 2
-
-
-def test_moving_a_break_is_not_a_change() -> None:
-    assert assignment_changes([_row("E1", 0, offset=1)], [_row("E1", 0, offset=5)]) == 0
 
 
 def test_absence_rejects_day_outside_week() -> None:

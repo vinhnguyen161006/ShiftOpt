@@ -24,7 +24,7 @@ function applied(
   assignments: AssignmentRead[],
   absent: AssignmentRead,
   candidate: ReplacementRead,
-): { employee_code: string; day: number; shift_name: string; break_offset: number | null }[] {
+): { employee_code: string; day: number; shift_name: string }[] {
   const kept = assignments.filter((item) => cellKey(item) !== cellKey(absent));
   return [
     ...kept,
@@ -32,13 +32,11 @@ function applied(
       ...absent,
       employee_code: candidate.employee_code,
       shift_name: candidate.shift_name,
-      break_offset: candidate.break_offset,
     },
   ].map((item) => ({
     employee_code: item.employee_code,
     day: item.day,
     shift_name: item.shift_name,
-    break_offset: item.break_offset ?? null,
   }));
 }
 
@@ -120,12 +118,7 @@ export function ReplacementList({ run, onCreated }: ReplacementListProps) {
                       <span className="tag-outline">{vi.compliance.replacement.prefersOff}</span>
                     )}
                   </th>
-                  <td>
-                    {item.shift_name}
-                    {item.break_offset !== null &&
-                      item.break_offset !== undefined &&
-                      vi.compliance.replacement.breakOffset(item.break_offset)}
-                  </td>
+                  <td>{item.shift_name}</td>
                   <td>{formatDecimal(item.extra_cost / COST_SCALE, 2)}</td>
                   <td>{item.weekly_hours}</td>
                   <td className="actions">

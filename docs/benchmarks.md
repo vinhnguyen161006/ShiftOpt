@@ -2,7 +2,7 @@
 
 Mọi số trong file này chạy lại được bằng lệnh ghi bên dưới. Kết luận chỉ áp cho instance, time limit, seed và số worker đã ghi (CLAUDE.md nguyên tắc 5). Không trích số của nhóm khác như số của ShiftOpt.
 
-Máy đo: Windows 11 (10.0.26200), 16 luồng CPU, Python 3.11.14, OR-Tools 9.15.6755, PuLP 3.3.2. Mục 1–3 đo ngày 2026-10-29; mục 2b, 2c, 7, 8 đo ngày 2026-11-08; mục 4 ngày 2026-11-05; mục 5 ngày 2026-11-08; mục 6 ngày 2026-11-09. Các mục đo trước khi có giờ tối thiểu và ngân sách (G3) không dùng hai tính năng này, nên không bị ảnh hưởng.
+Máy đo: Windows 11 (10.0.26200), 16 luồng CPU, Python 3.11.14, OR-Tools 9.15.6755, PuLP 3.3.2. Mục 1–3 đo ngày 2026-10-29; mục 2b, 2c, 7, 8 đo ngày 2026-11-08; mục 4 ngày 2026-11-05; mục 5 ngày 2026-11-08; mục 6 ngày 2026-11-09. Các mục đo trước khi có giờ tối thiểu và ngân sách (G3) không dùng hai tính năng này, nên không bị ảnh hưởng. **Mọi mục đo khi mô hình còn nghỉ giữa giờ (mỗi ca từ 6 giờ mất một giờ phủ). Từ 2026-11-11 mô hình bỏ nghỉ giữa giờ (đặc tả D6), nên số giờ thiếu, chi phí và thời gian giải hiện tại có thể khác; chưa đo lại.**
 
 ## 1. Curtois & Qu (2014), Instance1–5
 
@@ -50,7 +50,7 @@ Cột `gap_to_published` = objective − giá trị công bố (dương là kém
 
 ## 2. So sánh CP-SAT và HiGHS trên cùng mô hình
 
-Cùng mô hình phủ tập có nghỉ ngầm (`shiftopt.models.implicit_breaks` cho HiGHS qua PuLP, `shiftopt.models.implicit_breaks_cpsat` cho CP-SAT), cùng dữ liệu, cùng seed 0, `num_workers = 1`, `relative_gap_limit = 0`. Không dùng số Mittelmann.
+Cùng mô hình phủ tập (lúc đo còn nghỉ ngầm; nay là `shiftopt.models.set_covering_pulp` cho HiGHS qua PuLP, `shiftopt.models.set_covering_cpsat` cho CP-SAT), cùng dữ liệu, cùng seed 0, `num_workers = 1`, `relative_gap_limit = 0`. Không dùng số Mittelmann.
 
 Lệnh: `cd engine && uv run --locked python benchmarks/compare_solvers.py`
 

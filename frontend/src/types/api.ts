@@ -702,8 +702,6 @@ export interface components {
         };
         /** AssignmentRead */
         AssignmentRead: {
-            /** Break Offset */
-            break_offset?: number | null;
             /** Day */
             day: number;
             /** Employee Code */
@@ -713,8 +711,6 @@ export interface components {
         };
         /** AssignmentWrite */
         AssignmentWrite: {
-            /** Break Offset */
-            break_offset?: number | null;
             /** Day */
             day: number;
             /** Employee Code */
@@ -1003,18 +999,12 @@ export interface components {
          *     the backend rejects an input.
          */
         LaborRulesRead: {
-            /** Break Required From Hours */
-            break_required_from_hours: number;
             /** Max Consecutive Days */
             max_consecutive_days: number;
             /** Max Daily Hours */
             max_daily_hours: number;
             /** Max Weekly Hours */
             max_weekly_hours: number;
-            /** Min Break Minutes */
-            min_break_minutes: number;
-            /** Min Night Break Minutes */
-            min_night_break_minutes: number;
             /** Min Rest Between Shifts */
             min_rest_between_shifts: number;
             /** Night End */
@@ -1152,8 +1142,6 @@ export interface components {
         };
         /** ReplacementRead */
         ReplacementRead: {
-            /** Break Offset */
-            break_offset: number | null;
             /** Employee Code */
             employee_code: string;
             /** Extra Cost */
@@ -1217,8 +1205,6 @@ export interface components {
         };
         /** ShiftTemplateRead */
         ShiftTemplateRead: {
-            /** Break Required */
-            break_required: boolean;
             /**
              * Created At
              * Format: date-time

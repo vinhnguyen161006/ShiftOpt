@@ -76,7 +76,7 @@ Nhu cầu (nhập tay / CSV / file doanh số)
 | Tổng hợp (lõi giáo khoa) | Phủ tập Dantzig (1954): `min sum c_j x_j`, `sum a_tj x_j >= r_t`, `x_j` nguyên không âm; chu kỳ 24 giờ hoặc 168 giờ có quấn vòng | PuLP + HiGHS | Số người theo kiểu ca, lấy dual của LP relaxation, benchmark, ví dụ có đáp án tay |
 | Theo nhân viên (lõi sản phẩm) | `x[e,d,s]` Boolean, gán nhân viên `e` ca `s` ngày `d` | OR-Tools CP-SAT | Lịch thật có nghỉ 12 giờ, số ngày liên tiếp, công bằng, yêu cầu cá nhân |
 
-Nghỉ giữa ca (Điều 109) mô hình hóa như **giảm năng lực phủ ở một giờ trong cửa sổ nghỉ** (biến thể Bechtold–Jacobs đơn giản, `models/implicit_breaks.py`), không liệt kê từng tổ hợp (ca, vị trí nghỉ) như Dantzig gốc.
+**Nghỉ giữa giờ (Điều 109) không được mô hình hóa** (đặc tả D6, người dùng quyết định 2026-11-11): mỗi ca phủ đủ mọi giờ của nó, lịch không có giờ nghỉ, validator không kiểm Đ.109. Đây là điểm code lỏng hơn luật, ghi ở đặc tả mục 7; không thêm lại khi chưa được yêu cầu. Bản CP-SAT của mô hình tổng hợp nằm ở `models/set_covering_cpsat.py`.
 
 Phân rã hai pha là chiến lược giảm kích thước khi instance lớn: pha 1 giải mô hình tổng hợp để có số người mỗi kiểu ca, pha 2 gán cá nhân.
 
@@ -147,7 +147,6 @@ Khi repair (C6, lịch gốc + ngày khóa `from_day` + ca ghim): thiếu ngư�
 | Nghỉ ≥ 12 giờ giữa hai ca liên tiếp | Đ.110 | Hard | Cấm cặp `(s, s')` có `24 + sigma' - (sigma + L) < 12` |
 | Nghỉ ≥ 24 giờ liên tục mỗi tuần | Đ.111 | Hard | Ràng buộc ngày nghỉ **cộng kiểm tra 24 giờ liên tục trên trục giờ** |
 | Tối đa `K` ngày làm liên tiếp | Đề bài, INRC-II | Hard | Cửa sổ `sum w <= K` trên `K+1` ngày; `K = 6` đảm bảo có ngày nghỉ mỗi cửa sổ 7 ngày |
-| Nghỉ giữa giờ ≥ 30 phút (≥ 45 phút nếu ca đêm) | Đ.109, NĐ 145/2020 | Hard | Giảm năng lực phủ một giờ trong cửa sổ nghỉ |
 | Phụ cấp đêm ≥ 30% | Đ.98 khoản 2 | Chi phí | `c_s = L*wage + 0.3*wage*|night_hours(s)|` |
 | Công bằng ca đêm / cuối tuần | Van den Bergh 2013 | Soft | `F = max_e N_e - min_e N_e`, `AddMaxEquality` / `AddMinEquality` |
 | Số ngày làm liên tiếp tối thiểu, số cuối tuần tối đa | INRC-II | Soft | Trọng số cấu hình |
@@ -161,7 +160,7 @@ Khi repair (C6, lịch gốc + ngày khóa `from_day` + ca ghim): thiếu ngư�
 
 ### 5.4 Hằng số pháp lý
 
-Mọi con số luật (8, 48, 12, 24, 30%, 30/45 phút, khung đêm 22–6) nằm trong một dataclass bất biến `LaborRules` (`constraints/labor_law_vn.py`) với giá trị mặc định đúng luật và docstring ghi điều khoản. Mô hình và validator đều đọc từ `LaborRules`; kịch bản what-if đổi tham số bằng cách truyền `LaborRules` khác, không sửa code.
+Mọi con số luật (8, 48, 12, 24, 30%, khung đêm 22–6) nằm trong một dataclass bất biến `LaborRules` (`constraints/labor_law_vn.py`) với giá trị mặc định đúng luật và docstring ghi điều khoản. Mô hình và validator đều đọc từ `LaborRules`; kịch bản what-if đổi tham số bằng cách truyền `LaborRules` khác, không sửa code.
 
 Lưu ý khi trích dẫn: khung giờ đêm thuộc **Điều 106**, không phải Điều 105 (một số bài phổ biến ghi nhầm). Giới hạn làm thêm giờ (Đ.107: 50% giờ bình thường/ngày, 40 giờ/tháng, 200 giờ/năm, tới 300 giờ/năm với một số ngành) và hệ số làm thêm (Đ.98: 150% / 200% / 300%, đêm +20%) chỉ dùng trong mô hình ngẫu nhiên hai giai đoạn (mục 6, mức mở rộng). Bản đặc tả cuối nên trích trực tiếp văn bản 45/2019/QH14, không trích qua trang thứ cấp.
 
@@ -175,7 +174,7 @@ Chỉ áp cho nhóm đồng nhất: thứ tự từ điển `sum_d w[e,d] >= sum
 
 Bắt buộc (1–3), kịch bản (4) nên có, (5–6) là mở rộng:
 
-1. **Dual của LP relaxation** (`sensitivity/lp_duals.py`): mô hình Dantzig có nghỉ ngầm, relax biến liên tục, PuLP + HiGHS, lấy `constraint.pi` của `cover_h`. Luôn gắn nhãn "xấp xỉ, integrality gap có thể lớn". `.pi` có thể là `None` tùy giao diện solver — phải xử lý và có test. Dual và chi phí biên dùng cùng một mô hình để so sánh được.
+1. **Dual của LP relaxation** (`sensitivity/lp_duals.py`): mô hình phủ tập Dantzig, relax biến liên tục, PuLP + HiGHS, lấy `constraint.pi` của `cover_h`. Luôn gắn nhãn "xấp xỉ, integrality gap có thể lớn". `.pi` có thể là `None` tùy giao diện solver — phải xử lý và có test. Dual và chi phí biên dùng cùng một mô hình để so sánh được.
 2. **Bảng so sánh dual LP với chi phí biên rời rạc theo giờ** (`compare_duals_with_marginal_cost`) thay cho "cố định biến nguyên rồi giải lại LP": khi mọi biến của mô hình phủ tập đều nguyên, cố định hết thì LP không còn biến tự do và dual suy biến. Chênh lệch giữa dual và chi phí biên cho thấy integrality gap theo từng giờ.
 3. **Quét tham số** (`sensitivity/parametric.py`): với `lambda` trong `{0.8, 0.9, ..., 1.3}` giải lại với `r_t(lambda) = ceil(lambda * r_t)`, vẽ `z(lambda)`, số người, giờ thiếu. **Chi phí biên rời rạc** của giờ `t` là `z(r + e_t) - z(r)`, tính bằng 168 lần giải lại (một lần cho mỗi giờ trong tuần); đây là heatmap có giá trị nhất cho UI. Mỗi lần giải dùng cùng time limit và seed; kết quả không `OPTIMAL` phải được đánh dấu `proven = False` để chênh lệch không bị diễn giải sai.
 4. **Kịch bản theo covariate** (`sensitivity/scenarios.py`): `holiday_flag`, `discount < 1` / `activity_flag`, mưa. Khuyến mãi tạo nhu cầu cao hơn doanh số quan sát (median uplift 1.43× theo bài báo), mưa và giảm giá sâu làm tăng hết hàng — nghĩa là nhu cầu thật còn cao hơn nữa.
@@ -332,7 +331,7 @@ engine/
     domain.py               dataclass bất biến: ShiftType, Employee, Instance, Assignment, Solution
     time_grid.py            hằng số giờ/ngày/tuần, quấn vòng mod 168, giờ đêm
     staffing/               linear.py, latent_demand.py
-    models/                 set_covering_pulp.py, implicit_breaks.py, implicit_breaks_cpsat.py, roster_cpsat.py, roster_mip.py (ILP, HiGHS, đối chiếu)
+    models/                 set_covering_pulp.py, set_covering_cpsat.py, roster_cpsat.py, roster_mip.py (ILP, HiGHS, đối chiếu)
     constraints/            labor_law_vn.py (LaborRules), sequences.py, fairness.py
     solvers/                base.py (SolveStatus, SolveParams, SolveResult), cpsat.py, pulp_backend.py
     sensitivity/            lp_duals.py, parametric.py, scenarios.py

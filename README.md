@@ -27,7 +27,7 @@ Một cửa hàng hoặc kho mở 24/7 có lượng việc thay đổi theo từ
 
 - **Mỗi giờ cần bao nhiêu người?** Doanh số và lượng khách khác nhau giữa sáng, trưa, tối và giữa các ngày trong tuần.
 - **Xếp ai làm ca nào?** Phải đủ người ở mọi giờ, chi phí lương thấp nhất, chia ca đêm công bằng.
-- **Có đúng luật không?** Bộ luật Lao động 2019 giới hạn giờ làm, bắt buộc nghỉ giữa hai ca, nghỉ hằng tuần và nghỉ giữa ca. Xếp lịch bằng tay rất dễ vi phạm.
+- **Có đúng luật không?** Bộ luật Lao động 2019 giới hạn giờ làm, bắt buộc nghỉ giữa hai ca và nghỉ hằng tuần. Xếp lịch bằng tay rất dễ vi phạm.
 
 ### Giải pháp
 
@@ -80,7 +80,6 @@ Mô tả chi tiết từng tầng và thuật toán: [docs/kiến trúc.md](docs
 | Nghỉ ít nhất 12 giờ giữa hai ca, tính bằng công thức tổng quát | Đ.110 | Cứng |
 | Nghỉ ít nhất 24 giờ liên tục mỗi tuần, tính trên trục giờ | Đ.111 | Cứng |
 | Tối đa 6 ngày làm liên tiếp | Đề bài | Cứng |
-| Nghỉ giữa ca 30 phút (ca đêm 45 phút), trừ khỏi số người có mặt | Đ.109 | Cứng |
 | Phụ cấp làm đêm 30%, giờ đêm 22h–06h | Đ.98, Đ.106 | Chi phí |
 | Phủ nhu cầu từng giờ | Đề bài | Mềm: luôn có lời giải, giờ thiếu hiện trên biểu đồ |
 | Ngân sách lương tuần (tùy chọn) | Đặc tả D26 | Cứng: ngân sách chặt làm tăng giờ thiếu, không làm mô hình vô nghiệm |
@@ -225,7 +224,7 @@ ShiftOpt/
 │   │   ├── time_grid.py       # Trục 168 giờ có quấn vòng, khung giờ đêm
 │   │   ├── staffing/          # Nhu cầu ẩn giờ hết hàng, quy đổi tuyến tính
 │   │   ├── constraints/       # LaborRules (hằng số luật), cặp ca cấm, cửa sổ ngày liên tiếp
-│   │   ├── models/            # roster_cpsat (theo nhân viên), roster_mip (ILP, HiGHS), set_covering_pulp, implicit_breaks
+│   │   ├── models/            # roster_cpsat (theo nhân viên), roster_mip (ILP, HiGHS), set_covering_pulp, set_covering_cpsat
 │   │   ├── solvers/           # SolveParams / SolveResult chung cho CP-SAT và HiGHS
 │   │   ├── sensitivity/       # Quét λ, chi phí biên, dual LP, quét giả định
 │   │   ├── validation.py      # Kiểm tra luật độc lập, không import models/ hay solvers/

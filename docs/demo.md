@@ -61,7 +61,6 @@ Một cửa hàng hoặc kho mở 24/7 cần biết **mỗi giờ trong tuần c
 | Đ.105 | Tối đa 8 giờ/ngày, 48 giờ/tuần | Ràng buộc cứng |
 | Đ.106 | Giờ đêm là 22h–06h | Dùng để tính phụ cấp |
 | Đ.98 | Làm đêm được trả thêm ít nhất 30% | Nằm trong chi phí ca |
-| Đ.109 | Nghỉ giữa ca 30 phút (ca đêm 45 phút) | Mỗi ca mất một giờ phủ cho giờ nghỉ |
 | Đ.110 | Nghỉ ít nhất 12 giờ giữa hai ca | Ràng buộc cứng |
 | Đ.111 | Nghỉ ít nhất 24 giờ liên tục mỗi tuần | Ràng buộc cứng, tính trên trục giờ |
 
@@ -292,8 +291,7 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
   3. Tìm dòng của X vào ngày kế tiếp:
      - Nếu có: đổi ô **Ca** của dòng đó thành **Ngày**.
      - Nếu không có: bấm **Thêm ca** (dòng mới ở cuối bảng), chọn Nhân viên = X, Ngày = ngày kế tiếp, Ca = **Ngày**.
-  4. Ở dòng vừa đổi hoặc thêm, chọn **Bắt đầu nghỉ** là một giờ bất kỳ. **Không để "Không nghỉ"**; nếu để, sẽ có thêm lỗi thiếu giờ nghỉ (Đ.109) làm rối phần trình bày.
-  5. Bấm **Lưu thành lượt mới và kiểm tra lại**.
+  4. Bấm **Lưu thành lượt mới và kiểm tra lại**.
 - **Nói:** "Giả sử quản lý tự sửa lịch: cho X làm ca tối, kết thúc lúc 24h, rồi ca ngày hôm sau bắt đầu lúc 8h. X chỉ được nghỉ 8 giờ, ít hơn 12 giờ theo Điều 110. Hệ thống không ghi đè lịch cũ: bản sửa là một lượt mới và được kiểm lại ngay."
 - **Ý nghĩa:** chứng minh validator bắt được vi phạm do người sửa tay, và lịch gốc không bị phá.
 - **Mong đợi:**
@@ -385,7 +383,7 @@ Chi tiết từng bước ở dưới. Mỗi bước gồm: **Làm** (thao tác)
 
 | Câu hỏi | Trả lời ngắn |
 |---|---|
-| Tại sao dùng OR-Tools CP-SAT mà không dùng PuLP? | CP-SAT mạnh với biến 0/1 và ràng buộc chuỗi ngày, nghỉ giữa ca. PuLP + HiGHS được dùng cho mô hình tổng hợp, để lấy dual LP, và giải cùng mô hình theo nhân viên viết dạng ILP để đối chiếu. Hai solver được so sánh trên cả hai mô hình (`docs/benchmarks.md` mục 2, 2b). |
+| Tại sao dùng OR-Tools CP-SAT mà không dùng PuLP? | CP-SAT mạnh với biến 0/1 và ràng buộc chuỗi ngày, nghỉ giữa hai ca. PuLP + HiGHS được dùng cho mô hình tổng hợp, để lấy dual LP, và giải cùng mô hình theo nhân viên viết dạng ILP để đối chiếu. Hai solver được so sánh trên cả hai mô hình (`docs/benchmarks.md` mục 2, 2b). |
 | Sao không dùng trọng số phạt cho giờ thiếu? | Chọn trọng số lớn tùy tiện dễ sai. Giải theo tầng bảo đảm thiếu người luôn ưu tiên hơn chi phí. |
 | Nếu không đủ người thì sao? | Lịch vẫn được tạo, giờ thiếu hiện trên biểu đồ. Luật vẫn không bị vi phạm. |
 | Kết quả có đúng không? | Mô hình được kiểm trên benchmark công khai Curtois & Qu: 3/5 instance đạt và chứng minh được đúng tối ưu đã công bố (8 worker, 120 giây). Mọi lịch đều qua validator độc lập. |

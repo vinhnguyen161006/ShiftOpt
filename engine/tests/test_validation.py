@@ -21,7 +21,7 @@ ALL_SHIFTS = (DAY, MORNING, AFTERNOON, NIGHT, SEVEN_HOURS, TEN_HOURS, FOUR_HOURS
 
 
 def work(day: int, shift: ShiftType, employee: str = "e1") -> Assignment:
-    return Assignment(employee, day, shift.name, break_offset=1 if shift.length >= 6 else None)
+    return Assignment(employee, day, shift.name)
 
 
 def violations_for(*assignments: Assignment, rules: LaborRules | None = None) -> list[Violation]:
@@ -170,26 +170,6 @@ def test_validation_does_not_import_models_or_solvers() -> None:
     assert validation.__file__ is not None
     modules = imported_modules(validation.__file__)
     assert not any(module.startswith(("shiftopt.models", "shiftopt.solvers")) for module in modules)
-
-
-def test_shift_without_break_is_reported() -> None:
-    violations = violations_for(Assignment("e1", 0, DAY.name))
-    assert [violation.kind for violation in violations] == [ViolationKind.MISSING_BREAK]
-    assert violations[0].day == 0
-
-
-def test_break_in_first_or_last_hour_is_reported() -> None:
-    first = violations_for(Assignment("e1", 0, DAY.name, break_offset=0))
-    last = violations_for(Assignment("e1", 0, DAY.name, break_offset=7))
-    assert [violation.kind for violation in first] == [ViolationKind.BREAK_OUTSIDE_WINDOW]
-    assert [violation.kind for violation in last] == [ViolationKind.BREAK_OUTSIDE_WINDOW]
-
-
-def test_short_shift_must_not_carry_a_break() -> None:
-    assert kinds_for(Assignment("e1", 0, FOUR_HOURS.name)) == []
-    assert kinds_for(Assignment("e1", 0, FOUR_HOURS.name, break_offset=1)) == [
-        ViolationKind.BREAK_OUTSIDE_WINDOW
-    ]
 
 
 def test_rostering_on_unavailable_day_is_reported() -> None:

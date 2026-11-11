@@ -4,8 +4,8 @@ from collections.abc import Callable
 
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.domain import Employee, Instance, ShiftType
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
-from shiftopt.models.implicit_breaks_cpsat import solve_with_implicit_breaks_cpsat
+from shiftopt.models.set_covering_cpsat import solve_set_covering_cpsat
+from shiftopt.models.set_covering_pulp import solve_set_covering
 from shiftopt.solvers.base import SolveParams, SolveResult
 from shiftopt.time_grid import HOURS_PER_WEEK
 
@@ -54,10 +54,10 @@ INSTANCES: tuple[tuple[str, Callable[[], Instance]], ...] = (
     ("peaked_spaced_8_shifts", spaced_instance),
 )
 SOLVERS: tuple[tuple[str, Callable[[Instance, SolveParams], SolveResult]], ...] = (
-    ("highs", lambda instance, params: solve_with_implicit_breaks(instance, WAGE, params).result),
+    ("highs", lambda instance, params: solve_set_covering(instance, WAGE, params).result),
     (
         "cpsat",
-        lambda instance, params: solve_with_implicit_breaks_cpsat(instance, WAGE, params).result,
+        lambda instance, params: solve_set_covering_cpsat(instance, WAGE, params).result,
     ),
 )
 

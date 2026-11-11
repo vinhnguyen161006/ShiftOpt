@@ -2,8 +2,8 @@ from collections.abc import Callable
 
 from shiftopt.constraints.labor_law_vn import LaborRules
 from shiftopt.domain import Employee, Instance, ShiftType
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
-from shiftopt.models.implicit_breaks_cpsat import solve_with_implicit_breaks_cpsat
+from shiftopt.models.set_covering_cpsat import solve_set_covering_cpsat
+from shiftopt.models.set_covering_pulp import solve_set_covering
 from shiftopt.solvers.base import SolveParams, SolveStatus
 from shiftopt.time_grid import HOURS_PER_WEEK
 
@@ -16,8 +16,8 @@ def test_cpsat_matches_highs_uniform_demand(
 ) -> None:
     instance = build_instance(demand_per_hour=1)
 
-    highs = solve_with_implicit_breaks(instance, WAGE, PARAMS)
-    cpsat = solve_with_implicit_breaks_cpsat(instance, WAGE, PARAMS)
+    highs = solve_set_covering(instance, WAGE, PARAMS)
+    cpsat = solve_set_covering_cpsat(instance, WAGE, PARAMS)
 
     assert highs.result.status is SolveStatus.OPTIMAL
     assert cpsat.result.status is SolveStatus.OPTIMAL
@@ -33,8 +33,8 @@ def test_cpsat_matches_highs_on_peaked_demand(three_shifts: tuple[ShiftType, ...
         rules=LaborRules(),
     )
 
-    highs = solve_with_implicit_breaks(instance, WAGE, PARAMS)
-    cpsat = solve_with_implicit_breaks_cpsat(instance, WAGE, PARAMS)
+    highs = solve_set_covering(instance, WAGE, PARAMS)
+    cpsat = solve_set_covering_cpsat(instance, WAGE, PARAMS)
 
     assert highs.result.status is SolveStatus.OPTIMAL
     assert cpsat.result.status is SolveStatus.OPTIMAL
@@ -42,7 +42,7 @@ def test_cpsat_matches_highs_on_peaked_demand(three_shifts: tuple[ShiftType, ...
 
 
 def test_cpsat_returns_no_duals(build_instance: Callable[..., Instance]) -> None:
-    cpsat = solve_with_implicit_breaks_cpsat(build_instance(demand_per_hour=1), WAGE, PARAMS)
+    cpsat = solve_set_covering_cpsat(build_instance(demand_per_hour=1), WAGE, PARAMS)
 
     assert cpsat.duals is None
     assert all(value >= 0 for value in cpsat.counts.values())

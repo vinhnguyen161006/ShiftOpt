@@ -45,7 +45,6 @@ function toBody(
       employee_code: item.employee_code,
       day: item.day,
       shift_name: item.shift_name,
-      break_offset: item.break_offset ?? null,
     }));
   return {
     from_day: fromDay,

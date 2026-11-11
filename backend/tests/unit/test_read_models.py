@@ -22,12 +22,9 @@ async def test_labor_rules_endpoint_returns_engine_defaults(client: AsyncClient)
 def test_shift_template_read_carries_night_hours_from_the_engine() -> None:
     night = ShiftTemplate(id=1, name="night", start_hour=22, length_hours=8, created_at=CREATED)
     late = ShiftTemplate(id=2, name="late", start_hour=14, length_hours=8, created_at=CREATED)
-    short = ShiftTemplate(id=3, name="short", start_hour=8, length_hours=4, created_at=CREATED)
 
     assert ShiftTemplateRead.model_validate(night).night_hours == 8
     assert ShiftTemplateRead.model_validate(late).night_hours == 0
-    assert ShiftTemplateRead.model_validate(night).break_required is True
-    assert ShiftTemplateRead.model_validate(short).break_required is False
 
 
 def test_solve_run_read_lists_snapshot_employees_and_shifts() -> None:
