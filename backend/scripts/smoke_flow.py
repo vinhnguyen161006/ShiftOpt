@@ -88,7 +88,7 @@ def check_manual_edit(client: httpx.Client, run: dict[str, Any], tag: str) -> No
     kept = [row for row in run["assignments"] if row["employee_code"] != victim]
     evening = {"employee_code": victim, "day": 0, "shift_name": f"evening-{tag}"}
     early = {"employee_code": victim, "day": 1, "shift_name": f"early-{tag}"}
-    edited_rows = [*kept, {**evening, "break_offset": None}, {**early, "break_offset": None}]
+    edited_rows = [*kept, evening, early]
     edit = client.post(f"/api/schedules/{run['id']}/edits", json={"assignments": edited_rows})
     expect(edit.status_code == 201, f"POST edits: {edit.status_code} {edit.text}")
     edited = edit.json()
@@ -177,7 +177,6 @@ def check_replacements(client: httpx.Client, run: dict[str, Any]) -> dict[str, A
             "employee_code": pick["employee_code"],
             "day": target["day"],
             "shift_name": pick["shift_name"],
-            "break_offset": pick["break_offset"],
         }
     )
     applied = client.post(f"/api/schedules/{run['id']}/edits", json={"assignments": rows})

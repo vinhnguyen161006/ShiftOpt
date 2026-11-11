@@ -1,6 +1,6 @@
 # Đặc tả ShiftOpt
 
-**Trạng thái:** đã duyệt ngày 2026-11-08. Người dùng (Vinh) ủy quyền cho Claude quyết định mọi mục ở mục 3 và phiếu duyệt; kết quả ghi ở phiếu duyệt. Bổ sung ngày 2026-11-09: sửa D16, thêm D25–D28, theo câu trả lời của người dùng. Các thành viên khác của nhóm chưa xem bản này: ai không đồng ý thì sửa dòng tương ứng ở phiếu. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
+**Trạng thái:** đã duyệt ngày 2026-11-08. Người dùng (Vinh) ủy quyền cho Claude quyết định mọi mục ở mục 3 và phiếu duyệt; kết quả ghi ở phiếu duyệt. Bổ sung ngày 2026-11-09: sửa D16, thêm D25–D28, theo câu trả lời của người dùng. Sửa D6 ngày 2026-11-11: bỏ nghỉ giữa giờ khỏi mô hình theo yêu cầu của người dùng. Các thành viên khác của nhóm chưa xem bản này: ai không đồng ý thì sửa dòng tương ứng ở phiếu. Mọi quyết định ở mục 3 có thể đổi; khi đổi phải sửa config hoặc `LaborRules`, cập nhật mục này và chạy lại benchmark.
 
 **Chưa đóng:** Nghị định 145/2020 chưa đối chiếu văn bản gốc (mục 4). Điểm này không chặn duyệt vì code đang chặt hơn nguồn thứ cấp.
 
@@ -46,13 +46,13 @@ Người chốt: Claude theo ủy quyền của người dùng, 2026-11-08 (D1�
 | D3 | `K` ngày làm liên tiếp tối đa | 6 | Mỗi cửa sổ 7 ngày có ít nhất một ngày nghỉ |
 | D4 | 48 hay 40 giờ/tuần | 48 cho kịch bản cơ sở; 40 là kịch bản what-if | Luật cho phép 48 |
 | D5 | Đ.110 áp cho cặp ca nào | Mọi cặp ca liên tiếp, công thức tổng quát `24 + σ' − (σ + L) ≥ 12` | Cách hiểu chặt, không bao giờ sai luật |
-| D6 | Nghỉ giữa giờ (Đ.109) | Ca từ 6 giờ có nghỉ 30 phút (ca đêm 45 phút), tính là mất một giờ phủ | Bảo thủ. Ngưỡng 6 giờ và thời lượng khớp Đ.109 (mục 4) |
+| D6 | Nghỉ giữa giờ (Đ.109) | Không mô hình hóa (từ 2026-11-11). Mỗi ca phủ đủ mọi giờ của nó; validator không kiểm Đ.109 | Người dùng chọn bỏ 2026-11-11. Code lỏng hơn luật: lịch không chỉ ra ai nghỉ lúc nào, cửa hàng tự sắp giờ nghỉ khi vận hành (mục 4, mục 7) |
 | D7 | `alpha` | 1,0 | Không có hệ số chuẩn hóa công khai; gộp vào `p` |
 | D8 | `p` (đơn vị doanh số chuẩn hóa mỗi người mỗi giờ) | 4,0 cho kịch bản cơ sở (truyền tường minh) | Với store 18, giờ đỉnh cần 8 người. Tải đỉnh 28,3. `DEFAULT_PRODUCTIVITY` trong code vẫn là 1,0; chưa đổi để không đổi hành vi smoke và test, cần đổi kèm chạy lại test |
 | D9 | Sàn `min_staff`, `night_min_staff` | 1 và 1 | Nguyên tắc 7 gợi ý 1–2 |
 | D10 | Doanh thu cho tỷ lệ chi phí lao động | Không mặc định; nhập trên UI | Không có dữ liệu doanh thu thật |
 | D11 | Trọng số `M_u`, `λ_F` | Không dùng trọng số; giải lexicographic theo tầng: thiếu người, giờ tối thiểu (khi có, D25), thay đổi (repair), chi phí, chênh ca đêm, chênh giờ làm (khi dung sai > 0, D21), sở thích | Tránh chọn `M` tùy tiện (CLAUDE.md 5.2) |
-| D12 | So sánh CP-SAT với HiGHS | Trên mô hình tổng hợp có nghỉ ngầm, và trên mô hình theo nhân viên (HiGHS qua `roster_mip.py`, chỉ để đối chiếu; lõi sản phẩm vẫn là CP-SAT) | Đối chiếu có bảng kết quả ở `benchmarks.md` mục 2b; phạm vi 10–30 nhân viên, 3 seed, 60 giây |
+| D12 | So sánh CP-SAT với HiGHS | Trên mô hình tổng hợp (phủ tập), và trên mô hình theo nhân viên (HiGHS qua `roster_mip.py`, chỉ để đối chiếu; lõi sản phẩm vẫn là CP-SAT) | Đối chiếu có bảng kết quả ở `benchmarks.md` mục 2b; phạm vi 10–30 nhân viên, 3 seed, 60 giây |
 | D13 | Kịch bản cơ sở | Store 18, D7–D9, 3 ca 0/8/16 h, 30 nhân viên, 48 giờ | Dữ liệu thật, không sinh ngẫu nhiên |
 | D14 | Dataset tổng đài công khai | Bỏ, thay bằng D18 | — |
 | D15 | Giết tiến trình con khi quá hạn | Không làm; ghi là giới hạn đã biết | CP-SAT tự dừng theo time limit |
@@ -83,7 +83,7 @@ Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "
 | D3 | `K` ngày làm liên tiếp tối đa | Đồng ý | Mỗi cửa sổ 7 ngày có một ngày nghỉ. |
 | D4 | 48 hay 40 giờ/tuần | Đồng ý | Kịch bản 40 giờ nằm ở What-if. |
 | D5 | Đ.110 áp cho cặp ca nào | Đồng ý | Công thức tổng quát, không hard-code `sigma - sigma' > 4`. |
-| D6 | Nghỉ giữa giờ (Đ.109) | Đồng ý | Chặt hơn luật, có chủ đích. |
+| D6 | Nghỉ giữa giờ (Đ.109) | Đổi 2026-11-11 | Người dùng bỏ nghỉ giữa giờ khỏi mô hình. |
 | D7 | `alpha` | Đồng ý | Gộp vào `p`. |
 | D8 | `p` (đơn vị doanh số chuẩn hóa mỗi người mỗi giờ) | Đồng ý | Truyền tường minh. Không đổi `DEFAULT_PRODUCTIVITY` (1,0) để khỏi đổi hành vi test. |
 | D9 | Sàn `min_staff`, `night_min_staff` | Đồng ý | Theo nguyên tắc 7 của CLAUDE.md. |
@@ -110,7 +110,6 @@ Cột kết quả là "Đồng ý" hoặc "Sửa" kèm nội dung sửa. Mọi "
 **Điểm code chặt hơn luật (đã xác nhận có chủ đích, 2026-11-08):**
 
 - Đ.105 khoản 2: code chỉ cho 8 giờ mỗi ngày, luật cho tới 10 giờ khi quy định theo tuần.
-- Đ.109 khoản 1: code mất một giờ phủ cho mọi ca cần nghỉ, luật chỉ yêu cầu 30 hoặc 45 phút.
 - Đ.111 khoản 1: code không có ngoại lệ bình quân 04 ngày nghỉ mỗi tháng.
 
 **Các việc nhóm cần quyết trước đây, kết quả 2026-11-08:**
@@ -134,7 +133,7 @@ Mọi hằng nằm trong `LaborRules` (`engine/src/shiftopt/constraints/labor_la
 | 105 khoản 1 | Thời giờ làm việc bình thường không quá 08 giờ trong 01 ngày và không quá 48 giờ trong 01 tuần | 8 giờ/ngày; 48 giờ/tuần | Khớp |
 | 105 khoản 2 | Khi quy định theo tuần: không quá 10 giờ trong 01 ngày và không quá 48 giờ trong 01 tuần | Chỉ 8 giờ/ngày | Chặt hơn luật, có chủ đích |
 | 106 | Giờ làm việc ban đêm được tính từ 22 giờ đến 06 giờ sáng ngày hôm sau | 22; 6 | Khớp |
-| 109 khoản 1 | Làm việc theo thời giờ Điều 105 từ 06 giờ trở lên trong một ngày thì được nghỉ giữa giờ ít nhất 30 phút liên tục; làm việc ban đêm thì ít nhất 45 phút liên tục. Ca liên tục từ 06 giờ trở lên thì thời gian nghỉ giữa giờ được tính vào giờ làm việc | Ngưỡng 6 giờ; 30 phút; 45 phút ban đêm | Khớp về ngưỡng và thời lượng. Code mất một giờ phủ cho mọi ca cần nghỉ (chặt hơn, có chủ đích). Ca một ngày một người nên "theo ngày" và "theo ca" trùng nhau |
+| 109 khoản 1 | Làm việc theo thời giờ Điều 105 từ 06 giờ trở lên trong một ngày thì được nghỉ giữa giờ ít nhất 30 phút liên tục; làm việc ban đêm thì ít nhất 45 phút liên tục. Ca liên tục từ 06 giờ trở lên thì thời gian nghỉ giữa giờ được tính vào giờ làm việc | Không có (D6) | Không mô hình hóa từ 2026-11-11 (lỏng hơn luật, theo quyết định của người dùng) |
 | 110 | Làm việc theo ca được nghỉ ít nhất 12 giờ trước khi chuyển sang ca làm việc khác | 12 | Khớp |
 | 111 khoản 1 | Mỗi tuần được nghỉ ít nhất 24 giờ liên tục. Trường hợp đặc biệt không nghỉ hằng tuần được: bình quân ít nhất 04 ngày nghỉ mỗi tháng | 24 | Chặt hơn luật: code không có ngoại lệ 04 ngày/tháng |
 
@@ -161,7 +160,7 @@ Lấy từ CLAUDE.md mục 13. Kết quả đo nằm trong [benchmarks.md](bench
 
 ## 6. Mô hình và lệch có chủ đích
 
-- Nghỉ giữa ca là giảm một giờ phủ (xấp xỉ bảo thủ, `docs/model.md` mục 1b).
+- Không mô hình hóa nghỉ giữa giờ (D6): mỗi ca phủ đủ mọi giờ của nó.
 - Thứ tự tối ưu là lexicographic: thiếu người, giờ tối thiểu (khi có), thay đổi (repair), chi phí, chênh ca đêm, chênh giờ làm (khi có dung sai), sở thích. Không dùng trọng số phạt.
 - Công bằng: model tối thiểu hóa max − min (tuyến tính); KPI báo độ lệch chuẩn (mô tả). Hai đại lượng khác nhau.
 - Phá đối xứng và phân rã hai pha đều tắt mặc định. Repo không có số đo cho hai tùy chọn này, nên không kết luận chúng nhanh hay chậm hơn.
@@ -174,5 +173,7 @@ Lấy từ CLAUDE.md mục 13. Kết quả đo nằm trong [benchmarks.md](bench
 - Nghị định 145/2020 chưa đối chiếu văn bản gốc. Các điều luật còn lại ở mục 4 đã đối chiếu.
 - Lịch tuần quấn vòng: ca Chủ nhật nối với thứ Hai cùng tuần, không nối với tuần trước (D22).
 - Chưa có chấm công; không đo adherence.
+- Không xếp nghỉ giữa giờ Đ.109 (D6). Lịch không bảo đảm có người trực khi một người nghỉ giữa ca; ca chỉ có một người sẽ trống trong lúc người đó nghỉ.
+- Số đo trong `benchmarks.md` chạy khi mô hình còn nghỉ giữa giờ (trước 2026-11-11), chưa đo lại.
 - Giờ tối thiểu theo hợp đồng là mềm (D25): lịch có thể để một người dưới mức tối thiểu và chỉ báo số giờ thiếu.
 - Quét dung sai chi phí (D21) mới đo trên dữ liệu sinh, mọi điểm `FEASIBLE` trong 60 giây (`benchmarks.md` mục 6).

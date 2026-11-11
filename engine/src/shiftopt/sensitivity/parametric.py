@@ -3,7 +3,6 @@ from dataclasses import dataclass, replace
 
 from shiftopt import kpi
 from shiftopt.domain import Instance, Solution
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
 from shiftopt.models.roster_cpsat import solve_roster
 from shiftopt.models.set_covering_pulp import SetCoveringResult, solve_set_covering
 from shiftopt.solvers.base import DEFAULT_PARAMS, SolveParams, SolveResult, SolveStatus
@@ -15,7 +14,7 @@ DEFAULT_MULTIPLIERS = (0.8, 0.9, 1.0, 1.1, 1.2, 1.3)
 @dataclass(frozen=True)
 class Evaluation:
     """Outcome of one re-solve. labor_cost is in hundredths of the wage unit, night premium
-    included. staffed_hours counts paid shift hours, breaks included. staff_by_hour is the head
+    included. staffed_hours counts paid shift hours. staff_by_hour is the head
     count on the floor in each of the 168 hours, or None when the model has no per-person
     schedule. None means no solution."""
 
@@ -33,18 +32,12 @@ class Evaluation:
 Resolver = Callable[[Instance], Evaluation]
 
 
-def aggregate_resolver(
-    hourly_wage: int, params: SolveParams = DEFAULT_PARAMS, with_breaks: bool = True
-) -> Resolver:
+def aggregate_resolver(hourly_wage: int, params: SolveParams = DEFAULT_PARAMS) -> Resolver:
     """Re-solve with the head-count model. Coverage is hard there, so a solution has no
     understaffed hours."""
 
     def resolve(instance: Instance) -> Evaluation:
-        if with_breaks:
-            outcome = solve_with_implicit_breaks(instance, hourly_wage, params)
-        else:
-            outcome = solve_set_covering(instance, hourly_wage, params)
-        return _aggregate_evaluation(instance, outcome)
+        return _aggregate_evaluation(instance, solve_set_covering(instance, hourly_wage, params))
 
     return resolve
 

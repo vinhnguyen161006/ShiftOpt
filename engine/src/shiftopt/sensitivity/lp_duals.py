@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from shiftopt.domain import Instance
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
+from shiftopt.models.set_covering_pulp import solve_set_covering
 from shiftopt.sensitivity.parametric import MarginalCostTable
 from shiftopt.solvers.base import DEFAULT_PARAMS, SolveParams, SolveResult, SolveStatus
 
@@ -36,9 +36,9 @@ def normalize_duals(raw: Sequence[float | None]) -> tuple[tuple[float, ...], tup
 def lp_relaxation_duals(
     instance: Instance, hourly_wage: int, params: SolveParams = DEFAULT_PARAMS
 ) -> LpDuals:
-    """Duals of the LP relaxation of the implicit-break model. Duals are only meaningful at an
+    """Duals of the LP relaxation of the set covering model. Duals are only meaningful at an
     LP optimum, so any other status raises."""
-    outcome = solve_with_implicit_breaks(instance, hourly_wage, params, relax=True)
+    outcome = solve_set_covering(instance, hourly_wage, params, relax=True)
     if outcome.result.status != SolveStatus.OPTIMAL or outcome.result.objective is None:
         raise ValueError(f"LP relaxation not optimal: {outcome.result.status}")
     duals, missing = normalize_duals(outcome.duals or ())

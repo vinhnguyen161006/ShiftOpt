@@ -138,17 +138,6 @@
       },
       "AssignmentRead": {
         "properties": {
-          "break_offset": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Break Offset"
-          },
           "day": {
             "maximum": 6.0,
             "minimum": 0.0,
@@ -174,19 +163,6 @@
       },
       "AssignmentWrite": {
         "properties": {
-          "break_offset": {
-            "anyOf": [
-              {
-                "maximum": 23.0,
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Break Offset"
-          },
           "day": {
             "maximum": 6.0,
             "minimum": 0.0,
@@ -1053,10 +1029,6 @@
       "LaborRulesRead": {
         "description": "Default labor rules of the engine (Labor Code 45/2019/QH14), so the UI can warn before\nthe backend rejects an input.",
         "properties": {
-          "break_required_from_hours": {
-            "title": "Break Required From Hours",
-            "type": "integer"
-          },
           "max_consecutive_days": {
             "title": "Max Consecutive Days",
             "type": "integer"
@@ -1067,14 +1039,6 @@
           },
           "max_weekly_hours": {
             "title": "Max Weekly Hours",
-            "type": "integer"
-          },
-          "min_break_minutes": {
-            "title": "Min Break Minutes",
-            "type": "integer"
-          },
-          "min_night_break_minutes": {
-            "title": "Min Night Break Minutes",
             "type": "integer"
           },
           "min_rest_between_shifts": {
@@ -1106,10 +1070,7 @@
           "night_premium_percent",
           "min_rest_between_shifts",
           "weekly_rest_hours",
-          "max_consecutive_days",
-          "min_break_minutes",
-          "min_night_break_minutes",
-          "break_required_from_hours"
+          "max_consecutive_days"
         ],
         "title": "LaborRulesRead",
         "type": "object"
@@ -1453,17 +1414,6 @@
       },
       "ReplacementRead": {
         "properties": {
-          "break_offset": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Break Offset"
-          },
           "employee_code": {
             "title": "Employee Code",
             "type": "string"
@@ -1488,7 +1438,6 @@
         "required": [
           "employee_code",
           "shift_name",
-          "break_offset",
           "extra_cost",
           "weekly_hours",
           "prefers_off"
@@ -1658,10 +1607,6 @@
       },
       "ShiftTemplateRead": {
         "properties": {
-          "break_required": {
-            "title": "Break Required",
-            "type": "boolean"
-          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -1694,7 +1639,6 @@
           "start_hour",
           "length_hours",
           "night_hours",
-          "break_required",
           "created_at"
         ],
         "title": "ShiftTemplateRead",

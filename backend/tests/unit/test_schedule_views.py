@@ -44,8 +44,8 @@ def _run(assignments: list[dict[str, object]]) -> SolveRun:
 def test_rest_violation_is_reported_with_its_article() -> None:
     run = _run(
         [
-            {"employee_code": "E1", "day": 0, "shift_name": "evening", "break_offset": 3},
-            {"employee_code": "E1", "day": 1, "shift_name": "morning", "break_offset": 3},
+            {"employee_code": "E1", "day": 0, "shift_name": "evening"},
+            {"employee_code": "E1", "day": 1, "shift_name": "morning"},
         ]
     )
 
@@ -57,16 +57,16 @@ def test_rest_violation_is_reported_with_its_article() -> None:
 
 
 def test_assignments_csv_lists_each_shift() -> None:
-    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day", "break_offset": None}])
+    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day"}])
 
     lines = assignments_csv(run).splitlines()
 
-    assert lines[0] == "employee_code,day,shift_name,start_hour,length_hours,break_offset"
-    assert lines[1] == "E1,0,day,8,8,"
+    assert lines[0] == "employee_code,day,shift_name,start_hour,length_hours"
+    assert lines[1] == "E1,0,day,8,8"
 
 
 def test_coverage_csv_has_one_row_per_hour() -> None:
-    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day", "break_offset": None}])
+    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day"}])
 
     lines = coverage_csv(run).splitlines()
 
@@ -75,7 +75,7 @@ def test_coverage_csv_has_one_row_per_hour() -> None:
 
 
 def test_kpi_csv_carries_coverage_metric() -> None:
-    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day", "break_offset": None}])
+    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day"}])
 
     text = kpi_csv(get_kpi(run))
 
@@ -91,13 +91,14 @@ def test_run_without_schedule_has_no_views() -> None:
         get_compliance(run)
 
 
-def test_shortfall_explains_the_break_hour_with_its_legal_basis() -> None:
-    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "day", "break_offset": 4}])
+def test_shortfall_explains_the_uncovered_hours_with_their_legal_basis() -> None:
+    run = _run([{"employee_code": "E1", "day": 0, "shift_name": "morning"}])
 
     rows = get_shortfall(run)
 
     assert [(item.hour, item.day, item.hour_of_day, item.shortfall) for item in rows] == [
-        (12, 0, 12, 1)
+        (14, 0, 14, 1),
+        (15, 0, 15, 1),
     ]
     reasons = {item.kind: (item.legal_basis, item.employees) for item in rows[0].reasons}
     assert reasons["multiple_shifts_per_day"] == ("Roster rule", 1)

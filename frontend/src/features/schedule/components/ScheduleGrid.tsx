@@ -1,4 +1,4 @@
-import { DAY_NAMES, DAYS, formatHour, shiftSpan } from "../../../lib/time";
+import { DAY_NAMES, DAYS, shiftSpan } from "../../../lib/time";
 import type { AssignmentRead, ShiftTypeRead, SolveRunRead } from "../../../types/models";
 import "../schedule.css";
 import { vi } from "../../../locales/vi";
@@ -51,12 +51,6 @@ export function shiftLabels(shiftTypes: ShiftTypeRead[]): Map<string, string> {
   return labels;
 }
 
-function breakHour(shift: ShiftTypeRead | undefined, assignment: AssignmentRead): string | null {
-  return shift && assignment.break_offset !== null && assignment.break_offset !== undefined
-    ? formatHour(shift.start_hour + assignment.break_offset)
-    : null;
-}
-
 function cellTitle(
   day: number,
   shift: ShiftTypeRead | undefined,
@@ -64,10 +58,8 @@ function cellTitle(
   changed: boolean,
 ) {
   const span = shift ? ` ${shiftSpan(shift.start_hour, shift.length)}` : "";
-  const hour = breakHour(shift, assignment);
-  const rest = hour ? vi.schedule.grid.breakAt(hour) : "";
   const diff = changed ? `, ${vi.schedule.grid.changed}` : "";
-  return `${DAY_NAMES[day]}: ${assignment.shift_name}${span}${rest}${diff}`;
+  return `${DAY_NAMES[day]}: ${assignment.shift_name}${span}${diff}`;
 }
 
 export function ScheduleGrid({ run }: ScheduleGridProps) {
@@ -147,7 +139,6 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
                     );
                   }
                   const shift = shiftsByName.get(assignment.shift_name);
-                  const rest = breakHour(shift, assignment);
                   return (
                     <td key={day}>
                       <span
@@ -160,9 +151,6 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
                           <span className="roster-changed-mark" aria-hidden="true">
                             {vi.schedule.grid.changedMark}
                           </span>
-                        )}
-                        {rest && (
-                          <span className="roster-break">{vi.schedule.grid.breakShort(rest)}</span>
                         )}
                       </span>
                     </td>
@@ -190,7 +178,6 @@ export function ScheduleGrid({ run }: ScheduleGridProps) {
           <span className="swatch roster-off" />
           {vi.schedule.grid.off}
         </span>
-        <span className="legend-item">{vi.schedule.grid.breakLegend}</span>
         {repairing && (
           <span className="legend-item">
             <span className="swatch roster-cell-changed" />

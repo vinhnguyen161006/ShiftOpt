@@ -89,7 +89,7 @@ def test_mip_repair_counts_changes_as_symmetric_difference(
 
 def test_mip_pinned_shift_is_rostered(build_instance: InstanceFactory) -> None:
     instance = build_instance(demand_per_hour=1, employee_count=3)
-    pinned = Assignment("e1", 5, "day", 3)
+    pinned = Assignment("e1", 5, "day")
 
     outcome = solve_roster_mip(instance, PARAMS, repair=RepairSpec(Solution(()), pinned=(pinned,)))
 

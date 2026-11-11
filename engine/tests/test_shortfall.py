@@ -46,14 +46,14 @@ def reasons(explanation: HourExplanation) -> dict[ViolationKind, int]:
 
 def test_no_explanation_when_demand_is_met() -> None:
     instance = instance_of((Employee("e0", 100), Employee("e1", 100)), level=1)
-    roster = Solution((Assignment("e0", 0, "day", 4), Assignment("e1", 0, "day", 5)))
+    roster = Solution((Assignment("e0", 0, "day"), Assignment("e1", 0, "day")))
 
     assert explain_shortfall(instance, roster) == ()
 
 
 def test_unavailable_day_is_named_as_the_reason() -> None:
     crew = (Employee("e0", 100), Employee("e1", 100, unavailable_days=frozenset({0})))
-    roster = Solution((Assignment("e0", 0, "day", 4),))
+    roster = Solution((Assignment("e0", 0, "day"),))
 
     explanations = explain_shortfall(instance_of(crew), roster)
 
@@ -63,7 +63,7 @@ def test_unavailable_day_is_named_as_the_reason() -> None:
 
 def test_an_idle_legal_employee_is_reported_as_free() -> None:
     crew = (Employee("e0", 100), Employee("e1", 100))
-    roster = Solution((Assignment("e0", 0, "day", 4),))
+    roster = Solution((Assignment("e0", 0, "day"),))
 
     explanations = explain_shortfall(instance_of(crew), roster)
 
@@ -72,9 +72,9 @@ def test_an_idle_legal_employee_is_reported_as_free() -> None:
 
 
 def test_weekly_hours_is_named_when_the_employee_is_full() -> None:
-    full = tuple(Assignment("e1", day, "day", 4) for day in range(1, 7))
+    full = tuple(Assignment("e1", day, "day") for day in range(1, 7))
     crew = (Employee("e0", 100), Employee("e1", 100))
-    roster = Solution((Assignment("e0", 0, "day", 4), *full))
+    roster = Solution((Assignment("e0", 0, "day"), *full))
 
     explanations = explain_shortfall(instance_of(crew), roster)
 
@@ -83,7 +83,7 @@ def test_weekly_hours_is_named_when_the_employee_is_full() -> None:
 
 def test_rest_between_shifts_is_named_for_a_late_shift_before_the_morning() -> None:
     crew = (Employee("e0", 100), Employee("e1", 100))
-    roster = Solution((Assignment("e0", 0, "day", 4), Assignment("e1", 6, "evening", 4)))
+    roster = Solution((Assignment("e0", 0, "day"), Assignment("e1", 6, "evening")))
 
     explanations = explain_shortfall(instance_of(crew), roster)
 
@@ -92,7 +92,7 @@ def test_rest_between_shifts_is_named_for_a_late_shift_before_the_morning() -> N
 
 def test_second_shift_on_the_same_day_is_named() -> None:
     crew = (Employee("e0", 100), Employee("e1", 100))
-    roster = Solution((Assignment("e0", 0, "day", 4), Assignment("e1", 0, "night", 4)))
+    roster = Solution((Assignment("e0", 0, "day"), Assignment("e1", 0, "night")))
 
     explanations = explain_shortfall(instance_of(crew), roster)
 
@@ -101,7 +101,7 @@ def test_second_shift_on_the_same_day_is_named() -> None:
 
 def test_budget_is_named_when_one_more_shift_would_exceed_it() -> None:
     crew = (Employee("e0", 100), Employee("e1", 100))
-    roster = Solution((Assignment("e0", 0, "day", 4),))
+    roster = Solution((Assignment("e0", 0, "day"),))
     budget = 100 * 8 * 100
 
     explanations = explain_shortfall(instance_of(crew, budget=budget), roster)
@@ -144,7 +144,7 @@ def test_an_hour_no_shift_type_works_is_marked_uncoverable() -> None:
 
 def test_explanations_are_deterministic() -> None:
     crew = (Employee("e0", 100), Employee("e1", 100, unavailable_days=frozenset({0})))
-    roster = Solution((Assignment("e0", 0, "day", 4),))
+    roster = Solution((Assignment("e0", 0, "day"),))
     instance = instance_of(crew)
 
     assert explain_shortfall(instance, roster) == explain_shortfall(instance, roster)

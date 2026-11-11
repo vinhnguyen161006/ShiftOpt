@@ -13,6 +13,3 @@ class LaborRulesRead(BaseModel):
     min_rest_between_shifts: int
     weekly_rest_hours: int
     max_consecutive_days: int
-    min_break_minutes: int
-    min_night_break_minutes: int
-    break_required_from_hours: int

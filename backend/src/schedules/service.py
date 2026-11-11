@@ -62,7 +62,6 @@ ASSIGNMENT_HEADER = [
     "shift_name",
     "start_hour",
     "length_hours",
-    "break_offset",
 ]
 COVERAGE_HEADER = ["hour_of_week", "day", "hour", "required", "staffed"]
 KPI_HEADER = ["metric", "value"]
@@ -324,16 +323,8 @@ def assignments_csv(run: SolveRun) -> str:
     writer.writerow(ASSIGNMENT_HEADER)
     for row in run.assignments or []:
         shift = instance.shift_by_name(str(row["shift_name"]))
-        break_offset = row.get("break_offset")
         writer.writerow(
-            [
-                row["employee_code"],
-                row["day"],
-                shift.name,
-                shift.start_hour,
-                shift.length,
-                "" if break_offset is None else break_offset,
-            ]
+            [row["employee_code"], row["day"], shift.name, shift.start_hour, shift.length]
         )
     return buffer.getvalue()
 
@@ -527,7 +518,6 @@ def _assignment_read(assignment: Assignment) -> AssignmentRead:
         employee_code=assignment.employee_id,
         day=assignment.day,
         shift_name=assignment.shift_name,
-        break_offset=assignment.break_offset,
     )
 
 
@@ -543,7 +533,6 @@ def get_replacements(
         ReplacementRead(
             employee_code=item.employee_id,
             shift_name=item.shift_name,
-            break_offset=item.break_offset,
             extra_cost=item.extra_cost,
             weekly_hours=item.weekly_hours,
             prefers_off=item.prefers_off,

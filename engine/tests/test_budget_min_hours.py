@@ -14,7 +14,7 @@ from shiftopt.validation import ViolationKind, validate
 DAY = ShiftType("day", 8)
 SHIFT_COST = 100 * 8 * 100
 PARAMS = SolveParams(time_limit_seconds=60, num_workers=1, random_seed=0)
-UNCOVERED_WITH_TWO_SHIFTS = 3 * 8 - 2 * 7
+UNCOVERED_WITH_TWO_SHIFTS = 3 * 8 - 2 * 8
 
 
 def day_demand(days: int) -> tuple[int, ...]:
@@ -37,7 +37,7 @@ def instance_of(
 
 def test_validator_flags_a_roster_over_budget() -> None:
     instance = instance_of(plain_crew(1), day_demand(1), budget=SHIFT_COST - 1)
-    roster = Solution((Assignment("e0", 0, "day", 4),))
+    roster = Solution((Assignment("e0", 0, "day"),))
 
     violations = validate(instance, roster)
 
@@ -47,7 +47,7 @@ def test_validator_flags_a_roster_over_budget() -> None:
 
 def test_validator_accepts_a_roster_exactly_at_budget() -> None:
     instance = instance_of(plain_crew(1), day_demand(1), budget=SHIFT_COST)
-    roster = Solution((Assignment("e0", 0, "day", 4),))
+    roster = Solution((Assignment("e0", 0, "day"),))
 
     assert validate(instance, roster) == []
 

@@ -67,7 +67,7 @@ def test_absence_keeps_locked_days_and_counts_changes(
 
 def test_pinned_shift_is_rostered() -> None:
     instance = crew_instance(demand_per_hour=1)
-    pinned = Assignment("e1", 5, "day", 3)
+    pinned = Assignment("e1", 5, "day")
 
     outcome = solve_roster(instance, QUICK, repair=RepairSpec(Solution(()), pinned=(pinned,)))
 
@@ -116,7 +116,7 @@ def test_pinned_shift_on_unavailable_day_is_rejected() -> None:
     first = instance.employees[0]
     employees = (replace(first, unavailable_days=frozenset({4})), *instance.employees[1:])
     blocked = replace(instance, employees=employees)
-    spec = RepairSpec(Solution(()), pinned=(Assignment("e0", 4, "day", 3),))
+    spec = RepairSpec(Solution(()), pinned=(Assignment("e0", 4, "day"),))
     with pytest.raises(ValueError, match="cannot work"):
         solve_roster(blocked, QUICK, repair=spec)
 
@@ -128,6 +128,6 @@ def test_repair_spec_rejects_bad_from_day() -> None:
 
 def test_locked_employee_must_exist() -> None:
     instance = crew_instance(demand_per_hour=1, count=2)
-    spec = RepairSpec(Solution((Assignment("ghost", 0, "day", 3),)), from_day=1)
+    spec = RepairSpec(Solution((Assignment("ghost", 0, "day"),)), from_day=1)
     with pytest.raises(ValueError, match="unknown employee or shift"):
         solve_roster(instance, QUICK, repair=spec)

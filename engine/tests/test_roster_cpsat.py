@@ -45,7 +45,7 @@ def test_too_few_staff_stays_feasible_and_reports_shortfall(
     outcome = solve_roster(instance, PARAMS)
     assert outcome.result.status is not SolveStatus.INFEASIBLE
     assert outcome.understaffed_hours is not None
-    assert outcome.understaffed_hours >= 42
+    assert outcome.understaffed_hours >= HOURS_PER_WEEK - 3 * instance.rules.max_weekly_hours
     assert validate(instance, outcome.solution) == []
 
 

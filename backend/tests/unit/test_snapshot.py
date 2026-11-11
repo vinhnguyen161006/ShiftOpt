@@ -63,13 +63,14 @@ def test_employee_weekly_cap_round_trips_and_defaults_for_old_snapshots() -> Non
     assert instance.employees[1].max_weekly_hours is None
 
 
-def test_solution_rows_keep_break_offset() -> None:
+def test_rows_and_rules_saved_with_break_fields_still_load() -> None:
     solution = solution_from_rows(
         [{"employee_code": "E1", "day": 0, "shift_name": "day", "break_offset": 3}]
     )
+    snapshot = {**_snapshot(), "rules": {**asdict(LaborRules()), "min_break_minutes": 30}}
 
     assert solution.assignments[0].employee_id == "E1"
-    assert solution.assignments[0].break_offset == 3
+    assert instance_from_snapshot(snapshot).rules == LaborRules()
 
 
 def test_snapshot_round_trips_minimum_hours_and_budget() -> None:

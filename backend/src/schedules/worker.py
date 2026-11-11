@@ -38,7 +38,6 @@ def solve_snapshot(snapshot: Snapshot, params: dict[str, float]) -> dict[str, An
                 "employee_code": assignment.employee_id,
                 "day": assignment.day,
                 "shift_name": assignment.shift_name,
-                "break_offset": assignment.break_offset,
             }
             for assignment in outcome.solution.assignments
         ],

@@ -78,8 +78,8 @@ async def test_manual_edit_creates_new_run_and_keeps_original(
         f"/api/schedules/{original['id']}/edits",
         json={
             "assignments": [
-                {"employee_code": "E1", "day": 0, "shift_name": "evening", "break_offset": 3},
-                {"employee_code": "E1", "day": 1, "shift_name": "morning", "break_offset": 3},
+                {"employee_code": "E1", "day": 0, "shift_name": "evening"},
+                {"employee_code": "E1", "day": 1, "shift_name": "morning"},
             ]
         },
     )
@@ -239,8 +239,8 @@ async def test_reroster_refuses_a_run_that_violates_the_law(
         f"/api/schedules/{original['id']}/edits",
         json={
             "assignments": [
-                {"employee_code": "E1", "day": 0, "shift_name": "evening", "break_offset": 3},
-                {"employee_code": "E1", "day": 1, "shift_name": "morning", "break_offset": 3},
+                {"employee_code": "E1", "day": 0, "shift_name": "evening"},
+                {"employee_code": "E1", "day": 1, "shift_name": "morning"},
             ]
         },
     )

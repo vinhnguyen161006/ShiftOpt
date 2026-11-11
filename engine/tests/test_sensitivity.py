@@ -94,7 +94,7 @@ def test_sweep_flags_feasible_points_as_not_proven(build_instance: InstanceFacto
 
 def test_marginal_cost_matches_hand_example(build_instance: InstanceFactory) -> None:
     instance = build_instance(demand_per_hour=1, wage=WAGE)
-    table = discrete_marginal_cost(instance, aggregate_resolver(WAGE, PARAMS, with_breaks=False))
+    table = discrete_marginal_cost(instance, aggregate_resolver(WAGE, PARAMS))
     night_shift_cost_per_wage_unit = 100 * 8 + 30 * 6
     assert table.hours[3].delta == WAGE * night_shift_cost_per_wage_unit
     assert table.hours[3].proven
@@ -196,7 +196,7 @@ def test_staffing_assumption_sweep_raises_cost_with_alpha(
         base=StaffingAssumption(),
         field="alpha",
         values=(1.0, 2.0),
-        resolver=aggregate_resolver(WAGE, PARAMS, with_breaks=False),
+        resolver=aggregate_resolver(WAGE, PARAMS),
     )
     assert _cost(points[1][1]) > _cost(points[0][1])
 

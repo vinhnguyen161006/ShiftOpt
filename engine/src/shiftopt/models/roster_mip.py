@@ -12,7 +12,7 @@ from shiftopt.solvers.base import (
     with_time_share,
 )
 from shiftopt.solvers.pulp_backend import run_problem
-from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_WEEK, hour_of_week, shift_hours
+from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_WEEK, shift_hours
 
 TIER_TOLERANCE = 1e-6
 
@@ -28,8 +28,7 @@ def solve_roster_mip(
 
     Same constraints and lexicographic tiers as solve_roster (see docs/model.md section 2a, rows
     C1 to C8): shortfall, changes (repair only), labour cost with the night premium, night-shift
-    spread, then preference misses. Each tier is capped at the optimum of the tier before. Breaks
-    use one binary per break offset, so a break removes its worker from coverage at one hour.
+    spread, then preference misses. Each tier is capped at the optimum of the tier before.
     With params.cost_tolerance_percent above 0 the cost cap is relaxed by that percentage and a
     worked-hours spread tier is added after the night-shift spread, as in solve_roster.
     relax=True keeps the same rows and makes every variable continuous; it is used only to measure
@@ -72,8 +71,6 @@ class _RosterMip:
         self.problem = pulp.LpProblem("roster_mip", pulp.LpMinimize)
         self.rows = 0
         self.work: dict[tuple[int, int, int], Any] = {}
-        self.breaks: dict[tuple[int, int, int, int], Any] = {}
-        self.break_at: list[list[Any]] = [[] for _ in range(HOURS_PER_WEEK)]
         self.hour_work: list[list[list[Any]]] = [
             [[] for _ in range(HOURS_PER_WEEK)] for _ in self.employees
         ]
@@ -84,7 +81,7 @@ class _RosterMip:
         self.hours_max: Any = None
         self.hours_min: Any = None
         self.min_gaps: list[Any] = []
-        self.baseline_keys: dict[tuple[int, int, int], int | None] = {}
+        self.baseline_keys: set[tuple[int, int, int]] = set()
         self.changes: Any = None
         self._build()
 
@@ -111,7 +108,7 @@ class _RosterMip:
         self._add_rest_between_shifts()
         self._add_consecutive_days()
         self._add_weekly_rest()
-        self._add_breaks_and_coverage()
+        self._add_coverage()
         self._add_night_spread()
         if self.repair is not None:
             self._add_repair(self.repair)
@@ -122,15 +119,10 @@ class _RosterMip:
                 if day in employee.unavailable_days:
                     continue
                 for s_index, shift in enumerate(self.shifts):
-                    key = (e_index, day, s_index)
                     work = self._binary(f"work_{e_index}_{day}_{s_index}")
-                    self.work[key] = work
+                    self.work[(e_index, day, s_index)] = work
                     for hour in shift_hours(day, shift.start_hour, shift.length):
                         self.hour_work[e_index][hour].append(work)
-                    for offset in shift.break_window(self.rules):
-                        broken = self._binary(f"break_{e_index}_{day}_{s_index}_{offset}")
-                        self.breaks[(*key, offset)] = broken
-                        self.break_at[hour_of_week(day, shift.start_hour + offset)].append(broken)
 
     def _add_one_shift_per_day(self) -> None:
         for e_index in range(len(self.employees)):
@@ -196,20 +188,14 @@ class _RosterMip:
                     self._row(work + rest_start <= 1, "rest_111")
             self._row(pulp.lpSum(rest_starts) >= 1, "rest_111_once")
 
-    def _add_breaks_and_coverage(self) -> None:
-        for (e_index, day, s_index), work in self.work.items():
-            window = self.shifts[s_index].break_window(self.rules)
-            if window:
-                breaks = [self.breaks[(e_index, day, s_index, offset)] for offset in window]
-                self._row(pulp.lpSum(breaks) == work, "break_109")
+    def _add_coverage(self) -> None:
         for hour in range(HOURS_PER_WEEK):
             present = pulp.lpSum(
                 work for employee_hours in self.hour_work for work in employee_hours[hour]
             )
-            on_break = pulp.lpSum(self.break_at[hour])
             shortfall = self._var(f"short_{hour}", upper=self.instance.demand[hour])
             self.shortfall.append(shortfall)
-            self._row(present - on_break + shortfall >= self.instance.demand[hour], "cover")
+            self._row(present + shortfall >= self.instance.demand[hour], "cover")
 
     def _employee_nights(self, e_index: int) -> Any:
         return pulp.lpSum(
@@ -284,20 +270,12 @@ class _RosterMip:
         for key, work in self.work.items():
             if key[1] < spec.from_day or key in locked:
                 self._row(work == (1 if key in locked else 0), "repair_fix")
-        for key, offset in locked.items():
-            window = self.shifts[key[2]].break_window(self.rules)
-            if offset in window:
-                for candidate in window:
-                    value = 1 if candidate == offset else 0
-                    self._row(self.breaks[(*key, candidate)] == value, "repair_break")
         unmatched = sum(1 for key in self.baseline_keys if key not in self.work)
         terms = [1 - work if key in self.baseline_keys else work for key, work in self.work.items()]
         self.changes = pulp.lpSum(terms) + unmatched
 
-    def _keys_of(
-        self, assignments: tuple[Assignment, ...]
-    ) -> dict[tuple[int, int, int], int | None]:
-        keys: dict[tuple[int, int, int], int | None] = {}
+    def _keys_of(self, assignments: tuple[Assignment, ...]) -> set[tuple[int, int, int]]:
+        keys: set[tuple[int, int, int]] = set()
         for item in assignments:
             if (
                 item.employee_id not in self.employee_index
@@ -307,12 +285,9 @@ class _RosterMip:
                     f"repair refers to unknown employee or shift: {item.employee_id} "
                     f"{item.shift_name}"
                 )
-            key = (
-                self.employee_index[item.employee_id],
-                item.day,
-                self.shift_index[item.shift_name],
+            keys.add(
+                (self.employee_index[item.employee_id], item.day, self.shift_index[item.shift_name])
             )
-            keys[key] = item.break_offset
         return keys
 
     def _stages(self) -> list[tuple[str, Any]]:
@@ -404,14 +379,7 @@ class _RosterMip:
         for (e_index, day, s_index), work in sorted(self.work.items()):
             if values.get(work.name, 0.0) <= 0.5:
                 continue
-            shift = self.shifts[s_index]
-            offset = next(
-                (
-                    offset
-                    for offset in shift.break_window(self.rules)
-                    if values.get(self.breaks[(e_index, day, s_index, offset)].name, 0.0) > 0.5
-                ),
-                None,
+            assignments.append(
+                Assignment(self.employees[e_index].id, day, self.shifts[s_index].name)
             )
-            assignments.append(Assignment(self.employees[e_index].id, day, shift.name, offset))
         return Solution(tuple(assignments))

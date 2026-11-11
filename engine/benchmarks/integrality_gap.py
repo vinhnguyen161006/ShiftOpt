@@ -3,8 +3,8 @@ import sys
 
 from benchmarks.compare_solvers import INSTANCES, WAGE
 from benchmarks.run_roster_scale import weekly_instance
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
 from shiftopt.models.roster_mip import solve_roster_mip
+from shiftopt.models.set_covering_pulp import solve_set_covering
 from shiftopt.solvers.base import SolveParams
 
 ROSTER_EMPLOYEES = 10
@@ -25,8 +25,8 @@ def aggregate_rows() -> list[tuple[str, str, str, float | None, float | None, fl
     rows = []
     for name, build in INSTANCES:
         instance = build()
-        lp = solve_with_implicit_breaks(instance, WAGE, PARAMS, relax=True)
-        ip = solve_with_implicit_breaks(instance, WAGE, PARAMS, relax=False)
+        lp = solve_set_covering(instance, WAGE, PARAMS, relax=True)
+        ip = solve_set_covering(instance, WAGE, PARAMS, relax=False)
         rows.append(
             (
                 "aggregate",

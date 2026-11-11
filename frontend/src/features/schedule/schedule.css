@@ -95,14 +95,6 @@
   position: relative;
 }
 
-.roster-break {
-  display: block;
-  font-family: var(--font-body);
-  font-size: 10px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
 .roster-changed-mark {
   float: right;
   font-size: 11px;

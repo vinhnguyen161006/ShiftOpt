@@ -2,7 +2,7 @@ import copy
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from typing import Any
 
 from shiftopt.constraints.labor_law_vn import LaborRules
@@ -59,6 +59,13 @@ def input_hash(snapshot: Snapshot) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _rules_of(stored: Mapping[str, Any]) -> LaborRules:
+    """Rebuild LaborRules from a stored snapshot. Keys the dataclass no longer has, such as the
+    rest-break fields of runs saved before breaks were removed, are ignored."""
+    known = {item.name for item in fields(LaborRules)}
+    return LaborRules(**{key: value for key, value in stored.items() if key in known})
+
+
 def instance_from_snapshot(snapshot: Snapshot) -> Instance:
     return Instance(
         demand=tuple(snapshot["demand"]),
@@ -77,7 +84,7 @@ def instance_from_snapshot(snapshot: Snapshot) -> Instance:
             ShiftType(name=row["name"], start_hour=row["start_hour"], length=row["length"])
             for row in snapshot["shift_types"]
         ),
-        rules=LaborRules(**snapshot["rules"]),
+        rules=_rules_of(snapshot["rules"]),
         weekly_budget=snapshot.get("weekly_budget"),
     )
 
@@ -89,7 +96,6 @@ def solution_from_rows(rows: Sequence[Mapping[str, Any]]) -> Solution:
                 employee_id=row["employee_code"],
                 day=row["day"],
                 shift_name=row["shift_name"],
-                break_offset=row.get("break_offset"),
             )
             for row in rows
         )

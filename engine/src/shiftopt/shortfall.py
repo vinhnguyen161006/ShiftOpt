@@ -84,7 +84,7 @@ def _blocking_kinds(
     instance: Instance,
     employee: Employee,
     current: list[Assignment],
-    options: list[tuple[int, ShiftType, int | None]],
+    options: list[tuple[int, ShiftType]],
     shifts: dict[str, ShiftType],
     spent: int,
 ) -> frozenset[ViolationKind]:
@@ -96,8 +96,8 @@ def _blocking_kinds(
     )
     existing = {item.kind for item in validate(alone, Solution(tuple(current)))}
     best: frozenset[ViolationKind] | None = None
-    for day, shift, offset in options:
-        candidate = Assignment(employee.id, day, shift.name, offset)
+    for day, shift in options:
+        candidate = Assignment(employee.id, day, shift.name)
         kinds = {item.kind for item in validate(alone, Solution((*current, candidate)))} - existing
         cost = employee.hourly_wage * shifts[shift.name].cost_per_wage_unit(instance.rules)
         if instance.weekly_budget is not None and spent + cost > instance.weekly_budget:
@@ -111,31 +111,18 @@ def _blocking_kinds(
 
 def _covering_options(
     instance: Instance, hour: int, allowed: tuple[ShiftType, ...]
-) -> list[tuple[int, ShiftType, int | None]]:
+) -> list[tuple[int, ShiftType]]:
     first_day = hour // HOURS_PER_DAY
     options = []
     for day in (first_day, (first_day - 1) % DAYS_PER_WEEK):
         for shift in allowed:
             start = day * HOURS_PER_DAY + shift.start_hour
             if covers_hour(hour, start, shift.length, HOURS_PER_WEEK):
-                options.append((day, shift, _break_offset(instance, day, shift, hour)))
+                options.append((day, shift))
     return options
 
 
-def _break_offset(instance: Instance, day: int, shift: ShiftType, hour: int) -> int | None:
-    window = shift.break_window(instance.rules)
-    if not window:
-        return None
-    return next(
-        (offset for offset in window if hour_of_week(day, shift.start_hour + offset) != hour),
-        window[0],
-    )
-
-
 def _worked_hours(assignment: Assignment, shift: ShiftType) -> set[int]:
-    worked = {
+    return {
         hour_of_week(assignment.day, shift.start_hour + offset) for offset in range(shift.length)
     }
-    if assignment.break_offset is not None:
-        worked.discard(hour_of_week(assignment.day, shift.start_hour + assignment.break_offset))
-    return worked

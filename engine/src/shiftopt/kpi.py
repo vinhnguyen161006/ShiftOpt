@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from shiftopt.constraints.fairness import min_hours_shortfall, worked_hours_spread
 from shiftopt.domain import Assignment, Instance, ShiftType, Solution
-from shiftopt.time_grid import HOURS_PER_WEEK, hour_of_week, shift_hours
+from shiftopt.time_grid import HOURS_PER_WEEK, shift_hours
 
 WEEKEND_DAYS = (5, 6)
 
@@ -25,15 +25,13 @@ class Kpi:
 
 def staff_by_hour(instance: Instance, solution: Solution) -> tuple[int, ...]:
     """Head count actually working for each of the 168 hours of the week. A shift counts for
-    every hour it covers, so overnight hours land on the following day, except the break hour,
-    when that person is off the floor. Unknown shift names raise KeyError; run validate first."""
+    every hour it covers, so overnight hours land on the following day. Unknown shift names
+    raise KeyError; run validate first."""
     staff = [0] * HOURS_PER_WEEK
     for assignment in solution.assignments:
         shift = instance.shift_by_name(assignment.shift_name)
         for hour in shift_hours(assignment.day, shift.start_hour, shift.length):
             staff[hour] += 1
-        if assignment.break_offset is not None:
-            staff[hour_of_week(assignment.day, shift.start_hour + assignment.break_offset)] -= 1
     return tuple(staff)
 
 

@@ -6,7 +6,7 @@ from ortools.sat.python import cp_model
 
 from shiftopt.constraints.sequences import consecutive_day_windows, forbidden_shift_pairs
 from shiftopt.domain import Assignment, Employee, Instance, RepairSpec, Solution
-from shiftopt.models.implicit_breaks import solve_with_implicit_breaks
+from shiftopt.models.set_covering_pulp import solve_set_covering
 from shiftopt.solvers.base import (
     SolveParams,
     SolveResult,
@@ -16,7 +16,7 @@ from shiftopt.solvers.base import (
 )
 from shiftopt.solvers.cpsat import run_cp_model
 from shiftopt.staffing.linear import tolerant_ceil
-from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_WEEK, hour_of_week, shift_hours
+from shiftopt.time_grid import DAYS_PER_WEEK, HOURS_PER_WEEK, shift_hours
 
 
 @dataclass(frozen=True)
@@ -45,8 +45,8 @@ def solve_roster(
 
     Hard: at most one shift per day, weekly hours (Article 105), rest between shifts from the
     general formula (Article 110), maximum consecutive days, at least 24 consecutive hours without
-    work (Article 111), one rest break per shift that needs one (Article 109), and no shift on an
-    unavailable day. Soft: coverage through shortfall variables, so the model stays feasible.
+    work (Article 111), and no shift on an unavailable day. Soft: coverage through shortfall
+    variables, so the model stays feasible.
     An optional weekly_budget on the instance is a hard cap on the labour cost, which only adds
     shortfall when it binds. An optional min_weekly_hours on an employee is soft: the total hours
     below the minimums is its own tier right after the shortfall.
@@ -63,7 +63,7 @@ def solve_roster(
 
     symmetry_breaking orders employees that are identical in wage and carry no requests by their
     shift count; this keeps the optimum and only removes permutations of the same roster.
-    decompose first solves the aggregate model with implicit breaks, then caps the number of starts
+    decompose first solves the aggregate set covering model, then caps the number of starts
     per day and shift type to that head count. The result is then an approximation and is never
     reported as OPTIMAL.
     """
@@ -137,7 +137,7 @@ def _aggregate_starts(instance: Instance, params: SolveParams) -> dict[tuple[int
     if not wages:
         return {}
     median_wage = wages[len(wages) // 2]
-    counts = solve_with_implicit_breaks(instance, median_wage, params).counts
+    counts = solve_set_covering(instance, median_wage, params).counts
     return {key: tolerant_ceil(value) for key, value in counts.items()}
 
 
@@ -161,8 +161,6 @@ class _RosterModel:
         self.zero = self.model.new_constant(0)
         self.all_vars: list[Any] = []
         self.work: dict[tuple[int, int, int], Any] = {}
-        self.breaks: dict[tuple[int, int, int, int], Any] = {}
-        self.break_at: list[list[Any]] = [[] for _ in range(HOURS_PER_WEEK)]
         self.hour_work: list[list[list[Any]]] = [
             [[] for _ in range(HOURS_PER_WEEK)] for _ in self.employees
         ]
@@ -174,7 +172,7 @@ class _RosterModel:
         self.hours_min: Any = None
         self.min_gaps: list[Any] = []
         self.repair = repair
-        self.baseline_keys: dict[tuple[int, int, int], int | None] = {}
+        self.baseline_keys: set[tuple[int, int, int]] = set()
         self.changes: Any = None
         self._build()
 
@@ -195,15 +193,13 @@ class _RosterModel:
         self._add_rest_between_shifts()
         self._add_consecutive_days()
         self._add_weekly_rest()
-        self._add_breaks_and_coverage()
+        self._add_coverage()
         self._add_night_spread()
         if self.repair is not None:
             self._add_repair(self.repair)
 
-    def _keys_of(
-        self, assignments: tuple[Assignment, ...]
-    ) -> dict[tuple[int, int, int], int | None]:
-        keys: dict[tuple[int, int, int], int | None] = {}
+    def _keys_of(self, assignments: tuple[Assignment, ...]) -> set[tuple[int, int, int]]:
+        keys: set[tuple[int, int, int]] = set()
         for item in assignments:
             if (
                 item.employee_id not in self.employee_index
@@ -213,12 +209,9 @@ class _RosterModel:
                     f"repair refers to unknown employee or shift: {item.employee_id} "
                     f"{item.shift_name}"
                 )
-            key = (
-                self.employee_index[item.employee_id],
-                item.day,
-                self.shift_index[item.shift_name],
+            keys.add(
+                (self.employee_index[item.employee_id], item.day, self.shift_index[item.shift_name])
             )
-            keys[key] = item.break_offset
         return keys
 
     def _add_repair(self, spec: RepairSpec) -> None:
@@ -229,25 +222,12 @@ class _RosterModel:
         for key, work in self.work.items():
             if key[1] < spec.from_day or key in locked:
                 self.model.add(work == int(key in locked))
-        for key, offset in locked.items():
-            window = self.shifts[key[2]].break_window(self.rules)
-            if offset in window:
-                for candidate in window:
-                    self.model.add(self.breaks[(*key, candidate)] == int(candidate == offset))
         unmatched = sum(1 for key in self.baseline_keys if key not in self.work)
         terms = [1 - work if key in self.baseline_keys else work for key, work in self.work.items()]
         self.changes = self._sum(terms) + unmatched
 
     def _repair_hints(self) -> dict[Any, int]:
-        hints: dict[Any, int] = {}
-        for key, work in self.work.items():
-            hints[work] = int(key in self.baseline_keys)
-        for key, offset in self.baseline_keys.items():
-            if key not in self.work:
-                continue
-            for candidate in self.shifts[key[2]].break_window(self.rules):
-                hints[self.breaks[(*key, candidate)]] = int(candidate == offset)
-        return hints
+        return {work: int(key in self.baseline_keys) for key, work in self.work.items()}
 
     def _create_shift_variables(self) -> None:
         for e_index, employee in enumerate(self.employees):
@@ -259,10 +239,6 @@ class _RosterModel:
                     self.work[(e_index, day, s_index)] = work
                     for hour in shift_hours(day, shift.start_hour, shift.length):
                         self.hour_work[e_index][hour].append(work)
-                    for offset in shift.break_window(self.rules):
-                        broken = self._bool(f"break_{e_index}_{day}_{s_index}_{offset}")
-                        self.breaks[(e_index, day, s_index, offset)] = broken
-                        self.break_at[hour_of_week(day, shift.start_hour + offset)].append(broken)
 
     def _add_one_shift_per_day(self) -> None:
         for e_index in range(len(self.employees)):
@@ -327,20 +303,14 @@ class _RosterModel:
                     self.model.add(self._sum(window_work) == 0).only_enforce_if(rest_start)
             self.model.add_bool_or(rest_starts)
 
-    def _add_breaks_and_coverage(self) -> None:
-        for (e_index, day, s_index), work in self.work.items():
-            window = self.shifts[s_index].break_window(self.rules)
-            breaks = [self.breaks[(e_index, day, s_index, offset)] for offset in window]
-            self.model.add(self._sum(breaks) == work)
+    def _add_coverage(self) -> None:
         for hour in range(HOURS_PER_WEEK):
             present = self._sum(
                 work for employee_hours in self.hour_work for work in employee_hours[hour]
             )
             shortfall = self.model.new_int_var(0, self.instance.demand[hour], f"short_{hour}")
             self.shortfall.append(shortfall)
-            self.model.add(
-                present - self._sum(self.break_at[hour]) + shortfall >= self.instance.demand[hour]
-            )
+            self.model.add(present + shortfall >= self.instance.demand[hour])
 
     def _add_night_spread(self) -> None:
         if len(self.employees) < 2:
@@ -512,14 +482,7 @@ class _RosterModel:
         for (e_index, day, s_index), work in sorted(self.work.items()):
             if not best.value(work):
                 continue
-            shift = self.shifts[s_index]
-            offset = next(
-                (
-                    offset
-                    for offset in shift.break_window(self.rules)
-                    if best.value(self.breaks[(e_index, day, s_index, offset)])
-                ),
-                None,
+            assignments.append(
+                Assignment(self.employees[e_index].id, day, self.shifts[s_index].name)
             )
-            assignments.append(Assignment(self.employees[e_index].id, day, shift.name, offset))
         return Solution(tuple(assignments))
