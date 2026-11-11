@@ -71,14 +71,14 @@
 
 .roster-cell {
   display: block;
-  height: 26px;
-  padding: 0 4px;
+  height: 36px;
+  padding: 2px 4px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-family: var(--font-heading);
   font-size: 11px;
-  line-height: 24px;
+  line-height: 16px;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   text-align: center;
@@ -93,6 +93,14 @@
   outline: 2px dashed var(--color-accent-900);
   outline-offset: -2px;
   position: relative;
+}
+
+.roster-break {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .roster-changed-mark {
