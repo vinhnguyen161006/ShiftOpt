@@ -13,8 +13,7 @@ export const vi = {
     fieldErrors: "Một số ô cần sửa.",
     invalidValue: "Giá trị không hợp lệ",
     requestFailed: (status: number) => `Yêu cầu thất bại với mã ${status}.`,
-    tooManyJobs:
-      "Hệ thống đang chạy tối đa số lượt giải cùng lúc. Chờ một lượt xong rồi thử lại.",
+    tooManyJobs: "Hệ thống đang chạy tối đa số lượt giải cùng lúc. Chờ một lượt xong rồi thử lại.",
     skipLink: "Bỏ qua tới nội dung",
     workspaceNav: "Khu làm việc",
     noticeLabels: {
