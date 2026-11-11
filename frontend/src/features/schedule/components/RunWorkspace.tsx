@@ -20,8 +20,7 @@ const CP_SAT_SOLVER = "ortools-cp-sat";
 
 function money(hundredths: number): string {
   return (hundredths / COST_SCALE).toLocaleString("vi-VN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   });
 }
 
