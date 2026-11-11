@@ -18,6 +18,7 @@ export class ApiError extends Error {
 
 const UNREACHABLE = vi.common.unreachable;
 const FIELD_ERRORS = vi.common.fieldErrors;
+const TOO_MANY_JOBS = 429;
 
 type ValidationItem = { loc?: (string | number)[]; msg?: string };
 
@@ -74,6 +75,9 @@ async function readBody(response: Response): Promise<unknown> {
 
 function toApiError(status: number, body: unknown): ApiError {
   const detail = typeof body === "object" && body !== null ? Reflect.get(body, "detail") : body;
+  if (status === TOO_MANY_JOBS) {
+    return new ApiError(status, vi.common.tooManyJobs);
+  }
   if (typeof detail === "string") {
     return new ApiError(status, detail);
   }

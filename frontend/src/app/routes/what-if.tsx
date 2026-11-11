@@ -1,30 +1,22 @@
 import { useSearchParams } from "react-router";
 import { EmptyState, Loading, Notice } from "../../components/ui/Feedback";
-import { Field } from "../../components/ui/Field";
 import { PageHeader, Panel } from "../../components/ui/Layout";
 import { useDemandProfiles } from "../../features/demand/api/demand";
 import { useEmployees } from "../../features/employees/api/employees";
-import { useScheduleKpi, useScheduleRuns } from "../../features/schedule/api/schedules";
 import { useShiftTemplates } from "../../features/shift-templates/api/shift-templates";
 import { useAnalysisRun } from "../../features/what-if/api/analysis";
 import { AnalysisStatus } from "../../features/what-if/components/AnalysisStatus";
-import { BaselineCompare } from "../../features/what-if/components/BaselineCompare";
-import { FairnessSweepView } from "../../features/what-if/components/FairnessSweepView";
-import { ScenarioCompare } from "../../features/what-if/components/ScenarioCompare";
 import { SensitivityHeatmap } from "../../features/what-if/components/SensitivityHeatmap";
 import { StaffingSweepView } from "../../features/what-if/components/StaffingSweepView";
 import { SweepView } from "../../features/what-if/components/SweepView";
-import { WhatIfSetup } from "../../features/what-if/components/WhatIfSetup";
+import { type AnalysisKind, WhatIfSetup } from "../../features/what-if/components/WhatIfSetup";
 import { errorMessage } from "../../lib/api-client";
 import { useLaborRules } from "../../lib/labor-rules";
 import { vi } from "../../locales/vi";
 import type {
   AnalysisRunRead,
-  BaselineCompareResult,
   DemandSweepResult,
-  FairnessSweepResult,
   MarginalCostResult,
-  SolveRunRead,
   StaffingSweepResult,
 } from "../../types/models";
 
@@ -45,32 +37,13 @@ function isStaffing(
   return run?.kind === "staffing_sweep" && run.result !== null && run.result !== undefined;
 }
 
-function isBaseline(
-  run: AnalysisRunRead | undefined,
-): run is AnalysisRunRead & { result: BaselineCompareResult } {
-  return run?.kind === "baseline_compare" && run.result !== null && run.result !== undefined;
-}
-
-function isFairness(
-  run: AnalysisRunRead | undefined,
-): run is AnalysisRunRead & { result: FairnessSweepResult } {
-  return run?.kind === "fairness_sweep" && run.result !== null && run.result !== undefined;
-}
-
 function isMarginal(
   run: AnalysisRunRead | undefined,
 ): run is AnalysisRunRead & { result: MarginalCostResult } {
   return run?.result !== null && run?.result !== undefined && "marginal_cost_by_hour" in run.result;
 }
 
-function SetupPanel({
-  onStarted,
-}: {
-  onStarted: (
-    kind: "sweep" | "marginal" | "staffing" | "baseline" | "fairness",
-    runId: number,
-  ) => void;
-}) {
+function SetupPanel({ onStarted }: { onStarted: (kind: AnalysisKind, runId: number) => void }) {
   const profiles = useDemandProfiles();
   const templates = useShiftTemplates();
   const employees = useEmployees();
@@ -100,71 +73,6 @@ function SetupPanel({
   );
 }
 
-function runLabel(run: SolveRunRead): string {
-  const status =
-    run.solver === "manual"
-      ? vi.whatIf.compare.manualEdit
-      : (vi.schedule.solveStatus[run.solve_status ?? ""] ?? run.solve_status ?? run.status);
-  return vi.whatIf.runLabel(run.id, status);
-}
-
-function ComparePanel({
-  baselineId,
-  scenarioId,
-  onChange,
-}: {
-  baselineId: number | undefined;
-  scenarioId: number | undefined;
-  onChange: (key: "base" | "compare", runId: number | undefined) => void;
-}) {
-  const runs = useScheduleRuns();
-  const finished = (runs.data ?? []).filter((run) => run.assignments !== null);
-  const baseline = finished.find((run) => run.id === baselineId);
-  const scenario = finished.find((run) => run.id === scenarioId);
-  const baselineKpi = useScheduleKpi(baseline?.id, baseline !== undefined);
-  const scenarioKpi = useScheduleKpi(scenario?.id, scenario !== undefined);
-
-  if (runs.isPending) {
-    return <Loading label={vi.whatIf.loadingRuns} />;
-  }
-  if (finished.length < 2) {
-    return <EmptyState title={vi.whatIf.twoRunsTitle}>{vi.whatIf.twoRunsBody}</EmptyState>;
-  }
-  const picker = (key: "base" | "compare", label: string, value: number | undefined) => (
-    <Field id={`compare-${key}`} label={label}>
-      {(control) => (
-        <select
-          {...control}
-          className="input"
-          value={value ?? ""}
-          onChange={(event) => onChange(key, Number(event.target.value) || undefined)}
-        >
-          <option value="">{vi.whatIf.chooseRun}</option>
-          {finished.map((run) => (
-            <option key={run.id} value={run.id}>
-              {runLabel(run)}
-            </option>
-          ))}
-        </select>
-      )}
-    </Field>
-  );
-  return (
-    <div>
-      <div className="compare-pickers">
-        {picker("base", vi.whatIf.baseline, baselineId)}
-        {picker("compare", vi.whatIf.scenario, scenarioId)}
-      </div>
-      {baseline && scenario && (
-        <ScenarioCompare
-          baseline={{ run: baseline, kpi: baselineKpi.data }}
-          scenario={{ run: scenario, kpi: scenarioKpi.data }}
-        />
-      )}
-    </div>
-  );
-}
-
 export function WhatIfRoute() {
   const [params, setParams] = useSearchParams();
   const sweepId = numberParam(params, "sweep");
@@ -173,20 +81,12 @@ export function WhatIfRoute() {
   const sweep = useAnalysisRun(sweepId);
   const marginal = useAnalysisRun(marginalId);
   const staffing = useAnalysisRun(staffingId);
-  const baselineId = numberParam(params, "baseline");
-  const baseline = useAnalysisRun(baselineId);
-  const fairnessId = numberParam(params, "fairness");
-  const fairness = useAnalysisRun(fairnessId);
   const sweepResult =
     sweep.data?.status === "succeeded" && isSweep(sweep.data) ? sweep.data.result : undefined;
 
-  function setParam(key: string, value: number | undefined) {
+  function setParam(key: AnalysisKind, value: number) {
     const next = new URLSearchParams(params);
-    if (value === undefined) {
-      next.delete(key);
-    } else {
-      next.set(key, String(value));
-    }
+    next.set(key, String(value));
     setParams(next);
   }
 
@@ -194,7 +94,7 @@ export function WhatIfRoute() {
     <div className="page">
       <PageHeader eyebrow={vi.whatIf.eyebrow} title={vi.whatIf.title} lead={vi.whatIf.lead} />
       <Panel title={vi.whatIf.setup} labelledBy="whatif-setup-title">
-        <SetupPanel onStarted={(kind, runId) => setParam(kind, runId)} />
+        <SetupPanel onStarted={setParam} />
       </Panel>
       {sweepResult ? (
         <SweepView key={sweep.data?.id} result={sweepResult} />
@@ -211,20 +111,6 @@ export function WhatIfRoute() {
           )}
         </Panel>
       )}
-      <Panel title={vi.whatIf.staffingPanel} labelledBy="staffing-title">
-        {staffingId === undefined && (
-          <EmptyState title={vi.whatIf.noStaffingTitle}>{vi.whatIf.noStaffingBody}</EmptyState>
-        )}
-        {staffing.isError && <Notice kind="error" title={errorMessage(staffing.error)} />}
-        {staffing.data && (
-          <AnalysisStatus
-            run={staffing.data}
-            activeLabel={vi.whatIf.staffingActive(staffing.data.id)}
-          >
-            {isStaffing(staffing.data) && <StaffingSweepView result={staffing.data.result} />}
-          </AnalysisStatus>
-        )}
-      </Panel>
       <Panel title={vi.whatIf.marginalPanel} labelledBy="marginal-title">
         {marginalId === undefined && (
           <EmptyState title={vi.whatIf.noMarginalTitle}>{vi.whatIf.noMarginalBody}</EmptyState>
@@ -239,44 +125,19 @@ export function WhatIfRoute() {
           </AnalysisStatus>
         )}
       </Panel>
-      <Panel title={vi.whatIf.baselinePanel} labelledBy="baseline-title">
-        {baselineId === undefined && (
-          <EmptyState title={vi.whatIf.noBaselineTitle}>{vi.whatIf.noBaselineBody}</EmptyState>
+      <Panel title={vi.whatIf.staffingPanel} labelledBy="staffing-title">
+        {staffingId === undefined && (
+          <EmptyState title={vi.whatIf.noStaffingTitle}>{vi.whatIf.noStaffingBody}</EmptyState>
         )}
-        {baseline.isError && <Notice kind="error" title={errorMessage(baseline.error)} />}
-        {baseline.data && (
+        {staffing.isError && <Notice kind="error" title={errorMessage(staffing.error)} />}
+        {staffing.data && (
           <AnalysisStatus
-            run={baseline.data}
-            activeLabel={vi.whatIf.baselineActive(baseline.data.id)}
+            run={staffing.data}
+            activeLabel={vi.whatIf.staffingActive(staffing.data.id)}
           >
-            {isBaseline(baseline.data) && (
-              <BaselineCompare result={baseline.data.result} analysisId={baseline.data.id} />
-            )}
+            {isStaffing(staffing.data) && <StaffingSweepView result={staffing.data.result} />}
           </AnalysisStatus>
         )}
-      </Panel>
-      <Panel title={vi.whatIf.fairness.panel} labelledBy="fairness-title">
-        {fairnessId === undefined && (
-          <EmptyState title={vi.whatIf.fairness.noRunTitle}>
-            {vi.whatIf.fairness.noRunBody}
-          </EmptyState>
-        )}
-        {fairness.isError && <Notice kind="error" title={errorMessage(fairness.error)} />}
-        {fairness.data && (
-          <AnalysisStatus
-            run={fairness.data}
-            activeLabel={vi.whatIf.fairness.active(fairness.data.id)}
-          >
-            {isFairness(fairness.data) && <FairnessSweepView result={fairness.data.result} />}
-          </AnalysisStatus>
-        )}
-      </Panel>
-      <Panel title={vi.whatIf.comparePanel} labelledBy="compare-title">
-        <ComparePanel
-          baselineId={numberParam(params, "base")}
-          scenarioId={numberParam(params, "compare")}
-          onChange={setParam}
-        />
       </Panel>
     </div>
   );

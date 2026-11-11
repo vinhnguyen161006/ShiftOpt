@@ -215,7 +215,7 @@ Bắt buộc (1–3), kịch bản (4) nên có, (5–6) là mở rộng:
 6. **Lịch dạng lưới** (hàng = nhân viên, cột = ngày, ô màu theo loại ca); chế độ Gantt theo giờ là mức mở rộng.
 7. **Cảnh báo tuân thủ**: vi phạm Đ.105 / 110 / 111, phát hiện cả khi người dùng sửa tay.
 8. Bảng chi phí: tổng lương, phụ cấp đêm, % chi phí lao động.
-9. **What-if**: thanh trượt λ, so sánh hai kịch bản cạnh nhau, heatmap chi phí biên theo giờ, so với baseline greedy, quét dung sai chi phí (đánh đổi chi phí và công bằng, D21).
+9. **What-if**: thanh trượt λ, heatmap chi phí biên theo giờ (kèm dual LP xấp xỉ), quét giả định quy đổi. So với baseline greedy, quét dung sai chi phí (D21) và so sánh hai lượt đã gỡ khỏi UI theo quyết định của người dùng ngày 2026-11-11; API `/analysis/baseline-compare`, `/analysis/fairness-sweep` và benchmark vẫn giữ.
 10. Xuất CSV (PDF là mức mở rộng).
 11. Xếp lại (repair) từ lịch đã công bố: ngày khóa, người vắng, ca ghim; báo nghỉ đột xuất; gợi ý người thay. Mỗi lần xếp lại là lượt mới, validator kiểm lại (đặc tả D20).
 12. Cảnh báo trước khi giải (điều kiện cần, không chặn nút), giải thích từng giờ thiếu người, nhãn "đầu vào đã đổi" trên lượt cũ (đặc tả D27). Ngân sách tuần (cứng) và giờ tối thiểu theo hợp đồng (mềm) là tùy chọn (D25, D26).
@@ -373,7 +373,7 @@ frontend/
       schedule/             api (poll), NewRunForm, RunsTable, RunWorkspace (panel kết quả như trang chủ), SolveStatusPanel (SolveNotice, SolveDetails), ScheduleGrid (đánh dấu ô đổi và ngày khóa khi repair), RepairForm, CoverageChart, CostSummary, RunResults (KPI, xuất CSV)
       compliance/           api, ViolationList (nhóm theo điều luật), ManualEditor (sửa tay tạo run mới), ReplacementList (gợi ý người thay, áp dụng qua sửa tay), ShortfallExplanation (vì sao còn giờ thiếu)
       reroster/             api, RerosterForm (báo nghỉ đột xuất), ChangesSummary (so với lượt cha)
-      what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), ScenarioCompare, StaffingSweepView, BaselineCompare, FairnessSweepView, AnalysisStatus
+      what-if/              api (poll), WhatIfSetup, SweepView + LambdaSlider (z(lambda)), SensitivityHeatmap (chi phí biên / dual LP xấp xỉ), StaffingSweepView, AnalysisStatus
 data/                       demo/ (file mẫu: train.parquet gitignore, CSV mẫu), raw/ (gitignore), benchmarks/curtois_qu/ (script tải)
 docs/
   đặc tả.md                 nguồn sự thật yêu cầu (đã duyệt 2026-11-08, bổ sung 2026-11-09; quyết định D1–D28)
